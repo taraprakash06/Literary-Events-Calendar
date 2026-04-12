@@ -1,0 +1,96 @@
+export type EventFormat = "in-person" | "virtual" | "hybrid";
+
+export type PriceKind = "free" | "paid" | "unknown";
+
+/** High-level category for filtering; extend as you add cities. */
+export type WorkshopEventCategory =
+  | "reading"
+  | "workshop"
+  | "open-mic"
+  | "festival"
+  | "book-club"
+  | "panel"
+  | "launch"
+  | "theater"
+  | "other";
+
+export type City = {
+  id: string;
+  slug: string;
+  name: string;
+  label: string;
+};
+
+/** Ingestion channel this row would map to in production. */
+export type SourceChannel =
+  | "eventbrite"
+  | "google_public"
+  | "library"
+  | "literary_org"
+  | "theater_arts"
+  | "bookstore"
+  | "news_roundup"
+  | "instagram";
+
+export type ListingProvenance = "sample" | "live";
+
+export type WorkshopEvent = {
+  id: string;
+  cityId: string;
+  title: string;
+  tagline: string;
+  description: string;
+  /** ISO 8601 local date-time string (no Z) or with Z for UTC — parsed with Date */
+  start: string;
+  end?: string;
+  format: EventFormat;
+  price: PriceKind;
+  category: WorkshopEventCategory;
+  organizer: string;
+  venue?: string;
+  /** Street or well-known place name */
+  address?: string;
+  neighborhood?: string;
+  virtualLabel?: string;
+  rsvpUrl?: string;
+  /** Human-readable publisher or feed name once live. */
+  source?: string;
+  /** Which connector this listing belongs to in the ingestion model. */
+  sourceChannel?: SourceChannel;
+  /** `sample` = UI placeholder until feeds return real rows. */
+  listingProvenance?: ListingProvenance;
+};
+
+export type EventFilters = {
+  formats: Set<EventFormat>;
+  prices: Set<PriceKind>;
+  /** `null` = all categories; otherwise only types in the set */
+  categoryIncluded: Set<WorkshopEventCategory> | null;
+  rangeStart: string;
+  rangeEnd: string;
+  neighborhood: string;
+};
+
+export const CATEGORY_LABELS: Record<WorkshopEventCategory, string> = {
+  reading: "Reading",
+  workshop: "Workshop",
+  "open-mic": "Open mic",
+  festival: "Festival",
+  "book-club": "Book club",
+  panel: "Panel",
+  launch: "Launch",
+  theater: "Theater",
+  other: "Other",
+};
+
+export const FORMAT_LABELS: Record<EventFormat, string> = {
+  "in-person": "In person",
+  virtual: "Virtual",
+  hybrid: "Hybrid",
+};
+
+export const PRICE_LABELS: Record<PriceKind, string> = {
+  free: "Free",
+  paid: "Paid",
+  unknown: "Unknown",
+};
