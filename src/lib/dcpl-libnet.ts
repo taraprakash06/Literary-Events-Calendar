@@ -92,10 +92,40 @@ function stripHtml(html: string): string {
     .trim();
 }
 
-function mapFormat(eventType?: string): EventFormat {
-  const u = (eventType ?? "").toUpperCase();
-  if (u === "VIRTUAL" || u === "ONLINE") return "virtual";
+function libNetAttendanceBlob(raw: DcplLibnetRawEvent): string {
+  return [
+    raw.event_type,
+    raw.library,
+    raw.location,
+    raw.venues,
+    raw.title,
+    raw.sub_title,
+    raw.description,
+    raw.long_description,
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+}
+
+/** LibNet / Communico rows: infer in-person vs virtual vs hybrid for filter accuracy. */
+export function mapLibNetAttendanceFormat(raw: DcplLibnetRawEvent): EventFormat {
+  const u = (raw.event_type ?? "").trim().toUpperCase();
+  if (u === "VIRTUAL" || u === "ONLINE" || u === "WEBINAR") return "virtual";
   if (u === "HYBRID") return "hybrid";
+
+  const hay = libNetAttendanceBlob(raw);
+  if (/\bhybrid\b/.test(hay)) return "hybrid";
+  if (
+    /\b(virtual|online only|via zoom|on zoom|zoom link|webex|teams meeting|google meet|live-?stream|livestream)\b/.test(
+      hay,
+    )
+  ) {
+    if (/\b(in-?person|at the library|library branch|community room|meeting room)\b/.test(hay)) {
+      return "hybrid";
+    }
+    return "virtual";
+  }
   return "in-person";
 }
 
@@ -156,6 +186,14 @@ export function mapDcplLibnetRowToWorkshopEvent(
   const tagline =
     (raw.sub_title ?? "").trim() || (raw.time_string ?? "").trim() || "";
 
+  const format = mapLibNetAttendanceFormat(raw);
+  const virtualLabel =
+    format === "hybrid"
+      ? "Hybrid (online + in person)"
+      : format === "virtual"
+        ? "Online (library program)"
+        : undefined;
+
   return {
     id: `dcpl-${raw.id}`,
     cityId,
@@ -164,11 +202,12 @@ export function mapDcplLibnetRowToWorkshopEvent(
     description,
     start,
     end,
-    format: mapFormat(raw.event_type),
+    format,
     price,
     category: mapCategory(raw.tagsArray),
     organizer: "DC Public Library",
     venue: venueLine(raw),
+    virtualLabel,
     source: "DC Public Library (LibNet)",
     sourceChannel: "library",
     listingProvenance: "live",

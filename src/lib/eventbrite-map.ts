@@ -55,14 +55,42 @@ function textField(tf?: EbTextField): string {
   return h ? stripHtml(h) : "";
 }
 
-function isOnlineEvent(ev: EbEventResource): boolean {
-  if (ev.online_event === true) return true;
-  if (ev.format_id === "9") return true;
-  return false;
+/**
+ * Eventbrite `format_id` is the event *type* (e.g. 9 = Workshop), not attendance mode.
+ * Attendance comes from `online_event` and venue data — see Eventbrite “formats” API.
+ */
+function hasMeaningfulPhysicalVenue(v: EbVenue | null | undefined): boolean {
+  if (!v) return false;
+  const lat = Number(v.latitude);
+  const lng = Number(v.longitude);
+  if (Number.isFinite(lat) && Number.isFinite(lng) && Math.abs(lat) + Math.abs(lng) > 0.0001) {
+    return true;
+  }
+  const display = v.address?.localized_address_display?.trim();
+  if (display && display.length > 3) return true;
+  const name = (v.name ?? "").trim().toLowerCase();
+  if (!name) return false;
+  if (name === "online event" || name === "online" || name === "to be announced") return false;
+  return true;
 }
 
 function mapFormat(ev: EbEventResource): EventFormat {
-  if (isOnlineEvent(ev)) return "virtual";
+  const online = ev.online_event === true;
+  const physical = hasMeaningfulPhysicalVenue(ev.venue);
+
+  if (online && physical) return "hybrid";
+  if (online) return "virtual";
+
+  const hay = `${textField(ev.name)}\n${textField(ev.summary)}\n${textField(ev.description)}`.toLowerCase();
+  if (
+    !physical &&
+    /\b(virtual\s+(event|class|workshop|reading)|online\s+only|held\s+online|via\s+zoom|on\s+zoom|zoom\s+link|google\s+meet|microsoft\s+teams)\b/i.test(
+      hay,
+    )
+  ) {
+    return "virtual";
+  }
+
   return "in-person";
 }
 
@@ -110,6 +138,14 @@ export function mapEbEventToWorkshop(
 
   const price: WorkshopEvent["price"] = ev.is_free ? "free" : "paid";
 
+  const format = mapFormat(ev);
+  const virtualLabel =
+    format === "hybrid"
+      ? "Hybrid (online + in person)"
+      : format === "virtual"
+        ? "Online (Eventbrite)"
+        : undefined;
+
   return {
     id: `eb-${ev.id}`,
     cityId,
@@ -118,13 +154,14 @@ export function mapEbEventToWorkshop(
     description: description.slice(0, 4000),
     start: startUtc,
     end: ev.end?.utc?.trim() || undefined,
-    format: mapFormat(ev),
+    format,
     price,
     category: mapCategory(ev),
     organizer: "Eventbrite",
     venue: line,
     address,
     neighborhood: addr?.localized_area_display?.trim() || undefined,
+    virtualLabel,
     rsvpUrl: ev.url?.trim() || undefined,
     source: "Eventbrite",
     sourceChannel: "eventbrite",

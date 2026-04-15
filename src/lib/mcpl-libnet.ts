@@ -1,10 +1,6 @@
-import type {
-  EventFormat,
-  WorkshopEvent,
-  WorkshopEventCategory,
-} from "@/lib/workshop-types";
+import type { WorkshopEvent, WorkshopEventCategory } from "@/lib/workshop-types";
 import type { DcplLibnetRawEvent } from "@/lib/dcpl-libnet";
-import { DCPL_DEFAULT_EVENT_TYPE } from "@/lib/dcpl-libnet";
+import { DCPL_DEFAULT_EVENT_TYPE, mapLibNetAttendanceFormat } from "@/lib/dcpl-libnet";
 
 export const MCPL_LIBNET_ORIGIN = "https://mcpl.libnet.info";
 
@@ -32,13 +28,6 @@ function stripHtml(html: string): string {
     .replace(/<[^>]+>/g, " ")
     .replace(/\s+/g, " ")
     .trim();
-}
-
-function mapFormat(eventType?: string): EventFormat {
-  const u = (eventType ?? "").toUpperCase();
-  if (u === "VIRTUAL" || u === "ONLINE") return "virtual";
-  if (u === "HYBRID") return "hybrid";
-  return "in-person";
 }
 
 function mapCategory(tags: string[] | undefined): WorkshopEventCategory {
@@ -246,6 +235,14 @@ export function mapMcplLibnetRowToWorkshopEvent(
   const tagline =
     (raw.sub_title ?? "").trim() || (raw.time_string ?? "").trim() || "";
 
+  const format = mapLibNetAttendanceFormat(raw);
+  const virtualLabel =
+    format === "hybrid"
+      ? "Hybrid (online + in person)"
+      : format === "virtual"
+        ? "Online (library program)"
+        : undefined;
+
   return {
     id: `mcpl-${raw.id}`,
     cityId,
@@ -254,11 +251,12 @@ export function mapMcplLibnetRowToWorkshopEvent(
     description,
     start,
     end,
-    format: mapFormat(raw.event_type),
+    format,
     price,
     category: mapCategory(raw.tagsArray),
     organizer: "Montgomery County Public Libraries",
     venue: venueLine(raw),
+    virtualLabel,
     source: "Montgomery County Public Libraries (LibNet)",
     sourceChannel: "library",
     listingProvenance: "live",

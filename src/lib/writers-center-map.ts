@@ -55,6 +55,14 @@ function mapPrice(cost?: string): WorkshopEvent["price"] {
 }
 
 function mapFormat(ev: TwcTribeEvent): EventFormat {
+  const hasVenue =
+    Boolean(ev.venue?.venue?.trim()) ||
+    Boolean(ev.venue?.address?.trim()) ||
+    (ev.venue?.geo_lat != null &&
+      ev.venue?.geo_lng != null &&
+      String(ev.venue.geo_lat).trim() !== "" &&
+      String(ev.venue.geo_lng).trim() !== "");
+  if (ev.is_virtual && hasVenue) return "hybrid";
   if (ev.is_virtual) return "virtual";
   return "in-person";
 }
@@ -100,6 +108,14 @@ export function mapTwcEventToWorkshop(ev: TwcTribeEvent): WorkshopEvent | null {
   const title = safeTitle(ev.title);
   if (!title) return null;
 
+  const format = mapFormat(ev);
+  const virtualLabel =
+    format === "hybrid"
+      ? "Hybrid (online + in person)"
+      : format === "virtual"
+        ? "Online (The Writer's Center)"
+        : undefined;
+
   return {
     id: `twc-${ev.id}`,
     cityId: "dmv",
@@ -108,14 +124,14 @@ export function mapTwcEventToWorkshop(ev: TwcTribeEvent): WorkshopEvent | null {
     description,
     start,
     end: end ?? undefined,
-    format: mapFormat(ev),
+    format,
     price: mapPrice(ev.cost),
     category,
     organizer: "The Writer's Center",
     venue: venueLine(ev),
     address: ev.venue?.address?.trim() || undefined,
     neighborhood: ev.venue?.city?.trim() || undefined,
-    virtualLabel: ev.is_virtual ? "Online (The Writer's Center)" : undefined,
+    virtualLabel,
     rsvpUrl: ev.url?.trim() || undefined,
     source: "The Writer's Center — Workshops (writer.org)",
     sourceChannel: "literary_org",

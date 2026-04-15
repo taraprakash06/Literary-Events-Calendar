@@ -191,6 +191,7 @@ export function WorkshopCalendar({ city }: { city: City }) {
     WorkshopEvent[]
   >([]);
   const [eventbriteEvents, setEventbriteEvents] = useState<WorkshopEvent[]>([]);
+  const [laplEvents, setLaplEvents] = useState<WorkshopEvent[]>([]);
 
   useEffect(() => {
     if (city.id !== "dmv") {
@@ -245,6 +246,33 @@ export function WorkshopCalendar({ city }: { city: City }) {
   }, [city.id, year, monthIndex]);
 
   useEffect(() => {
+    if (city.id !== "la") {
+      setLaplEvents([]);
+      return;
+    }
+    const y = year;
+    const m = monthIndex + 1;
+    const ac = new AbortController();
+    (async () => {
+      try {
+        const res = await fetch(`/api/lapl/events?year=${y}&month=${m}`, {
+          signal: ac.signal,
+        });
+        if (!res.ok) {
+          setLaplEvents([]);
+          return;
+        }
+        const body = (await res.json()) as { events?: WorkshopEvent[] };
+        setLaplEvents(Array.isArray(body.events) ? body.events : []);
+      } catch (e) {
+        if ((e as Error).name === "AbortError") return;
+        setLaplEvents([]);
+      }
+    })();
+    return () => ac.abort();
+  }, [city.id, year, monthIndex]);
+
+  useEffect(() => {
     if (
       city.id !== "dmv" &&
       city.id !== "nyc" &&
@@ -282,6 +310,7 @@ export function WorkshopCalendar({ city }: { city: City }) {
     const lib = city.id === "dmv" ? libnetEvents : [];
     const twc = city.id === "dmv" ? writersCenterEvents : [];
     const pnp = city.id === "dmv" ? politicsProseEvents : [];
+    const lapl = city.id === "la" ? laplEvents : [];
     const eb =
       city.id === "dmv" ||
       city.id === "nyc" ||
@@ -289,12 +318,13 @@ export function WorkshopCalendar({ city }: { city: City }) {
       city.id === "sf"
         ? eventbriteEvents
         : [];
-    return [...base, ...lib, ...twc, ...pnp, ...eb];
+    return [...base, ...lib, ...twc, ...pnp, ...lapl, ...eb];
   }, [
     city.id,
     libnetEvents,
     writersCenterEvents,
     politicsProseEvents,
+    laplEvents,
     eventbriteEvents,
   ]);
   const neighborhoods = useMemo(
@@ -397,7 +427,9 @@ export function WorkshopCalendar({ city }: { city: City }) {
     cityEvents.length === 0
       ? city.id === "dmv"
         ? "No DMV library listings for this month, or one of the feeds could not be reached. Try another month or check your connection."
-        : "No verified events loaded for this city yet. Wire ingestion (Eventbrite, library calendars, RSS, etc.) so only real dated listings appear here."
+        : city.id === "la"
+          ? "No LA listings for this month from LAPL or Eventbrite, or a feed could not be reached. Try another month or check your connection."
+          : "No verified events loaded for this city yet. Wire ingestion (Eventbrite, library calendars, RSS, etc.) so only real dated listings appear here."
       : "No events match your filters — try adjusting them.";
 
   return (
@@ -455,9 +487,22 @@ export function WorkshopCalendar({ city }: { city: City }) {
           </>
         ) : (
           <>
-            {city.id === "nyc" ||
-            city.id === "la" ||
-            city.id === "sf" ? (
+            {city.id === "la" ? (
+              <>
+                Los Angeles pulls a curated slice of{" "}
+                <a
+                  className="font-medium text-stone-900 underline decoration-stone-400 underline-offset-2 hover:decoration-stone-600 dark:text-stone-100 dark:decoration-stone-500"
+                  href="https://www.lapl.org/events"
+                  rel="noreferrer"
+                  target="_blank"
+                >
+                  LAPL&apos;s public events calendar
+                </a>{" "}
+                (authors, book clubs, writing, and closely related programs) for
+                the month you select, plus Eventbrite search results when your
+                API token is configured.{" "}
+              </>
+            ) : city.id === "nyc" || city.id === "sf" ? (
               <>
                 Eventbrite events from your API token (and optional organization
                 IDs) show here when the venue maps to this metro.{" "}
@@ -525,6 +570,9 @@ export function WorkshopCalendar({ city }: { city: City }) {
               <legend className="text-xs text-stone-600 dark:text-stone-400">
                 Format
               </legend>
+              <p className="mt-0.5 text-[11px] text-stone-500 dark:text-stone-500">
+                Highlighted formats are included; tap to exclude one.
+              </p>
               <div className="mt-2 flex flex-wrap gap-2">
                 {(
                   ["in-person", "virtual", "hybrid"] as EventFormat[]
