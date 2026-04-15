@@ -66,7 +66,23 @@ function mapFormat(ev: EbEventResource): EventFormat {
   return "in-person";
 }
 
-function mapCategory(_ev: EbEventResource): WorkshopEventCategory {
+function mapCategory(ev: EbEventResource): WorkshopEventCategory {
+  const t = textField(ev.name).toLowerCase();
+  const d = (
+    textField(ev.summary) ||
+    textField(ev.description)
+  ).toLowerCase();
+  const hay = `${t}\n${d}`;
+
+  if (/(book\s*club|book\s+discussion|reading\s+group)/.test(hay)) return "book-club";
+  if (/(open\s*mic|mic\s*night|slam)/.test(hay)) return "open-mic";
+  if (/(workshop|writing\s+workshop|creative\s+writing|screenwriting|memoir|novel|short\s+story|critique|writers'?(\s+)?group)/.test(hay))
+    return "workshop";
+  if (/(poetry\s+reading|reading\b|author\s+talk|author\s+reading)/.test(hay)) return "reading";
+  if (/(panel|conversation|in\s+conversation)/.test(hay)) return "panel";
+  if (/(festival)/.test(hay)) return "festival";
+  if (/(launch|book\s+launch)/.test(hay)) return "launch";
+
   return "other";
 }
 
@@ -80,10 +96,8 @@ export function mapEbEventToWorkshop(
   const title = textField(ev.name);
   if (!title) return null;
 
-  const description =
-    textField(ev.description) ||
-    textField(ev.summary) ||
-    "Details on Eventbrite.";
+  const summary = textField(ev.summary);
+  const description = textField(ev.description) || summary || "Details on Eventbrite.";
 
   const venue = ev.venue;
   const addr = venue?.address;
@@ -100,7 +114,7 @@ export function mapEbEventToWorkshop(
     id: `eb-${ev.id}`,
     cityId,
     title,
-    tagline: "",
+    tagline: summary || "",
     description: description.slice(0, 4000),
     start: startUtc,
     end: ev.end?.utc?.trim() || undefined,

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import {
   fetchAllSourceEventsForMonth,
+  fetchKeywordSearchEventsForMonth,
   getEventbriteToken,
 } from "@/lib/eventbrite-client";
 import { cityIdForEbEvent, mapEbEventToWorkshop } from "@/lib/eventbrite-map";
@@ -30,7 +31,7 @@ export async function GET(req: Request) {
       meta: {
         configured: false,
         message:
-          "Set EVENTBRITE_API_TOKEN in .env.local. Events are loaded from your owned events and optional organization IDs.",
+          "Set EVENTBRITE_API_TOKEN (or EVENTBRITE_OAUTH_TOKEN) in .env.local. Events are loaded from public Eventbrite search (writing workshops, book clubs, etc.) plus any owned/org events.",
       },
     });
   }
@@ -43,11 +44,20 @@ export async function GET(req: Request) {
     Number.isFinite(m) && m >= 1 && m <= 12 ? m - 1 : now.getMonth();
 
   try {
-    const raw = await fetchAllSourceEventsForMonth(token, year, monthIndex);
+    const [searched, sourced] = await Promise.all([
+      fetchKeywordSearchEventsForMonth(token, cityId, year, monthIndex),
+      fetchAllSourceEventsForMonth(token, year, monthIndex),
+    ]);
+
+    const seen = new Set<string>();
     const events = [];
-    for (const ev of raw) {
+    const merged = [...searched, ...sourced];
+    for (const ev of merged) {
+      if (seen.has(ev.id)) continue;
+      seen.add(ev.id);
       const resolved = cityIdForEbEvent(ev);
-      if (resolved !== cityId) continue;
+      // Search is already scoped by city query, but still verify venue mapping if present.
+      if (resolved && resolved !== cityId) continue;
       const row = mapEbEventToWorkshop(ev, cityId);
       if (row) events.push(row);
     }
@@ -58,7 +68,8 @@ export async function GET(req: Request) {
         cityId,
         year,
         month: monthIndex + 1,
-        sourceCount: raw.length,
+        searchedCount: searched.length,
+        sourceCount: sourced.length,
         matchedCount: events.length,
       },
     });
