@@ -24,7 +24,6 @@ import {
   type WorkshopEvent,
   type WorkshopEventCategory,
 } from "@/lib/workshop-types";
-import { SOURCE_CHANNEL_LABELS } from "@/lib/source-connectors";
 
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const;
 
@@ -272,6 +271,18 @@ export function WorkshopCalendar({ city }: { city: City }) {
     WorkshopEvent[]
   >([]);
   const [eventbriteEvents, setEventbriteEvents] = useState<WorkshopEvent[]>([]);
+  const [eventbriteMeta, setEventbriteMeta] = useState<
+    | {
+        configured?: boolean;
+        message?: string;
+        cityId?: string;
+        year?: number;
+        month?: number;
+        sourceCount?: number;
+        matchedCount?: number;
+      }
+    | null
+  >(null);
   const [laplEvents, setLaplEvents] = useState<WorkshopEvent[]>([]);
   const [sfplEvents, setSfplEvents] = useState<WorkshopEvent[]>([]);
 
@@ -389,6 +400,7 @@ export function WorkshopCalendar({ city }: { city: City }) {
       city.id !== "sf"
     ) {
       setEventbriteEvents([]);
+      setEventbriteMeta(null);
       return;
     }
     const y = year;
@@ -402,13 +414,21 @@ export function WorkshopCalendar({ city }: { city: City }) {
         });
         if (!res.ok) {
           setEventbriteEvents([]);
+          setEventbriteMeta(null);
           return;
         }
-        const body = (await res.json()) as { events?: WorkshopEvent[] };
+        const body = (await res.json()) as {
+          events?: WorkshopEvent[];
+          meta?: typeof eventbriteMeta extends infer T ? T : unknown;
+        };
         setEventbriteEvents(Array.isArray(body.events) ? body.events : []);
+        setEventbriteMeta(
+          body.meta && typeof body.meta === "object" ? (body.meta as any) : null,
+        );
       } catch (e) {
         if ((e as Error).name === "AbortError") return;
         setEventbriteEvents([]);
+        setEventbriteMeta(null);
       }
     })();
     return () => ac.abort();
@@ -565,14 +585,36 @@ export function WorkshopCalendar({ city }: { city: City }) {
     (showCalendar && inVisibleMonth.length === 0) ||
     (showList && listSorted.length === 0);
 
-  const emptyMessage =
-    cityEvents.length === 0
-      ? city.id === "dmv"
-        ? "No DMV library listings for this month, or one of the feeds could not be reached. Try another month or check your connection."
-        : city.id === "la"
-          ? "No LA listings for this month from LAPL or Eventbrite, or a feed could not be reached. Try another month or check your connection."
-          : "No verified events loaded for this city yet. Wire ingestion (Eventbrite, library calendars, RSS, etc.) so only real dated listings appear here."
-      : "No events match your filters — try adjusting them.";
+  const emptyMessage = (() => {
+    if (cityEvents.length > 0) {
+      return "No events match your filters — try adjusting them.";
+    }
+
+    if (city.id === "dmv") {
+      return "No DMV library listings for this month, or one of the feeds could not be reached. Try another month or check your connection.";
+    }
+
+    if (city.id === "la") {
+      return "No LA listings for this month from LAPL or Eventbrite, or a feed could not be reached. Try another month or check your connection.";
+    }
+
+    if (eventbriteMeta?.configured === false) {
+      return (
+        eventbriteMeta.message ??
+        "Eventbrite ingestion is not configured on this deployment yet. Set EVENTBRITE_API_TOKEN (or EVENTBRITE_OAUTH_TOKEN) and optionally EVENTBRITE_ORGANIZATION_IDS."
+      );
+    }
+
+    if (city.id === "nyc") {
+      return "No New York listings were returned. This view currently depends on Eventbrite events you own and/or organization IDs in EVENTBRITE_ORGANIZATION_IDS, placed into NYC by venue.";
+    }
+
+    if (city.id === "sf") {
+      return "No SF listings were returned for this month from SFPL or Eventbrite. Try another month or check that Eventbrite org IDs include SF organizers.";
+    }
+
+    return "No verified events loaded for this city yet. Wire ingestion (Eventbrite, library calendars, RSS, etc.) so only real dated listings appear here.";
+  })();
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-8">
@@ -1435,21 +1477,6 @@ function EventDetailModal({
             </div>
           ) : null}
 
-          {event.sourceChannel ? (
-            <div>
-              <p className="text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-stone-500 dark:text-stone-400">
-                Ingestion channel
-              </p>
-              <p className="mt-2 text-sm font-medium text-stone-900 dark:text-stone-100">
-                {SOURCE_CHANNEL_LABELS[event.sourceChannel]}
-              </p>
-              <p className="mt-1 text-xs text-stone-600 dark:text-stone-400">
-                Production rows for this channel will come from the connector named
-                above once feeds or APIs are configured.
-              </p>
-            </div>
-          ) : null}
-
           <div>
             <p className="text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-stone-500 dark:text-stone-400">
               Date &amp; time
@@ -1516,15 +1543,6 @@ function EventDetailModal({
             </p>
           )}
 
-          <div className="border-t border-stone-200/90 pt-4 text-xs text-stone-600 dark:border-stone-700/80 dark:text-stone-400">
-            <p className="font-medium not-italic text-stone-700 dark:text-stone-300">
-              Publisher / feed note: {event.source ?? "Not set"}
-            </p>
-            <p className="mt-2 italic text-stone-500 dark:text-stone-500">
-              Live deployments should stamp each row with the upstream system
-              (e.g. Eventbrite event id, library iCal UID, or article URL).
-            </p>
-          </div>
         </div>
       </div>
     </div>
