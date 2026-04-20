@@ -6,6 +6,7 @@ import type {
 import type { AppCityId } from "@/lib/eventbrite-geo";
 import { classifyEventbriteLocation } from "@/lib/eventbrite-geo";
 import { DateTime } from "luxon";
+import { stripHtmlAndDecode, toShortOverview } from "@/lib/text";
 
 /** Minimal Eventbrite event JSON (owned_events / organization events + expand=venue). */
 export type EbTextField = { text?: string; html?: string };
@@ -42,10 +43,7 @@ export type EbEventResource = {
 };
 
 function stripHtml(html: string): string {
-  return html
-    .replace(/<[^>]+>/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
+  return stripHtmlAndDecode(html);
 }
 
 function textField(tf?: EbTextField): string {
@@ -132,7 +130,12 @@ export function mapEbEventToWorkshop(
   if (!title) return null;
 
   const summary = textField(ev.summary);
-  const description = textField(ev.description) || summary || "Details on Eventbrite.";
+  const description =
+    (ev.description?.html ? toShortOverview(ev.description.html, 360) : "") ||
+    (ev.summary?.html ? toShortOverview(ev.summary.html, 240) : "") ||
+    textField(ev.description) ||
+    summary ||
+    "Details on Eventbrite.";
 
   const venue = ev.venue;
   const addr = venue?.address;

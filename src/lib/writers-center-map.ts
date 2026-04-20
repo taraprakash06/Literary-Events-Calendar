@@ -3,6 +3,7 @@ import type {
   WorkshopEvent,
   WorkshopEventCategory,
 } from "@/lib/workshop-types";
+import { stripHtmlAndDecode, toShortOverview } from "@/lib/text";
 
 /** One event from `GET /wp-json/tribe/events/v1/events` (subset of fields). */
 export type TwcTribeEvent = {
@@ -32,10 +33,7 @@ export type TwcTribeEvent = {
 };
 
 function stripHtml(html: string): string {
-  return html
-    .replace(/<[^>]+>/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
+  return stripHtmlAndDecode(html);
 }
 
 function toIsoUtc(raw?: string | null): string | null {
@@ -101,7 +99,7 @@ export function mapTwcEventToWorkshop(ev: TwcTribeEvent): WorkshopEvent | null {
     "Workshop at The Writer's Center.";
 
   const tagline =
-    excerpt.length > 0 ? stripHtml(excerpt).slice(0, 160) : "";
+    excerpt.length > 0 ? toShortOverview(excerpt, 220) : "";
 
   const category: WorkshopEventCategory = "workshop";
 

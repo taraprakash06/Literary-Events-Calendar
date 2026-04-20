@@ -5,8 +5,8 @@ import { useEffect, useMemo, useState } from "react";
 import { DateTime } from "luxon";
 import { CITIES } from "@/data/cities";
 import { eventsForCity } from "@/data/workshop-events";
-import { SourceCoveragePanel } from "@/components/SourceCoveragePanel";
 import { CATEGORY_TAG_STYLES } from "@/lib/category-styles";
+import { decodeHtmlEntities, stripHtmlAndDecode } from "@/lib/text";
 import {
   applyEventFilters,
   distinctCategories,
@@ -72,6 +72,72 @@ function sameMonthAs(ev: Pick<WorkshopEvent, "start" | "timeZone">, year: number
     return fallback.getFullYear() === year && fallback.getMonth() === monthIndex;
   }
   return d.year === year && d.month === monthIndex + 1;
+}
+
+function eventQualityScore(ev: WorkshopEvent): number {
+  let score = 0;
+  if (ev.listingProvenance === "live") score += 20;
+  if (ev.rsvpUrl) score += 6;
+  if (ev.description && ev.description.trim().length > 80) score += 3;
+  if (ev.venue) score += 2;
+
+  const catBoost: Record<WorkshopEventCategory, number> = {
+    workshop: 12,
+    reading: 10,
+    "book-club": 9,
+    panel: 8,
+    launch: 7,
+    "open-mic": 6,
+    festival: 5,
+    theater: 3,
+    other: 1,
+  };
+  score += catBoost[ev.category] ?? 0;
+
+  const organizer = (ev.organizer ?? "").toLowerCase();
+  if (organizer.includes("public library")) score += 2;
+  if (organizer.includes("politics and prose")) score += 3;
+
+  return score;
+}
+
+function pickWeeklyHighlights(events: WorkshopEvent[], min = 5, max = 7): WorkshopEvent[] {
+  const sorted = [...events].sort((a, b) => {
+    const s = eventQualityScore(b) - eventQualityScore(a);
+    if (s !== 0) return s;
+    return eventZonedDateTime(a).toMillis() - eventZonedDateTime(b).toMillis();
+  });
+
+  const byDay = new Map<string, WorkshopEvent[]>();
+  for (const ev of sorted) {
+    const key = localDateKey(ev);
+    const list = byDay.get(key) ?? [];
+    list.push(ev);
+    byDay.set(key, list);
+  }
+
+  // Pull one strong pick per day first to spread across days.
+  const out: WorkshopEvent[] = [];
+  const dayKeys = [...byDay.keys()].sort();
+  for (const k of dayKeys) {
+    const first = byDay.get(k)?.[0];
+    if (!first) continue;
+    out.push(first);
+    if (out.length >= max) return out;
+  }
+
+  // Then fill remaining slots with best remaining.
+  if (out.length < min) {
+    const used = new Set(out.map((e) => e.id));
+    for (const ev of sorted) {
+      if (used.has(ev.id)) continue;
+      out.push(ev);
+      used.add(ev.id);
+      if (out.length >= Math.min(max, Math.max(min, out.length))) break;
+    }
+  }
+
+  return out.slice(0, max);
 }
 
 type ViewMode = "calendar" | "list";
@@ -457,6 +523,37 @@ export function WorkshopCalendar({ city }: { city: City }) {
     setDetail(ev);
   };
 
+  const weekAnchor = useMemo(() => {
+    const viewingCurrentMonth =
+      year === today.getFullYear() && monthIndex === today.getMonth();
+    const anchor = viewingCurrentMonth
+      ? DateTime.fromJSDate(today)
+      : DateTime.local(year, monthIndex + 1, 1);
+    return anchor.startOf("week");
+  }, [today, year, monthIndex]);
+
+  const weekRangeLabel = useMemo(() => {
+    const end = weekAnchor.plus({ days: 6 });
+    const sameMonth = weekAnchor.month === end.month;
+    const left = weekAnchor.toFormat("LLL d");
+    const right = end.toFormat(sameMonth ? "d" : "LLL d");
+    return `${left}–${right}`;
+  }, [weekAnchor]);
+
+  const weeklyPool = useMemo(() => {
+    const start = weekAnchor;
+    const end = weekAnchor.plus({ days: 7 });
+    return filtered.filter((ev) => {
+      const dt = eventZonedDateTime(ev);
+      return dt.isValid && dt >= start && dt < end;
+    });
+  }, [filtered, weekAnchor]);
+
+  const weeklyHighlights = useMemo(
+    () => pickWeeklyHighlights(weeklyPool, 5, 7),
+    [weeklyPool],
+  );
+
   const showCalendar = !isMobile && view === "calendar";
   const showList = isMobile || view === "list";
 
@@ -791,7 +888,70 @@ export function WorkshopCalendar({ city }: { city: City }) {
         )}
       </div>
 
-      <SourceCoveragePanel />
+      {weeklyHighlights.length > 0 ? (
+        <section
+          aria-label="This week’s picks"
+          className="rounded-sm border border-stone-200/90 bg-[var(--surface)] p-5 shadow-sm dark:border-stone-700/80 dark:bg-stone-900/30"
+        >
+          <div className="flex flex-wrap items-baseline justify-between gap-3">
+            <div>
+              <h2 className="font-serif text-xl font-semibold tracking-tight text-stone-900 dark:text-stone-50">
+                This Week&apos;s Picks
+              </h2>
+              <p className="mt-1 text-sm text-stone-600 dark:text-stone-400">
+                {weekRangeLabel} · {weeklyHighlights.length} standout{" "}
+                {weeklyHighlights.length === 1 ? "event" : "events"}
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-4 -mx-5 overflow-x-auto px-5">
+            <div className="flex min-w-full gap-3 pb-1">
+              {weeklyHighlights.map((ev) => {
+                const dt = eventZonedDateTime(ev);
+                const when = dt.isValid ? dt.toFormat("ccc, LLL d · h:mm a") : "";
+                return (
+                  <button
+                    key={ev.id}
+                    type="button"
+                    onClick={() => openEventDetail(ev)}
+                    className="min-h-14 w-[min(22rem,85vw)] shrink-0 rounded-sm border border-stone-200/90 bg-white/90 p-4 text-left shadow-sm transition hover:border-stone-300 hover:bg-stone-50 dark:border-stone-700/80 dark:bg-stone-950/60 dark:hover:bg-stone-900/40"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <FormatGlyph format={ev.format} />
+                          <span
+                            className={[
+                              "inline-flex items-center rounded border px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
+                              CATEGORY_TAG_STYLES[ev.category].tag,
+                            ].join(" ")}
+                          >
+                            {CATEGORY_LABELS[ev.category]}
+                          </span>
+                        </div>
+                        <p className="mt-2 line-clamp-2 font-serif text-base font-semibold text-stone-900 dark:text-stone-50">
+                          {ev.title}
+                        </p>
+                        <p className="mt-1 line-clamp-2 text-sm text-stone-600 dark:text-stone-400">
+                          {ev.tagline || ev.organizer}
+                        </p>
+                        <p className="mt-2 text-xs text-stone-500 dark:text-stone-500">
+                          {when}
+                          {ev.venue ? ` · ${ev.venue}` : ""}
+                        </p>
+                      </div>
+                      <span className="shrink-0 text-xs font-semibold text-rose-900/90 dark:text-rose-300/90">
+                        Open
+                      </span>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+      ) : null}
 
       <div className="flex flex-col gap-0 lg:flex-row lg:items-start">
         <div className="min-w-0 flex-1 rounded-sm border border-stone-200/90 bg-[var(--surface)] shadow-sm dark:border-stone-700/80 dark:bg-stone-900/30">
@@ -841,7 +1001,7 @@ export function WorkshopCalendar({ city }: { city: City }) {
                     </div>
                   ))}
                 </div>
-                <div className="grid grid-cols-7 gap-px rounded-sm bg-stone-200/80 p-px dark:bg-stone-700/80">
+                <div className="grid grid-cols-7 gap-px rounded-sm bg-stone-200/50 p-px dark:bg-stone-700/50">
                   {grid.map((day, i) => {
                     const key =
                       day !== null
@@ -855,7 +1015,7 @@ export function WorkshopCalendar({ city }: { city: City }) {
                       <div
                         key={`${year}-${monthIndex}-${i}`}
                         className={[
-                          "min-h-[7.5rem] sm:min-h-[9.5rem]",
+                          "min-h-[8.25rem] sm:min-h-[10.5rem]",
                           day === null
                             ? "bg-[var(--paper)] dark:bg-stone-950/50"
                             : "relative bg-[var(--surface)]",
@@ -867,7 +1027,7 @@ export function WorkshopCalendar({ city }: { city: City }) {
                               dayEvents.length && key && setDayPanelKey(key)
                             }
                             className={[
-                              "flex h-full min-h-[7.5rem] w-full flex-col rounded-[1px] p-1.5 text-left transition sm:min-h-[9.5rem] sm:p-2",
+                              "flex h-full min-h-[8.25rem] w-full flex-col rounded-[1px] p-2 text-left transition sm:min-h-[10.5rem] sm:p-2.5",
                               dayEvents.length
                                 ? "cursor-pointer hover:bg-rose-50/40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-900/25 dark:hover:bg-stone-800/60"
                                 : "cursor-default",
@@ -1213,14 +1373,7 @@ function EventDetailModal({
           html.match(/property=["']og:description["'][^>]*content=["']([^"']+)["']/i)?.[1] ??
           html.match(/name=["']description["'][^>]*content=["']([^"']+)["']/i)?.[1] ??
           null;
-        const cleaned = (og ?? "")
-          .replace(/&amp;/g, "&")
-          .replace(/&#039;/g, "'")
-          .replace(/&quot;/g, '"')
-          .replace(/&lt;/g, "<")
-          .replace(/&gt;/g, ">")
-          .replace(/\s+/g, " ")
-          .trim();
+        const cleaned = decodeHtmlEntities(og ?? "").replace(/\s+/g, " ").trim();
         if (cleaned) setSynopsis(cleaned);
       } catch (e) {
         if ((e as Error).name === "AbortError") return;
@@ -1335,7 +1488,7 @@ function EventDetailModal({
               About
             </p>
             <p className="mt-2 text-sm leading-relaxed text-stone-700 dark:text-stone-300">
-              {synopsis ?? event.description}
+              {synopsis ?? stripHtmlAndDecode(event.description)}
             </p>
           </div>
 

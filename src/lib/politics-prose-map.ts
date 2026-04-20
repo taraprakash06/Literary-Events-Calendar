@@ -2,12 +2,10 @@ import type { WorkshopEvent, WorkshopEventCategory } from "@/lib/workshop-types"
 import type { PnpFullCalendarEvent } from "@/lib/politics-prose-client";
 import { POLITICS_PROSE_ORIGIN } from "@/lib/politics-prose-client";
 import { DateTime } from "luxon";
+import { stripHtmlAndDecode, toShortOverview } from "@/lib/text";
 
 function stripHtml(html: string): string {
-  return html
-    .replace(/<[^>]+>/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
+  return stripHtmlAndDecode(html);
 }
 
 /** Prefer plain title inside first `<span>...</span>` in FullCalendar title HTML. */
@@ -55,7 +53,7 @@ export function mapPnpEventToWorkshop(ev: PnpFullCalendarEvent): WorkshopEvent |
         : undefined;
 
   const venue = parseVenueFromTitleHtml(ev.title);
-  const tagline = ev.des ? stripHtml(ev.des).slice(0, 200) : "";
+  const tagline = ev.des ? toShortOverview(ev.des, 240) : "";
 
   const category: WorkshopEventCategory = "reading";
 
