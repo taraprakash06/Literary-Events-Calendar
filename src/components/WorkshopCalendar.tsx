@@ -270,6 +270,7 @@ export function WorkshopCalendar({ city }: { city: City }) {
   const [politicsProseEvents, setPoliticsProseEvents] = useState<
     WorkshopEvent[]
   >([]);
+  const [scrawlBooksEvents, setScrawlBooksEvents] = useState<WorkshopEvent[]>([]);
   const [eventbriteEvents, setEventbriteEvents] = useState<WorkshopEvent[]>([]);
   const [eventbriteMeta, setEventbriteMeta] = useState<
     | {
@@ -291,6 +292,7 @@ export function WorkshopCalendar({ city }: { city: City }) {
       setLibnetEvents([]);
       setWritersCenterEvents([]);
       setPoliticsProseEvents([]);
+      setScrawlBooksEvents([]);
       return;
     }
     const y = year;
@@ -299,13 +301,16 @@ export function WorkshopCalendar({ city }: { city: City }) {
     const q = `year=${y}&month=${m}&cityId=dmv`;
     (async () => {
       try {
-        const [dcRes, mcRes, twcRes, pnpRes] = await Promise.all([
+        const [dcRes, mcRes, twcRes, pnpRes, scrawlRes] = await Promise.all([
           fetch(`/api/dcpl/events?${q}`, { signal: ac.signal }),
           fetch(`/api/mcpl/events?${q}`, { signal: ac.signal }),
           fetch(`/api/writers-center/events?year=${y}&month=${m}`, {
             signal: ac.signal,
           }),
           fetch(`/api/politics-prose/events?year=${y}&month=${m}`, {
+            signal: ac.signal,
+          }),
+          fetch(`/api/scrawl-books/events?year=${y}&month=${m}`, {
             signal: ac.signal,
           }),
         ]);
@@ -321,18 +326,24 @@ export function WorkshopCalendar({ city }: { city: City }) {
         const pnpJson = pnpRes.ok
           ? ((await pnpRes.json()) as { events?: WorkshopEvent[] })
           : {};
+        const scrawlJson = scrawlRes.ok
+          ? ((await scrawlRes.json()) as { events?: WorkshopEvent[] })
+          : {};
         const dcEv = Array.isArray(dcJson.events) ? dcJson.events : [];
         const mcEv = Array.isArray(mcJson.events) ? mcJson.events : [];
         const twcEv = Array.isArray(twcJson.events) ? twcJson.events : [];
         const pnpEv = Array.isArray(pnpJson.events) ? pnpJson.events : [];
+        const scrawlEv = Array.isArray(scrawlJson.events) ? scrawlJson.events : [];
         setLibnetEvents([...dcEv, ...mcEv]);
         setWritersCenterEvents(twcEv);
         setPoliticsProseEvents(pnpEv);
+        setScrawlBooksEvents(scrawlEv);
       } catch (e) {
         if ((e as Error).name === "AbortError") return;
         setLibnetEvents([]);
         setWritersCenterEvents([]);
         setPoliticsProseEvents([]);
+        setScrawlBooksEvents([]);
       }
     })();
     return () => ac.abort();
@@ -439,6 +450,7 @@ export function WorkshopCalendar({ city }: { city: City }) {
     const lib = city.id === "dmv" ? libnetEvents : [];
     const twc = city.id === "dmv" ? writersCenterEvents : [];
     const pnp = city.id === "dmv" ? politicsProseEvents : [];
+    const scrawl = city.id === "dmv" ? scrawlBooksEvents : [];
     const lapl = city.id === "la" ? laplEvents : [];
     const sfpl = city.id === "sf" ? sfplEvents : [];
     const eb =
@@ -448,12 +460,13 @@ export function WorkshopCalendar({ city }: { city: City }) {
       city.id === "sf"
         ? eventbriteEvents
         : [];
-    return [...base, ...lib, ...twc, ...pnp, ...lapl, ...sfpl, ...eb];
+    return [...base, ...lib, ...twc, ...pnp, ...scrawl, ...lapl, ...sfpl, ...eb];
   }, [
     city.id,
     libnetEvents,
     writersCenterEvents,
     politicsProseEvents,
+    scrawlBooksEvents,
     laplEvents,
     sfplEvents,
     eventbriteEvents,
@@ -591,7 +604,7 @@ export function WorkshopCalendar({ city }: { city: City }) {
     }
 
     if (city.id === "dmv") {
-      return "No DMV library listings for this month, or one of the feeds could not be reached. Try another month or check your connection.";
+      return "No DMV listings for this month from the libraries, Scrawl Books, Politics and Prose, The Writer's Center, or Eventbrite — or one of the feeds could not be reached. Try another month or check your connection.";
     }
 
     if (city.id === "la") {
@@ -653,6 +666,16 @@ export function WorkshopCalendar({ city }: { city: City }) {
               Politics and Prose
             </a>{" "}
             author events load from their public month calendar.{" "}
+            <a
+              className="font-medium text-stone-900 underline decoration-stone-400 underline-offset-2 hover:decoration-stone-600 dark:text-stone-100 dark:decoration-stone-500"
+              href="https://www.scrawlbooks.com/events"
+              rel="noreferrer"
+              target="_blank"
+            >
+              Scrawl Books
+            </a>{" "}
+            (Reston, VA) bookstore events load from their public Bookmanager
+            calendar for the month you select.{" "}
             <a
               className="font-medium text-stone-900 underline decoration-stone-400 underline-offset-2 hover:decoration-stone-600 dark:text-stone-100 dark:decoration-stone-500"
               href="https://writer.org/workshops/"
