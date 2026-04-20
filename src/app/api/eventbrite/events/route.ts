@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import {
   fetchAllSourceEventsForMonth,
-  fetchKeywordSearchEventsForMonth,
   getEventbriteToken,
 } from "@/lib/eventbrite-client";
 import { cityIdForEbEvent, mapEbEventToWorkshop } from "@/lib/eventbrite-map";
@@ -31,7 +30,7 @@ export async function GET(req: Request) {
       meta: {
         configured: false,
         message:
-          "Set EVENTBRITE_API_TOKEN (or EVENTBRITE_OAUTH_TOKEN) in .env.local. Events are loaded from public Eventbrite search (writing workshops, book clubs, etc.) plus any owned/org events.",
+          "Set EVENTBRITE_API_TOKEN (or EVENTBRITE_OAUTH_TOKEN) in .env.local. Events are loaded from events you own and optional organization IDs.",
       },
     });
   }
@@ -44,20 +43,14 @@ export async function GET(req: Request) {
     Number.isFinite(m) && m >= 1 && m <= 12 ? m - 1 : now.getMonth();
 
   try {
-    const [searched, sourced] = await Promise.all([
-      fetchKeywordSearchEventsForMonth(token, cityId, year, monthIndex),
-      fetchAllSourceEventsForMonth(token, year, monthIndex),
-    ]);
-
     const seen = new Set<string>();
     const events = [];
-    const merged = [...searched, ...sourced];
-    for (const ev of merged) {
+    const raw = await fetchAllSourceEventsForMonth(token, year, monthIndex);
+    for (const ev of raw) {
       if (seen.has(ev.id)) continue;
       seen.add(ev.id);
       const resolved = cityIdForEbEvent(ev);
-      // Search is already scoped by city query, but still verify venue mapping if present.
-      if (resolved && resolved !== cityId) continue;
+      if (resolved !== cityId) continue;
       const row = mapEbEventToWorkshop(ev, cityId);
       if (row) events.push(row);
     }
@@ -68,16 +61,16 @@ export async function GET(req: Request) {
         cityId,
         year,
         month: monthIndex + 1,
-        searchedCount: searched.length,
-        sourceCount: sourced.length,
+        sourceCount: raw.length,
         matchedCount: events.length,
       },
     });
   } catch (e) {
     const message = e instanceof Error ? e.message : "Eventbrite request failed";
-    return NextResponse.json(
-      { error: message, events: [], meta: { configured: true } },
-      { status: 502 },
-    );
+    return NextResponse.json({
+      events: [],
+      meta: { configured: true, cityId, year, month: monthIndex + 1 },
+      error: message,
+    });
   }
 }

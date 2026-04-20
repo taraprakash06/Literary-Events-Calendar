@@ -17,18 +17,10 @@ function pad2(n: number) {
   return String(n).padStart(2, "0");
 }
 
-function monthDateRange(year: number, monthIndex: number): { min: string; max: string } {
-  const first = `${year}-${pad2(monthIndex + 1)}-01`;
-  const last = new Date(year, monthIndex + 1, 0);
-  const max = `${year}-${pad2(monthIndex + 1)}-${pad2(last.getDate())}`;
-  return { min: first, max: max };
-}
-
 function buildCalendarUrl(year: number, monthIndex: number, page: number): string {
-  const { min, max } = monthDateRange(year, monthIndex);
+  void year;
+  void monthIndex;
   const u = new URL(`${LAPL_ORIGIN}/whats-on/calendar`);
-  u.searchParams.set("field_event_date_value[min][date]", min);
-  u.searchParams.set("field_event_date_value[max][date]", max);
   u.searchParams.set("items_per_page", "100");
   if (page > 0) u.searchParams.set("page", String(page));
   return u.toString();
@@ -63,7 +55,7 @@ function extractCalendarTbody(html: string): string | null {
 }
 
 function hasNextCalendarPage(html: string): boolean {
-  return /class="pager-next"[^>]*>\s*<a\b/i.test(html);
+  return /pager-next/i.test(html) && /Go to next page|next\s+›/i.test(html);
 }
 
 type LaplRawRow = {
@@ -236,6 +228,15 @@ function slugFromPath(path: string): string {
   return path.replace(/^\/whats-on\/events\//, "").replace(/[^\w-]+/g, "-");
 }
 
+function monthEndLa(year: number, monthIndex: number): DateTime {
+  return DateTime.fromObject(
+    { year, month: monthIndex + 1, day: 1 },
+    { zone: "America/Los_Angeles" },
+  )
+    .endOf("month")
+    .set({ hour: 23, minute: 59, second: 59, millisecond: 999 });
+}
+
 export function mapLaplRowToWorkshop(row: LaplRawRow): WorkshopEvent | null {
   const cats = categoryLabels(row.categoryTd);
   if (!isLaplLiteraryRow(row, cats)) return null;
@@ -267,6 +268,7 @@ export function mapLaplRowToWorkshop(row: LaplRawRow): WorkshopEvent | null {
       "Program details on the Los Angeles Public Library website.",
     start: start.toUTC().toISO() ?? start.toISO() ?? "",
     end: endIso,
+    timeZone: "America/Los_Angeles",
     format,
     price: "free",
     category,
@@ -291,8 +293,9 @@ export async function fetchLaplLiteraryEventsForMonth(
   const events: WorkshopEvent[] = [];
   let rowsParsed = 0;
   let pagesFetched = 0;
+  const endOfTarget = monthEndLa(year, monthIndex);
 
-  for (; page < 24; page++) {
+  for (; page < 12; page++) {
     const url = buildCalendarUrl(year, monthIndex, page);
     const res = await fetch(url, { headers, cache: "no-store" });
     if (!res.ok) break;
@@ -304,7 +307,10 @@ export async function fetchLaplLiteraryEventsForMonth(
 
     const rows = parseRowsFromTbody(tbody);
     rowsParsed += rows.length;
+    let maxRowDt: DateTime | null = null;
     for (const row of rows) {
+      const dt = parseLaDateTime(row.dateLine, row.timeStart);
+      if (dt && (maxRowDt === null || dt > maxRowDt)) maxRowDt = dt;
       const key = row.eventPath;
       if (seen.has(key)) continue;
       seen.add(key);
@@ -314,16 +320,32 @@ export async function fetchLaplLiteraryEventsForMonth(
 
     if (!hasNextCalendarPage(html)) break;
     if (rows.length === 0) break;
+
+    const inMonthSoFar = events.some((e) => {
+      const dt = DateTime.fromISO(e.start, { zone: "utc" }).setZone(
+        "America/Los_Angeles",
+      );
+      return dt.isValid && dt.year === year && dt.month === monthIndex + 1;
+    });
+    if (inMonthSoFar && maxRowDt && maxRowDt > endOfTarget.plus({ days: 7 })) {
+      break;
+    }
   }
 
   events.sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime());
+  const inMonth = events.filter((e) => {
+    const dt = DateTime.fromISO(e.start, { zone: "utc" }).setZone(
+      "America/Los_Angeles",
+    );
+    return dt.isValid && dt.year === year && dt.month === monthIndex + 1;
+  });
 
   return {
-    events,
+    events: inMonth,
     meta: {
       pagesFetched,
       rowsParsed,
-      rowsAfterLiteraryFilter: events.length,
+      rowsAfterLiteraryFilter: inMonth.length,
     },
   };
 }

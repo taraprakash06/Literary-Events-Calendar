@@ -3,6 +3,7 @@ import type {
   WorkshopEvent,
   WorkshopEventCategory,
 } from "@/lib/workshop-types";
+import { DateTime } from "luxon";
 
 /** Public LibNet origin used by the DCPL events widget (same host as `eeventcaldata`). */
 export const DCPL_LIBNET_ORIGIN = "https://dclibrary.libnet.info";
@@ -158,14 +159,17 @@ export function mapDcplLibnetRowToWorkshopEvent(
 ): WorkshopEvent {
   const startRaw = raw.event_start ?? raw.raw_start_time ?? "";
   const endRaw = raw.event_end ?? raw.raw_end_time;
-  const start = startRaw.includes("T")
-    ? startRaw
-    : startRaw.replace(" ", "T");
-  const end =
+  const tz = "America/New_York";
+  const startLocal = startRaw.includes("T") ? startRaw : startRaw.replace(" ", "T");
+  const startDt = DateTime.fromISO(startLocal, { zone: tz });
+  const start = (startDt.isValid ? startDt.toISO() : null) ?? startLocal;
+  const endLocal =
     endRaw && !endRaw.startsWith("0000-00-00")
-      ? endRaw.includes("T")
-        ? endRaw
-        : endRaw.replace(" ", "T")
+      ? (endRaw.includes("T") ? endRaw : endRaw.replace(" ", "T"))
+      : undefined;
+  const end =
+    endLocal
+      ? (DateTime.fromISO(endLocal, { zone: tz }).toISO() ?? endLocal)
       : undefined;
 
   const plainDesc = (raw.description ?? "").trim();
@@ -202,6 +206,7 @@ export function mapDcplLibnetRowToWorkshopEvent(
     description,
     start,
     end,
+    timeZone: tz,
     format,
     price,
     category: mapCategory(raw.tagsArray),

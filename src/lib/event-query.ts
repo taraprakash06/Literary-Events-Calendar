@@ -5,22 +5,25 @@ import type {
   WorkshopEvent,
   WorkshopEventCategory,
 } from "@/lib/workshop-types";
+import { DateTime } from "luxon";
 
 const ALL_FORMATS: EventFormat[] = ["in-person", "virtual", "hybrid"];
 const ALL_PRICES: PriceKind[] = ["free", "paid", "unknown"];
 
 function parseStart(ev: WorkshopEvent): number {
-  return new Date(ev.start).getTime();
+  const dt = DateTime.fromISO(ev.start, { setZone: true });
+  const zoned = ev.timeZone ? dt.setZone(ev.timeZone) : dt.toLocal();
+  return zoned.isValid ? zoned.toMillis() : new Date(ev.start).getTime();
 }
 
-function dayStartMs(isoDate: string): number {
-  const [y, m, d] = isoDate.split("-").map(Number);
-  return new Date(y, m - 1, d, 0, 0, 0, 0).getTime();
+function dayStartMs(isoDate: string, zone: string): number {
+  const dt = DateTime.fromISO(isoDate, { zone }).startOf("day");
+  return dt.isValid ? dt.toMillis() : new Date(isoDate + "T00:00:00").getTime();
 }
 
-function dayEndMs(isoDate: string): number {
-  const [y, m, d] = isoDate.split("-").map(Number);
-  return new Date(y, m - 1, d, 23, 59, 59, 999).getTime();
+function dayEndMs(isoDate: string, zone: string): number {
+  const dt = DateTime.fromISO(isoDate, { zone }).endOf("day");
+  return dt.isValid ? dt.toMillis() : new Date(isoDate + "T23:59:59.999").getTime();
 }
 
 export function eventOccursInRange(
@@ -29,7 +32,8 @@ export function eventOccursInRange(
   rangeEnd: string,
 ): boolean {
   const t = parseStart(ev);
-  return t >= dayStartMs(rangeStart) && t <= dayEndMs(rangeEnd);
+  const zone = ev.timeZone ?? DateTime.local().zoneName;
+  return t >= dayStartMs(rangeStart, zone) && t <= dayEndMs(rangeEnd, zone);
 }
 
 export function matchesSearch(ev: WorkshopEvent, q: string): boolean {

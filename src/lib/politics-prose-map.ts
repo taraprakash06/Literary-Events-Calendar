@@ -1,6 +1,7 @@
 import type { WorkshopEvent, WorkshopEventCategory } from "@/lib/workshop-types";
 import type { PnpFullCalendarEvent } from "@/lib/politics-prose-client";
 import { POLITICS_PROSE_ORIGIN } from "@/lib/politics-prose-client";
+import { DateTime } from "luxon";
 
 function stripHtml(html: string): string {
   return html
@@ -33,14 +34,17 @@ export function mapPnpEventToWorkshop(ev: PnpFullCalendarEvent): WorkshopEvent |
   const title = parseTitle(ev.title);
   if (!title) return null;
 
-  let end = ev.end?.trim();
-  if (!end) {
-    const d = new Date(start);
-    if (!Number.isNaN(d.getTime())) {
-      d.setHours(d.getHours() + 1);
-      end = d.toISOString();
-    }
-  }
+  const tz = "America/New_York";
+  // P&P FullCalendar strings are local times for the store (DC). Ensure the stored ISO
+  // includes an offset so display is stable across user locales.
+  const startDt = DateTime.fromISO(start, { zone: tz });
+  if (!startDt.isValid) return null;
+
+  const endRaw = ev.end?.trim();
+  const endDt = endRaw
+    ? DateTime.fromISO(endRaw, { zone: tz })
+    : startDt.plus({ hours: 1 });
+  const endIso = endDt.isValid ? endDt.toISO() ?? undefined : undefined;
 
   const path = ev.url?.trim();
   const rsvpUrl =
@@ -65,11 +69,10 @@ export function mapPnpEventToWorkshop(ev: PnpFullCalendarEvent): WorkshopEvent |
     cityId: "dmv",
     title,
     tagline,
-    description:
-      tagline ||
-      "Author event at Politics and Prose. See the store site for full details.",
-    start,
-    end,
+    description: "Details from Politics and Prose.",
+    start: startDt.toISO() ?? startDt.toUTC().toISO() ?? start,
+    end: endIso,
+    timeZone: tz,
     format: "in-person",
     price: "unknown",
     category,

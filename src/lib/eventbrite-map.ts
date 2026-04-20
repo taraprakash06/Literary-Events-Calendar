@@ -5,6 +5,7 @@ import type {
 } from "@/lib/workshop-types";
 import type { AppCityId } from "@/lib/eventbrite-geo";
 import { classifyEventbriteLocation } from "@/lib/eventbrite-geo";
+import { DateTime } from "luxon";
 
 /** Minimal Eventbrite event JSON (owned_events / organization events + expand=venue). */
 export type EbTextField = { text?: string; html?: string };
@@ -118,8 +119,14 @@ export function mapEbEventToWorkshop(
   ev: EbEventResource,
   cityId: AppCityId,
 ): WorkshopEvent | null {
+  const tz = ev.start?.timezone?.trim() || ev.end?.timezone?.trim() || "";
+  const startLocal = ev.start?.local?.trim();
   const startUtc = ev.start?.utc?.trim();
-  if (!startUtc) return null;
+  const startIso =
+    startLocal && tz
+      ? DateTime.fromISO(startLocal, { zone: tz }).toISO()
+      : startUtc || null;
+  if (!startIso) return null;
 
   const title = textField(ev.name);
   if (!title) return null;
@@ -146,14 +153,22 @@ export function mapEbEventToWorkshop(
         ? "Online (Eventbrite)"
         : undefined;
 
+  const endLocal = ev.end?.local?.trim();
+  const endUtc = ev.end?.utc?.trim();
+  const endIso =
+    endLocal && tz
+      ? DateTime.fromISO(endLocal, { zone: tz }).toISO() ?? undefined
+      : endUtc || undefined;
+
   return {
     id: `eb-${ev.id}`,
     cityId,
     title,
     tagline: summary || "",
     description: description.slice(0, 4000),
-    start: startUtc,
-    end: ev.end?.utc?.trim() || undefined,
+    start: startIso,
+    end: endIso,
+    timeZone: tz || undefined,
     format,
     price,
     category: mapCategory(ev),

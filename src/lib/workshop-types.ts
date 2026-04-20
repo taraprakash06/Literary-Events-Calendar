@@ -43,6 +43,11 @@ export type WorkshopEvent = {
   /** ISO 8601 local date-time string (no Z) or with Z for UTC — parsed with Date */
   start: string;
   end?: string;
+  /**
+   * Optional IANA timezone to display dates/times consistently with the source.
+   * Example: "America/New_York".
+   */
+  timeZone?: string;
   format: EventFormat;
   price: PriceKind;
   category: WorkshopEventCategory;

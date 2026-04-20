@@ -1,5 +1,4 @@
 import type { EbEventResource } from "@/lib/eventbrite-map";
-import type { AppCityId } from "@/lib/eventbrite-geo";
 
 const EB_API = "https://www.eventbriteapi.com/v3";
 
@@ -72,19 +71,6 @@ async function fetchAllEventPages(
   return out;
 }
 
-function citySearchParams(cityId: AppCityId): { address: string; within: string } {
-  switch (cityId) {
-    case "dmv":
-      return { address: "Washington, DC", within: "40mi" };
-    case "nyc":
-      return { address: "New York, NY", within: "30mi" };
-    case "sf":
-      return { address: "San Francisco, CA", within: "35mi" };
-    case "la":
-      return { address: "Los Angeles, CA", within: "35mi" };
-  }
-}
-
 export function getEventbriteToken(): string | null {
   const t =
     process.env.EVENTBRITE_API_TOKEN?.trim() ||
@@ -123,56 +109,6 @@ export async function fetchOrganizationEventsForMonth(
     year,
     monthIndex,
   );
-}
-
-/**
- * Public Eventbrite search for writing workshops + literary events.
- * Note: still requires a valid Eventbrite token.
- */
-export async function fetchKeywordSearchEventsForMonth(
-  token: string,
-  cityId: AppCityId,
-  year: number,
-  monthIndex: number,
-): Promise<EbEventResource[]> {
-  const { address, within } = citySearchParams(cityId);
-  const queries = [
-    "writing workshop",
-    "creative writing",
-    "writers workshop",
-    "book club",
-    "poetry reading",
-    "open mic",
-    "author talk",
-    "literary",
-    "memoir",
-  ];
-
-  const seen = new Set<string>();
-  const merged: EbEventResource[] = [];
-
-  for (const q of queries) {
-    const rows = await fetchAllEventPages(
-      token,
-      "/events/search/",
-      year,
-      monthIndex,
-      {
-        q,
-        "location.address": address,
-        "location.within": within,
-      },
-      5,
-    );
-    for (const ev of rows) {
-      if (!seen.has(ev.id)) {
-        seen.add(ev.id);
-        merged.push(ev);
-      }
-    }
-  }
-
-  return merged;
 }
 
 export async function fetchAllSourceEventsForMonth(

@@ -124,6 +124,7 @@ export function mapTwcEventToWorkshop(ev: TwcTribeEvent): WorkshopEvent | null {
     description,
     start,
     end: end ?? undefined,
+    timeZone: "America/New_York",
     format,
     price: mapPrice(ev.cost),
     category,

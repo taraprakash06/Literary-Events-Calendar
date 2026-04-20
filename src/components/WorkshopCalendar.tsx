@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+import { DateTime } from "luxon";
 import { CITIES } from "@/data/cities";
 import { eventsForCity } from "@/data/workshop-events";
 import { SourceCoveragePanel } from "@/components/SourceCoveragePanel";
@@ -49,14 +50,28 @@ function pad2(n: number) {
   return String(n).padStart(2, "0");
 }
 
-function localDateKey(iso: string): string {
-  const d = new Date(iso);
-  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+function eventZonedDateTime(ev: Pick<WorkshopEvent, "start" | "timeZone">): DateTime {
+  const dt = DateTime.fromISO(ev.start, { setZone: true });
+  if (ev.timeZone) return dt.setZone(ev.timeZone);
+  return dt.toLocal();
 }
 
-function sameMonthAs(iso: string, year: number, monthIndex: number) {
-  const d = new Date(iso);
-  return d.getFullYear() === year && d.getMonth() === monthIndex;
+function localDateKey(ev: Pick<WorkshopEvent, "start" | "timeZone">): string {
+  const d = eventZonedDateTime(ev);
+  if (!d.isValid) {
+    const fallback = new Date(ev.start);
+    return `${fallback.getFullYear()}-${pad2(fallback.getMonth() + 1)}-${pad2(fallback.getDate())}`;
+  }
+  return `${d.year}-${pad2(d.month)}-${pad2(d.day)}`;
+}
+
+function sameMonthAs(ev: Pick<WorkshopEvent, "start" | "timeZone">, year: number, monthIndex: number) {
+  const d = eventZonedDateTime(ev);
+  if (!d.isValid) {
+    const fallback = new Date(ev.start);
+    return fallback.getFullYear() === year && fallback.getMonth() === monthIndex;
+  }
+  return d.year === year && d.month === monthIndex + 1;
 }
 
 type ViewMode = "calendar" | "list";
@@ -192,6 +207,7 @@ export function WorkshopCalendar({ city }: { city: City }) {
   >([]);
   const [eventbriteEvents, setEventbriteEvents] = useState<WorkshopEvent[]>([]);
   const [laplEvents, setLaplEvents] = useState<WorkshopEvent[]>([]);
+  const [sfplEvents, setSfplEvents] = useState<WorkshopEvent[]>([]);
 
   useEffect(() => {
     if (city.id !== "dmv") {
@@ -273,6 +289,33 @@ export function WorkshopCalendar({ city }: { city: City }) {
   }, [city.id, year, monthIndex]);
 
   useEffect(() => {
+    if (city.id !== "sf") {
+      setSfplEvents([]);
+      return;
+    }
+    const y = year;
+    const m = monthIndex + 1;
+    const ac = new AbortController();
+    (async () => {
+      try {
+        const res = await fetch(`/api/sfpl/events?year=${y}&month=${m}`, {
+          signal: ac.signal,
+        });
+        if (!res.ok) {
+          setSfplEvents([]);
+          return;
+        }
+        const body = (await res.json()) as { events?: WorkshopEvent[] };
+        setSfplEvents(Array.isArray(body.events) ? body.events : []);
+      } catch (e) {
+        if ((e as Error).name === "AbortError") return;
+        setSfplEvents([]);
+      }
+    })();
+    return () => ac.abort();
+  }, [city.id, year, monthIndex]);
+
+  useEffect(() => {
     if (
       city.id !== "dmv" &&
       city.id !== "nyc" &&
@@ -311,6 +354,7 @@ export function WorkshopCalendar({ city }: { city: City }) {
     const twc = city.id === "dmv" ? writersCenterEvents : [];
     const pnp = city.id === "dmv" ? politicsProseEvents : [];
     const lapl = city.id === "la" ? laplEvents : [];
+    const sfpl = city.id === "sf" ? sfplEvents : [];
     const eb =
       city.id === "dmv" ||
       city.id === "nyc" ||
@@ -318,13 +362,14 @@ export function WorkshopCalendar({ city }: { city: City }) {
       city.id === "sf"
         ? eventbriteEvents
         : [];
-    return [...base, ...lib, ...twc, ...pnp, ...lapl, ...eb];
+    return [...base, ...lib, ...twc, ...pnp, ...lapl, ...sfpl, ...eb];
   }, [
     city.id,
     libnetEvents,
     writersCenterEvents,
     politicsProseEvents,
     laplEvents,
+    sfplEvents,
     eventbriteEvents,
   ]);
   const neighborhoods = useMemo(
@@ -342,14 +387,14 @@ export function WorkshopCalendar({ city }: { city: City }) {
   );
 
   const inVisibleMonth = useMemo(
-    () => filtered.filter((e) => sameMonthAs(e.start, year, monthIndex)),
+    () => filtered.filter((e) => sameMonthAs(e, year, monthIndex)),
     [filtered, year, monthIndex],
   );
 
   const byDay = useMemo(() => {
     const map = new Map<string, WorkshopEvent[]>();
     for (const ev of inVisibleMonth) {
-      const key = localDateKey(ev.start);
+      const key = localDateKey(ev);
       const list = map.get(key) ?? [];
       list.push(ev);
       map.set(key, list);
@@ -1080,15 +1125,9 @@ function useEscapeKey(onClose: () => void) {
 }
 
 function formatWhen(ev: WorkshopEvent) {
-  const start = new Date(ev.start);
-  const opts: Intl.DateTimeFormatOptions = {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  };
-  return start.toLocaleString("en-US", opts);
+  const dt = eventZonedDateTime(ev);
+  if (!dt.isValid) return new Date(ev.start).toLocaleString("en-US");
+  return dt.toFormat("ccc, LLL d, h:mm a");
 }
 
 function FilterChip({
@@ -1146,9 +1185,49 @@ function EventDetailModal({
 }) {
   useEscapeKey(onClose);
 
-  const start = new Date(event.start);
-  const end = event.end ? new Date(event.end) : null;
+  const start = eventZonedDateTime(event);
+  const end = event.end
+    ? (event.timeZone
+        ? DateTime.fromISO(event.end, { setZone: true }).setZone(event.timeZone)
+        : DateTime.fromISO(event.end, { setZone: true }).toLocal())
+    : null;
   const isSample = event.listingProvenance === "sample";
+  const [synopsis, setSynopsis] = useState<string | null>(null);
+
+  useEffect(() => {
+    setSynopsis(null);
+    if (
+      !event.rsvpUrl ||
+      !event.rsvpUrl.includes("politics-prose.com") ||
+      event.organizer !== "Politics and Prose"
+    ) {
+      return;
+    }
+    const ac = new AbortController();
+    (async () => {
+      try {
+        const res = await fetch(event.rsvpUrl!, { signal: ac.signal });
+        if (!res.ok) return;
+        const html = await res.text();
+        const og =
+          html.match(/property=["']og:description["'][^>]*content=["']([^"']+)["']/i)?.[1] ??
+          html.match(/name=["']description["'][^>]*content=["']([^"']+)["']/i)?.[1] ??
+          null;
+        const cleaned = (og ?? "")
+          .replace(/&amp;/g, "&")
+          .replace(/&#039;/g, "'")
+          .replace(/&quot;/g, '"')
+          .replace(/&lt;/g, "<")
+          .replace(/&gt;/g, ">")
+          .replace(/\s+/g, " ")
+          .trim();
+        if (cleaned) setSynopsis(cleaned);
+      } catch (e) {
+        if ((e as Error).name === "AbortError") return;
+      }
+    })();
+    return () => ac.abort();
+  }, [event.organizer, event.rsvpUrl]);
 
   return (
     <div
@@ -1223,20 +1302,22 @@ function EventDetailModal({
               Date &amp; time
             </p>
             <p className="mt-2 text-sm leading-relaxed text-stone-800 dark:text-stone-200">
-              {start.toLocaleString("en-US", {
-                weekday: "long",
-                month: "long",
-                day: "numeric",
-                year: "numeric",
-                hour: "numeric",
-                minute: "2-digit",
-              })}
-              {end
-                ? ` · ends ${end.toLocaleTimeString("en-US", {
+              {start.isValid
+                ? start.toFormat("cccc, LLLL d, yyyy 'at' h:mm a")
+                : new Date(event.start).toLocaleString("en-US", {
+                    weekday: "long",
+                    month: "long",
+                    day: "numeric",
+                    year: "numeric",
                     hour: "numeric",
                     minute: "2-digit",
-                  })}`
+                  })}
+              {end
+                ? end.isValid
+                  ? ` · ends ${end.toFormat("h:mm a")}`
+                  : null
                 : null}
+              {event.timeZone ? ` · ${event.timeZone}` : null}
             </p>
           </div>
 
@@ -1254,7 +1335,7 @@ function EventDetailModal({
               About
             </p>
             <p className="mt-2 text-sm leading-relaxed text-stone-700 dark:text-stone-300">
-              {event.description}
+              {synopsis ?? event.description}
             </p>
           </div>
 
