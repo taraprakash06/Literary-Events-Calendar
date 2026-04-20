@@ -272,6 +272,7 @@ export function WorkshopCalendar({ city }: { city: City }) {
   >([]);
   const [scrawlBooksEvents, setScrawlBooksEvents] = useState<WorkshopEvent[]>([]);
   const [busboysPoetsEvents, setBusboysPoetsEvents] = useState<WorkshopEvent[]>([]);
+  const [mdHumanitiesEvents, setMdHumanitiesEvents] = useState<WorkshopEvent[]>([]);
   const [eventbriteEvents, setEventbriteEvents] = useState<WorkshopEvent[]>([]);
   const [eventbriteMeta, setEventbriteMeta] = useState<
     | {
@@ -295,6 +296,7 @@ export function WorkshopCalendar({ city }: { city: City }) {
       setPoliticsProseEvents([]);
       setScrawlBooksEvents([]);
       setBusboysPoetsEvents([]);
+      setMdHumanitiesEvents([]);
       return;
     }
     const y = year;
@@ -303,7 +305,8 @@ export function WorkshopCalendar({ city }: { city: City }) {
     const q = `year=${y}&month=${m}&cityId=dmv`;
     (async () => {
       try {
-        const [dcRes, mcRes, twcRes, pnpRes, scrawlRes, busboysRes] = await Promise.all([
+        const [dcRes, mcRes, twcRes, pnpRes, scrawlRes, busboysRes, mdHumRes] =
+          await Promise.all([
           fetch(`/api/dcpl/events?${q}`, { signal: ac.signal }),
           fetch(`/api/mcpl/events?${q}`, { signal: ac.signal }),
           fetch(`/api/writers-center/events?year=${y}&month=${m}`, {
@@ -316,6 +319,9 @@ export function WorkshopCalendar({ city }: { city: City }) {
             signal: ac.signal,
           }),
           fetch(`/api/busboys-poets/events?year=${y}&month=${m}`, {
+            signal: ac.signal,
+          }),
+          fetch(`/api/mdhumanities/events?year=${y}&month=${m}`, {
             signal: ac.signal,
           }),
         ]);
@@ -337,17 +343,22 @@ export function WorkshopCalendar({ city }: { city: City }) {
         const busboysJson = busboysRes.ok
           ? ((await busboysRes.json()) as { events?: WorkshopEvent[] })
           : {};
+        const mdHumJson = mdHumRes.ok
+          ? ((await mdHumRes.json()) as { events?: WorkshopEvent[] })
+          : {};
         const dcEv = Array.isArray(dcJson.events) ? dcJson.events : [];
         const mcEv = Array.isArray(mcJson.events) ? mcJson.events : [];
         const twcEv = Array.isArray(twcJson.events) ? twcJson.events : [];
         const pnpEv = Array.isArray(pnpJson.events) ? pnpJson.events : [];
         const scrawlEv = Array.isArray(scrawlJson.events) ? scrawlJson.events : [];
         const busboysEv = Array.isArray(busboysJson.events) ? busboysJson.events : [];
+        const mdHumEv = Array.isArray(mdHumJson.events) ? mdHumJson.events : [];
         setLibnetEvents([...dcEv, ...mcEv]);
         setWritersCenterEvents(twcEv);
         setPoliticsProseEvents(pnpEv);
         setScrawlBooksEvents(scrawlEv);
         setBusboysPoetsEvents(busboysEv);
+        setMdHumanitiesEvents(mdHumEv);
       } catch (e) {
         if ((e as Error).name === "AbortError") return;
         setLibnetEvents([]);
@@ -355,6 +366,7 @@ export function WorkshopCalendar({ city }: { city: City }) {
         setPoliticsProseEvents([]);
         setScrawlBooksEvents([]);
         setBusboysPoetsEvents([]);
+        setMdHumanitiesEvents([]);
       }
     })();
     return () => ac.abort();
@@ -463,6 +475,7 @@ export function WorkshopCalendar({ city }: { city: City }) {
     const pnp = city.id === "dmv" ? politicsProseEvents : [];
     const scrawl = city.id === "dmv" ? scrawlBooksEvents : [];
     const busboys = city.id === "dmv" ? busboysPoetsEvents : [];
+    const mdHum = city.id === "dmv" ? mdHumanitiesEvents : [];
     const lapl = city.id === "la" ? laplEvents : [];
     const sfpl = city.id === "sf" ? sfplEvents : [];
     const eb =
@@ -472,7 +485,18 @@ export function WorkshopCalendar({ city }: { city: City }) {
       city.id === "sf"
         ? eventbriteEvents
         : [];
-    return [...base, ...lib, ...twc, ...pnp, ...scrawl, ...busboys, ...lapl, ...sfpl, ...eb];
+    return [
+      ...base,
+      ...lib,
+      ...twc,
+      ...pnp,
+      ...scrawl,
+      ...busboys,
+      ...mdHum,
+      ...lapl,
+      ...sfpl,
+      ...eb,
+    ];
   }, [
     city.id,
     libnetEvents,
@@ -480,6 +504,7 @@ export function WorkshopCalendar({ city }: { city: City }) {
     politicsProseEvents,
     scrawlBooksEvents,
     busboysPoetsEvents,
+    mdHumanitiesEvents,
     laplEvents,
     sfplEvents,
     eventbriteEvents,
@@ -617,7 +642,7 @@ export function WorkshopCalendar({ city }: { city: City }) {
     }
 
     if (city.id === "dmv") {
-      return "No DMV listings for this month from the libraries, Scrawl Books, Busboys and Poets, Politics and Prose, The Writer's Center, or Eventbrite — or one of the feeds could not be reached. Try another month or check your connection.";
+      return "No DMV listings for this month from the libraries, Scrawl Books, Busboys and Poets, Maryland Humanities, Politics and Prose, The Writer's Center, or Eventbrite — or one of the feeds could not be reached. Try another month or check your connection.";
     }
 
     if (city.id === "la") {
@@ -698,6 +723,16 @@ export function WorkshopCalendar({ city }: { city: City }) {
               Busboys and Poets
             </a>{" "}
             events load from their public events list API for the month you
+            select.{" "}
+            <a
+              className="font-medium text-stone-900 underline decoration-stone-400 underline-offset-2 hover:decoration-stone-600 dark:text-stone-100 dark:decoration-stone-500"
+              href="https://www.mdhumanities.org/events/"
+              rel="noreferrer"
+              target="_blank"
+            >
+              Maryland Humanities
+            </a>{" "}
+            programs load from The Events Calendar REST API for the month you
             select.{" "}
             <a
               className="font-medium text-stone-900 underline decoration-stone-400 underline-offset-2 hover:decoration-stone-600 dark:text-stone-100 dark:decoration-stone-500"
