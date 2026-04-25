@@ -111,6 +111,21 @@ export async function fetchOrganizationEventsForMonth(
   );
 }
 
+/** Events under a public organizer profile ID (eventbrite.com/o/...). */
+export async function fetchOrganizerEventsForMonth(
+  token: string,
+  organizerId: string,
+  year: number,
+  monthIndex: number,
+): Promise<EbEventResource[]> {
+  return fetchAllEventPages(
+    token,
+    `/organizers/${encodeURIComponent(organizerId)}/events/`,
+    year,
+    monthIndex,
+  );
+}
+
 export async function fetchAllSourceEventsForMonth(
   token: string,
   year: number,

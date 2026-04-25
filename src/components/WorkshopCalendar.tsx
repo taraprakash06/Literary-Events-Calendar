@@ -263,6 +263,22 @@ export function WorkshopCalendar({ city }: { city: City }) {
     };
   });
 
+  useEffect(() => {
+    // Keep the date-range filter aligned with the currently viewed month.
+    // If a user explicitly sets a custom range within the month, we leave it alone.
+    const r = monthRangeISO(year, monthIndex);
+    const monthPrefix = `${year}-${pad2(monthIndex + 1)}-`;
+    const rangeLooksLikeThisMonth =
+      filters.rangeStart.startsWith(monthPrefix) && filters.rangeEnd.startsWith(monthPrefix);
+    if (!rangeLooksLikeThisMonth) {
+      setFilters((prev) => ({
+        ...prev,
+        rangeStart: r.start,
+        rangeEnd: r.end,
+      }));
+    }
+  }, [filters.rangeEnd, filters.rangeStart, monthIndex, year]);
+
   const [libnetEvents, setLibnetEvents] = useState<WorkshopEvent[]>([]);
   const [writersCenterEvents, setWritersCenterEvents] = useState<
     WorkshopEvent[]
@@ -287,7 +303,24 @@ export function WorkshopCalendar({ city }: { city: City }) {
     | null
   >(null);
   const [laplEvents, setLaplEvents] = useState<WorkshopEvent[]>([]);
+  const [lyricHyperionEvents, setLyricHyperionEvents] = useState<WorkshopEvent[]>(
+    [],
+  );
+  const [laAnnualEvents, setLaAnnualEvents] = useState<WorkshopEvent[]>([]);
   const [sfplEvents, setSfplEvents] = useState<WorkshopEvent[]>([]);
+  const [writersGrottoEvents, setWritersGrottoEvents] = useState<WorkshopEvent[]>(
+    [],
+  );
+  const [catEvents, setCatEvents] = useState<WorkshopEvent[]>([]);
+  const [nyplEvents, setNyplEvents] = useState<WorkshopEvent[]>([]);
+  const [centerForFictionEvents, setCenterForFictionEvents] = useState<
+    WorkshopEvent[]
+  >([]);
+  const [justBuffaloEvents, setJustBuffaloEvents] = useState<WorkshopEvent[]>([]);
+  const [poetsHouseEvents, setPoetsHouseEvents] = useState<WorkshopEvent[]>([]);
+  const [strandEvents, setStrandEvents] = useState<WorkshopEvent[]>([]);
+  const [ny92Events, setNy92Events] = useState<WorkshopEvent[]>([]);
+  const [nuyoricanEvents, setNuyoricanEvents] = useState<WorkshopEvent[]>([]);
 
   useEffect(() => {
     if (city.id !== "dmv") {
@@ -375,6 +408,8 @@ export function WorkshopCalendar({ city }: { city: City }) {
   useEffect(() => {
     if (city.id !== "la") {
       setLaplEvents([]);
+      setLyricHyperionEvents([]);
+      setLaAnnualEvents([]);
       return;
     }
     const y = year;
@@ -382,18 +417,38 @@ export function WorkshopCalendar({ city }: { city: City }) {
     const ac = new AbortController();
     (async () => {
       try {
-        const res = await fetch(`/api/lapl/events?year=${y}&month=${m}`, {
-          signal: ac.signal,
-        });
-        if (!res.ok) {
-          setLaplEvents([]);
-          return;
-        }
-        const body = (await res.json()) as { events?: WorkshopEvent[] };
-        setLaplEvents(Array.isArray(body.events) ? body.events : []);
+        const [laplRes, lyricRes, annualRes] = await Promise.all([
+          fetch(`/api/lapl/events?year=${y}&month=${m}`, { signal: ac.signal }),
+          fetch(`/api/lyric-hyperion/events?year=${y}&month=${m}`, {
+            signal: ac.signal,
+          }),
+          fetch(`/api/la-literature/annual-events?year=${y}&month=${m}`, {
+            signal: ac.signal,
+          }),
+        ]);
+
+        const laplBody = laplRes.ok
+          ? ((await laplRes.json()) as { events?: WorkshopEvent[] })
+          : {};
+        const lyricBody = lyricRes.ok
+          ? ((await lyricRes.json()) as { events?: WorkshopEvent[] })
+          : {};
+        const annualBody = annualRes.ok
+          ? ((await annualRes.json()) as { events?: WorkshopEvent[] })
+          : {};
+
+        setLaplEvents(Array.isArray(laplBody.events) ? laplBody.events : []);
+        setLyricHyperionEvents(
+          Array.isArray(lyricBody.events) ? lyricBody.events : [],
+        );
+        setLaAnnualEvents(
+          Array.isArray(annualBody.events) ? annualBody.events : [],
+        );
       } catch (e) {
         if ((e as Error).name === "AbortError") return;
         setLaplEvents([]);
+        setLyricHyperionEvents([]);
+        setLaAnnualEvents([]);
       }
     })();
     return () => ac.abort();
@@ -421,6 +476,250 @@ export function WorkshopCalendar({ city }: { city: City }) {
       } catch (e) {
         if ((e as Error).name === "AbortError") return;
         setSfplEvents([]);
+      }
+    })();
+    return () => ac.abort();
+  }, [city.id, year, monthIndex]);
+
+  useEffect(() => {
+    if (city.id !== "sf") {
+      setWritersGrottoEvents([]);
+      return;
+    }
+    const y = year;
+    const m = monthIndex + 1;
+    const ac = new AbortController();
+    (async () => {
+      try {
+        const res = await fetch(`/api/writers-grotto/events?year=${y}&month=${m}`, {
+          signal: ac.signal,
+        });
+        if (!res.ok) {
+          setWritersGrottoEvents([]);
+          return;
+        }
+        const body = (await res.json()) as { events?: WorkshopEvent[] };
+        setWritersGrottoEvents(Array.isArray(body.events) ? body.events : []);
+      } catch (e) {
+        if ((e as Error).name === "AbortError") return;
+        setWritersGrottoEvents([]);
+      }
+    })();
+    return () => ac.abort();
+  }, [city.id, year, monthIndex]);
+
+  useEffect(() => {
+    if (city.id !== "sf") {
+      setCatEvents([]);
+      return;
+    }
+    const y = year;
+    const m = monthIndex + 1;
+    const ac = new AbortController();
+    (async () => {
+      try {
+        const res = await fetch(`/api/cat/events?year=${y}&month=${m}`, {
+          signal: ac.signal,
+        });
+        if (!res.ok) {
+          setCatEvents([]);
+          return;
+        }
+        const body = (await res.json()) as { events?: WorkshopEvent[] };
+        setCatEvents(Array.isArray(body.events) ? body.events : []);
+      } catch (e) {
+        if ((e as Error).name === "AbortError") return;
+        setCatEvents([]);
+      }
+    })();
+    return () => ac.abort();
+  }, [city.id, year, monthIndex]);
+
+  useEffect(() => {
+    if (city.id !== "nyc") {
+      setNyplEvents([]);
+      return;
+    }
+    const y = year;
+    const m = monthIndex + 1;
+    const ac = new AbortController();
+    (async () => {
+      try {
+        const res = await fetch(`/api/nypl/events?year=${y}&month=${m}`, {
+          signal: ac.signal,
+        });
+        if (!res.ok) {
+          setNyplEvents([]);
+          return;
+        }
+        const body = (await res.json()) as { events?: WorkshopEvent[] };
+        setNyplEvents(Array.isArray(body.events) ? body.events : []);
+      } catch (e) {
+        if ((e as Error).name === "AbortError") return;
+        setNyplEvents([]);
+      }
+    })();
+    return () => ac.abort();
+  }, [city.id, year, monthIndex]);
+
+  useEffect(() => {
+    if (city.id !== "nyc") {
+      setCenterForFictionEvents([]);
+      return;
+    }
+    const y = year;
+    const m = monthIndex + 1;
+    const ac = new AbortController();
+    (async () => {
+      try {
+        const res = await fetch(
+          `/api/center-for-fiction/events?year=${y}&month=${m}`,
+          { signal: ac.signal },
+        );
+        if (!res.ok) {
+          setCenterForFictionEvents([]);
+          return;
+        }
+        const body = (await res.json()) as { events?: WorkshopEvent[] };
+        setCenterForFictionEvents(Array.isArray(body.events) ? body.events : []);
+      } catch (e) {
+        if ((e as Error).name === "AbortError") return;
+        setCenterForFictionEvents([]);
+      }
+    })();
+    return () => ac.abort();
+  }, [city.id, year, monthIndex]);
+
+  useEffect(() => {
+    if (city.id !== "nyc") {
+      setJustBuffaloEvents([]);
+      return;
+    }
+    const y = year;
+    const m = monthIndex + 1;
+    const ac = new AbortController();
+    (async () => {
+      try {
+        const res = await fetch(`/api/just-buffalo/events?year=${y}&month=${m}`, {
+          signal: ac.signal,
+        });
+        if (!res.ok) {
+          setJustBuffaloEvents([]);
+          return;
+        }
+        const body = (await res.json()) as { events?: WorkshopEvent[] };
+        setJustBuffaloEvents(Array.isArray(body.events) ? body.events : []);
+      } catch (e) {
+        if ((e as Error).name === "AbortError") return;
+        setJustBuffaloEvents([]);
+      }
+    })();
+    return () => ac.abort();
+  }, [city.id, year, monthIndex]);
+
+  useEffect(() => {
+    if (city.id !== "nyc") {
+      setPoetsHouseEvents([]);
+      return;
+    }
+    const y = year;
+    const m = monthIndex + 1;
+    const ac = new AbortController();
+    (async () => {
+      try {
+        const res = await fetch(`/api/poets-house/events?year=${y}&month=${m}`, {
+          signal: ac.signal,
+        });
+        if (!res.ok) {
+          setPoetsHouseEvents([]);
+          return;
+        }
+        const body = (await res.json()) as { events?: WorkshopEvent[] };
+        setPoetsHouseEvents(Array.isArray(body.events) ? body.events : []);
+      } catch (e) {
+        if ((e as Error).name === "AbortError") return;
+        setPoetsHouseEvents([]);
+      }
+    })();
+    return () => ac.abort();
+  }, [city.id, year, monthIndex]);
+
+  useEffect(() => {
+    if (city.id !== "nyc") {
+      setStrandEvents([]);
+      return;
+    }
+    const y = year;
+    const m = monthIndex + 1;
+    const ac = new AbortController();
+    (async () => {
+      try {
+        const res = await fetch(`/api/strand/events?year=${y}&month=${m}`, {
+          signal: ac.signal,
+        });
+        if (!res.ok) {
+          setStrandEvents([]);
+          return;
+        }
+        const body = (await res.json()) as { events?: WorkshopEvent[] };
+        setStrandEvents(Array.isArray(body.events) ? body.events : []);
+      } catch (e) {
+        if ((e as Error).name === "AbortError") return;
+        setStrandEvents([]);
+      }
+    })();
+    return () => ac.abort();
+  }, [city.id, year, monthIndex]);
+
+  useEffect(() => {
+    if (city.id !== "nyc") {
+      setNy92Events([]);
+      return;
+    }
+    const y = year;
+    const m = monthIndex + 1;
+    const ac = new AbortController();
+    (async () => {
+      try {
+        const res = await fetch(`/api/92ny/events?year=${y}&month=${m}`, {
+          signal: ac.signal,
+        });
+        if (!res.ok) {
+          setNy92Events([]);
+          return;
+        }
+        const body = (await res.json()) as { events?: WorkshopEvent[] };
+        setNy92Events(Array.isArray(body.events) ? body.events : []);
+      } catch (e) {
+        if ((e as Error).name === "AbortError") return;
+        setNy92Events([]);
+      }
+    })();
+    return () => ac.abort();
+  }, [city.id, year, monthIndex]);
+
+  useEffect(() => {
+    if (city.id !== "nyc") {
+      setNuyoricanEvents([]);
+      return;
+    }
+    const y = year;
+    const m = monthIndex + 1;
+    const ac = new AbortController();
+    (async () => {
+      try {
+        const res = await fetch(`/api/nuyorican/events?year=${y}&month=${m}`, {
+          signal: ac.signal,
+        });
+        if (!res.ok) {
+          setNuyoricanEvents([]);
+          return;
+        }
+        const body = (await res.json()) as { events?: WorkshopEvent[] };
+        setNuyoricanEvents(Array.isArray(body.events) ? body.events : []);
+      } catch (e) {
+        if ((e as Error).name === "AbortError") return;
+        setNuyoricanEvents([]);
       }
     })();
     return () => ac.abort();
@@ -477,7 +776,18 @@ export function WorkshopCalendar({ city }: { city: City }) {
     const busboys = city.id === "dmv" ? busboysPoetsEvents : [];
     const mdHum = city.id === "dmv" ? mdHumanitiesEvents : [];
     const lapl = city.id === "la" ? laplEvents : [];
+    const lyric = city.id === "la" ? lyricHyperionEvents : [];
+    const annual = city.id === "la" ? laAnnualEvents : [];
     const sfpl = city.id === "sf" ? sfplEvents : [];
+    const wg = city.id === "sf" ? writersGrottoEvents : [];
+    const cat = city.id === "sf" ? catEvents : [];
+    const nypl = city.id === "nyc" ? nyplEvents : [];
+    const cff = city.id === "nyc" ? centerForFictionEvents : [];
+    const jb = city.id === "nyc" ? justBuffaloEvents : [];
+    const ph = city.id === "nyc" ? poetsHouseEvents : [];
+    const strand = city.id === "nyc" ? strandEvents : [];
+    const ny92 = city.id === "nyc" ? ny92Events : [];
+    const nycafe = city.id === "nyc" ? nuyoricanEvents : [];
     const eb =
       city.id === "dmv" ||
       city.id === "nyc" ||
@@ -494,7 +804,18 @@ export function WorkshopCalendar({ city }: { city: City }) {
       ...busboys,
       ...mdHum,
       ...lapl,
+      ...lyric,
+      ...annual,
       ...sfpl,
+      ...wg,
+      ...cat,
+      ...nypl,
+      ...cff,
+      ...jb,
+      ...ph,
+      ...strand,
+      ...ny92,
+      ...nycafe,
       ...eb,
     ];
   }, [
@@ -506,7 +827,18 @@ export function WorkshopCalendar({ city }: { city: City }) {
     busboysPoetsEvents,
     mdHumanitiesEvents,
     laplEvents,
+    lyricHyperionEvents,
+    laAnnualEvents,
     sfplEvents,
+    writersGrottoEvents,
+    catEvents,
+    nyplEvents,
+    centerForFictionEvents,
+    justBuffaloEvents,
+    poetsHouseEvents,
+    strandEvents,
+    ny92Events,
+    nuyoricanEvents,
     eventbriteEvents,
   ]);
   const neighborhoods = useMemo(
@@ -646,7 +978,7 @@ export function WorkshopCalendar({ city }: { city: City }) {
     }
 
     if (city.id === "la") {
-      return "No LA listings for this month from LAPL or Eventbrite, or a feed could not be reached. Try another month or check your connection.";
+      return "No LA listings for this month from LAPL, Lyric Hyperion, Los Angeles Literature (annual events index), or Eventbrite, or a feed could not be reached. Try another month or check your connection.";
     }
 
     if (eventbriteMeta?.configured === false) {
@@ -657,7 +989,7 @@ export function WorkshopCalendar({ city }: { city: City }) {
     }
 
     if (city.id === "nyc") {
-      return "No New York listings were returned. This view currently depends on Eventbrite events you own and/or organization IDs in EVENTBRITE_ORGANIZATION_IDS, placed into NYC by venue.";
+      return "No New York listings were returned for this month from NYPL, The Center for Fiction, Just Buffalo, Poets House, Strand, 92NY, NuYorican Poets Cafe, or Eventbrite (your orgs / EVENTBRITE_ORGANIZATION_IDS), or a feed could not be reached. Try another month or check your connection.";
     }
 
     if (city.id === "sf") {
@@ -669,117 +1001,6 @@ export function WorkshopCalendar({ city }: { city: City }) {
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-8">
-      <p className="rounded-sm border border-stone-200/90 bg-stone-50/90 px-4 py-3 text-sm leading-relaxed text-stone-800 dark:border-stone-700/80 dark:bg-stone-900/50 dark:text-stone-200">
-        <strong>No fabricated listings.</strong>{" "}
-        {city.id === "dmv" ? (
-          <>
-            The DMV view combines live literary events from the{" "}
-            <a
-              className="font-medium text-stone-900 underline decoration-stone-400 underline-offset-2 hover:decoration-stone-600 dark:text-stone-100 dark:decoration-stone-500"
-              href="https://dclibrary.libnet.info/events"
-              rel="noreferrer"
-              target="_blank"
-            >
-              DC Public Library
-            </a>{" "}
-            (Author Talks for the month you select) and a curated slice of{" "}
-            <a
-              className="font-medium text-stone-900 underline decoration-stone-400 underline-offset-2 hover:decoration-stone-600 dark:text-stone-100 dark:decoration-stone-500"
-              href="https://mcpl.libnet.info/events"
-              rel="noreferrer"
-              target="_blank"
-            >
-              Montgomery County Public Libraries
-            </a>{" "}
-            (book discussions, writers groups, poetry, and similar programs).
-            Greater Baltimore is included in this same DMV region. Northern
-            Virginia library feeds are not wired here yet; the region label
-            still covers DC, Maryland, and Virginia for when they are.{" "}
-            <a
-              className="font-medium text-stone-900 underline decoration-stone-400 underline-offset-2 hover:decoration-stone-600 dark:text-stone-100 dark:decoration-stone-500"
-              href="https://politics-prose.com/upcoming-events"
-              rel="noreferrer"
-              target="_blank"
-            >
-              Politics and Prose
-            </a>{" "}
-            author events load from their public month calendar.{" "}
-            <a
-              className="font-medium text-stone-900 underline decoration-stone-400 underline-offset-2 hover:decoration-stone-600 dark:text-stone-100 dark:decoration-stone-500"
-              href="https://www.scrawlbooks.com/events"
-              rel="noreferrer"
-              target="_blank"
-            >
-              Scrawl Books
-            </a>{" "}
-            (Reston, VA) bookstore events load from their public Bookmanager
-            calendar for the month you select.{" "}
-            <a
-              className="font-medium text-stone-900 underline decoration-stone-400 underline-offset-2 hover:decoration-stone-600 dark:text-stone-100 dark:decoration-stone-500"
-              href="https://www.busboysandpoets.com/events-list/"
-              rel="noreferrer"
-              target="_blank"
-            >
-              Busboys and Poets
-            </a>{" "}
-            events load from their public events list API for the month you
-            select.{" "}
-            <a
-              className="font-medium text-stone-900 underline decoration-stone-400 underline-offset-2 hover:decoration-stone-600 dark:text-stone-100 dark:decoration-stone-500"
-              href="https://www.mdhumanities.org/events/"
-              rel="noreferrer"
-              target="_blank"
-            >
-              Maryland Humanities
-            </a>{" "}
-            programs load from The Events Calendar REST API for the month you
-            select.{" "}
-            <a
-              className="font-medium text-stone-900 underline decoration-stone-400 underline-offset-2 hover:decoration-stone-600 dark:text-stone-100 dark:decoration-stone-500"
-              href="https://writer.org/workshops/"
-              rel="noreferrer"
-              target="_blank"
-            >
-              The Writer&apos;s Center (Bethesda)
-            </a>{" "}
-            writing workshops load from their public events API for the month
-            you select. Eventbrite listings you own (or from organization IDs in{" "}
-            <code className="rounded bg-stone-200/80 px-1 py-0.5 text-xs dark:bg-stone-800">
-              EVENTBRITE_ORGANIZATION_IDS
-            </code>
-            ) appear when the venue is in the DMV; each event is placed by
-            location.
-          </>
-        ) : (
-          <>
-            {city.id === "la" ? (
-              <>
-                Los Angeles pulls a curated slice of{" "}
-                <a
-                  className="font-medium text-stone-900 underline decoration-stone-400 underline-offset-2 hover:decoration-stone-600 dark:text-stone-100 dark:decoration-stone-500"
-                  href="https://www.lapl.org/events"
-                  rel="noreferrer"
-                  target="_blank"
-                >
-                  LAPL&apos;s public events calendar
-                </a>{" "}
-                (authors, book clubs, writing, and closely related programs) for
-                the month you select, plus Eventbrite search results when your
-                API token is configured.{" "}
-              </>
-            ) : city.id === "nyc" || city.id === "sf" ? (
-              <>
-                Eventbrite events from your API token (and optional organization
-                IDs) show here when the venue maps to this metro.{" "}
-              </>
-            ) : null}
-            The calendar stays empty until real events are ingested from your
-            configured sources. Every row must use actual dates and verifiable
-            publisher data.
-          </>
-        )}
-      </p>
-
       <div className="flex flex-col gap-5 rounded-sm border border-stone-200/90 bg-[var(--surface)] p-5 shadow-sm dark:border-stone-700/80 dark:bg-stone-900/40 sm:p-6">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div className="min-w-0 flex-1">

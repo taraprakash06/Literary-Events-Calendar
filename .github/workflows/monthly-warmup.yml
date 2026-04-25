@@ -1,0 +1,39 @@
+name: Monthly ingestion warmup
+
+on:
+  schedule:
+    # 00:15 UTC on the 1st of every month
+    - cron: "15 0 1 * *"
+  workflow_dispatch:
+    inputs:
+      year:
+        description: "Year (e.g. 2026)"
+        required: false
+      month:
+        description: "Month 1-12 (e.g. 5)"
+        required: false
+
+jobs:
+  warm:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Warm ingestion caches
+        env:
+          BASE_URL: ${{ secrets.CALENDAR_BASE_URL }}
+          YEAR: ${{ inputs.year }}
+          MONTH: ${{ inputs.month }}
+        run: |
+          if [ -z "$BASE_URL" ]; then
+            echo "Missing secret CALENDAR_BASE_URL (e.g. https://your-app.example.com)" >&2
+            exit 1
+          fi
+
+          if [ -n "$YEAR" ] && [ -n "$MONTH" ]; then
+            URL="${BASE_URL%/}/api/ingestion/warm?year=${YEAR}&month=${MONTH}"
+          else
+            URL="${BASE_URL%/}/api/ingestion/warm"
+          fi
+
+          echo "GET $URL"
+          curl -fsSL "$URL"
+
