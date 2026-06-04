@@ -1,0 +1,14 @@
+# Render Blueprint — https://litlist.onrender.com
+services:
+  - type: web
+    name: litlist
+    runtime: node
+    plan: free
+    # Render sets NODE_ENV=production; devDeps (Tailwind, TS) are required to build.
+    buildCommand: NPM_CONFIG_PRODUCTION=false npm ci && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      - key: NEXT_PUBLIC_SITE_URL
+        value: https://litlist.onrender.com
