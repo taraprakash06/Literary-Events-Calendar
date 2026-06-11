@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { fetchWritersGrottoEventsForMonth } from "@/lib/writers-grotto";
+import { fetchShutUpAndWriteEventsForMonth } from "@/lib/shut-up-and-write";
 
 export const revalidate = 600;
 
@@ -13,13 +13,17 @@ export async function GET(req: Request) {
     Number.isFinite(m) && m >= 1 && m <= 12 ? m - 1 : now.getMonth();
 
   try {
-    const { events, meta } = await fetchWritersGrottoEventsForMonth(year, monthIndex);
+    const { events, meta } = await fetchShutUpAndWriteEventsForMonth(
+      year,
+      monthIndex,
+    );
     return NextResponse.json({
       events,
       meta: {
         year,
         month: monthIndex + 1,
-        source: "https://www.writersgrotto.org/classes-events",
+        source:
+          "https://www.meetup.com/shutupandwritesfo/events/314807057/",
         ...meta,
       },
     });
@@ -31,4 +35,3 @@ export async function GET(req: Request) {
     );
   }
 }
-

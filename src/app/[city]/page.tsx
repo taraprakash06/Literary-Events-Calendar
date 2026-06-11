@@ -23,12 +23,14 @@ export default async function CityCalendarPage({
           <div className="flex flex-wrap items-center gap-3 sm:gap-4">
             <LiteraryCalendarLogo className="h-10 w-10 shrink-0 text-stone-800 dark:text-stone-100 sm:h-12 sm:w-12" />
             <h1 className="font-serif text-3xl font-semibold tracking-tight text-stone-900 dark:text-stone-50 sm:text-4xl">
-              Literary Events Calendar
+              The Lit List
             </h1>
           </div>
           <p className="max-w-3xl text-lg leading-relaxed text-stone-700 dark:text-stone-300">
-            This project is designed to strengthen literary communities by making
-            existing events easier to find, attend, and support.
+            This calendar platform is designed to strengthen literary communities by
+            making existing events easier to find, attend, and support. Browse through
+            events happening in your area this month to see what you would want to
+            attend!
           </p>
           <p className="text-sm font-medium uppercase tracking-[0.12em] text-stone-500 dark:text-stone-400">
             {city.name}

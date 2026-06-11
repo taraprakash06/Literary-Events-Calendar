@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { fetchWritersCenterWorkshopsForMonth } from "@/lib/writers-center-client";
-import { mapTwcEventToWorkshop } from "@/lib/writers-center-map";
+import { mapTwcEventToWorkshops } from "@/lib/writers-center-map";
 
 export const revalidate = 600;
 
@@ -15,9 +15,7 @@ export async function GET(req: Request) {
 
   try {
     const raw = await fetchWritersCenterWorkshopsForMonth(year, monthIndex);
-    const events = raw
-      .map((row) => mapTwcEventToWorkshop(row))
-      .filter((e): e is NonNullable<typeof e> => e !== null);
+    const events = raw.flatMap((row) => mapTwcEventToWorkshops(row));
 
     return NextResponse.json({
       events,

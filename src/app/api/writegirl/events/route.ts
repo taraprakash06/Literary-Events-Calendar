@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { fetchWritersGrottoEventsForMonth } from "@/lib/writers-grotto";
+import { fetchWriteGirlEventsForMonth } from "@/lib/writegirl";
 
 export const revalidate = 600;
 
@@ -13,13 +13,13 @@ export async function GET(req: Request) {
     Number.isFinite(m) && m >= 1 && m <= 12 ? m - 1 : now.getMonth();
 
   try {
-    const { events, meta } = await fetchWritersGrottoEventsForMonth(year, monthIndex);
+    const { events, meta } = await fetchWriteGirlEventsForMonth(year, monthIndex);
     return NextResponse.json({
       events,
       meta: {
         year,
         month: monthIndex + 1,
-        source: "https://www.writersgrotto.org/classes-events",
+        source: "https://www.writegirl.org/calendar-view",
         ...meta,
       },
     });
@@ -31,4 +31,3 @@ export async function GET(req: Request) {
     );
   }
 }
-

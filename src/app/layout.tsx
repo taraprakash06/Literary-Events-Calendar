@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Newsreader } from "next/font/google";
+import { SITE_URL } from "@/lib/site-url";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -19,9 +20,15 @@ const newsreader = Newsreader({
 });
 
 export const metadata: Metadata = {
-  title: "Literary Events Calendar",
+  metadataBase: new URL(SITE_URL),
+  title: "The Lit List",
   description:
-    "Browse literary events by city — calendar and agenda views, filters, and search to support existing programs.",
+    "The Lit List — browse literary events by city with calendar and agenda views, filters, and search.",
+  openGraph: {
+    title: "The Lit List",
+    url: SITE_URL,
+    siteName: "The Lit List",
+  },
   icons: {
     icon: [{ url: "/icon.svg", type: "image/svg+xml" }],
     apple: [{ url: "/icon.svg", type: "image/svg+xml" }],

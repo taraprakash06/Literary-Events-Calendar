@@ -37,6 +37,7 @@ function endpointsForCity(cityId: string): string[] {
       "/api/scrawl-books/events",
       "/api/busboys-poets/events",
       "/api/mdhumanities/events",
+      "/api/planet-word/events",
       "/api/eventbrite/events",
     ];
   }
@@ -57,12 +58,18 @@ function endpointsForCity(cityId: string): string[] {
       "/api/lapl/events",
       "/api/lyric-hyperion/events",
       "/api/la-literature/annual-events",
+      "/api/last-bookstore/events",
+      "/api/skylight-books/events",
+      "/api/writegirl/events",
       "/api/eventbrite/events",
     ];
   }
   if (cityId === "sf") {
     return [
       "/api/sfpl/events",
+      "/api/writing-salon/events",
+      "/api/shut-up-and-write/events",
+      "/api/sf-writers-workshop/events",
       "/api/writers-grotto/events",
       "/api/eventbrite/events",
     ];

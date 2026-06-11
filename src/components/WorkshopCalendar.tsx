@@ -10,7 +10,6 @@ import { decodeHtmlEntities, stripHtmlAndDecode } from "@/lib/text";
 import {
   applyEventFilters,
   distinctCategories,
-  distinctNeighborhoods,
   monthRangeISO,
 } from "@/lib/event-query";
 import {
@@ -18,6 +17,9 @@ import {
   FORMAT_LABELS,
   PRICE_LABELS,
   type City,
+  ALL_EVENT_FORMATS,
+  ALL_PRICE_KINDS,
+  ALL_WORKSHOP_CATEGORIES,
   type EventFilters,
   type EventFormat,
   type PriceKind,
@@ -153,34 +155,10 @@ function useIsMobile(breakpoint = 768) {
   return isMobile;
 }
 
-function toggleInSet<T extends string>(
-  set: Set<T>,
-  value: T,
-  allValues: readonly T[],
-): Set<T> {
+function toggleFilterInSet<T extends string>(set: Set<T>, value: T): Set<T> {
   const next = new Set(set);
   if (next.has(value)) next.delete(value);
   else next.add(value);
-  if (next.size === 0) return new Set(allValues);
-  return next;
-}
-
-function toggleCategoryIncluded(
-  options: WorkshopEventCategory[],
-  prev: Set<WorkshopEventCategory> | null,
-  c: WorkshopEventCategory,
-): Set<WorkshopEventCategory> | null {
-  if (prev === null) {
-    return new Set([c]);
-  }
-  const next = new Set(prev);
-  if (next.has(c)) {
-    next.delete(c);
-    if (next.size === 0) return null;
-    return next;
-  }
-  next.add(c);
-  if (next.size === options.length) return null;
   return next;
 }
 
@@ -254,12 +232,11 @@ export function WorkshopCalendar({ city }: { city: City }) {
   const [filters, setFilters] = useState<EventFilters>(() => {
     const r = monthRangeISO(today.getFullYear(), today.getMonth());
     return {
-      formats: new Set<EventFormat>(["in-person", "virtual", "hybrid"]),
-      prices: new Set<PriceKind>(["free", "paid", "unknown"]),
-      categoryIncluded: null,
+      formats: new Set(ALL_EVENT_FORMATS),
+      prices: new Set(ALL_PRICE_KINDS),
+      categoryIncluded: new Set(ALL_WORKSHOP_CATEGORIES),
       rangeStart: r.start,
       rangeEnd: r.end,
-      neighborhood: "",
     };
   });
 
@@ -289,6 +266,7 @@ export function WorkshopCalendar({ city }: { city: City }) {
   const [scrawlBooksEvents, setScrawlBooksEvents] = useState<WorkshopEvent[]>([]);
   const [busboysPoetsEvents, setBusboysPoetsEvents] = useState<WorkshopEvent[]>([]);
   const [mdHumanitiesEvents, setMdHumanitiesEvents] = useState<WorkshopEvent[]>([]);
+  const [planetWordEvents, setPlanetWordEvents] = useState<WorkshopEvent[]>([]);
   const [eventbriteEvents, setEventbriteEvents] = useState<WorkshopEvent[]>([]);
   const [eventbriteMeta, setEventbriteMeta] = useState<
     | {
@@ -307,10 +285,26 @@ export function WorkshopCalendar({ city }: { city: City }) {
     [],
   );
   const [laAnnualEvents, setLaAnnualEvents] = useState<WorkshopEvent[]>([]);
+  const [lastBookstoreEvents, setLastBookstoreEvents] = useState<WorkshopEvent[]>(
+    [],
+  );
+  const [skylightBooksEvents, setSkylightBooksEvents] = useState<WorkshopEvent[]>(
+    [],
+  );
+  const [writegirlEvents, setWritegirlEvents] = useState<WorkshopEvent[]>([]);
   const [sfplEvents, setSfplEvents] = useState<WorkshopEvent[]>([]);
   const [writersGrottoEvents, setWritersGrottoEvents] = useState<WorkshopEvent[]>(
     [],
   );
+  const [writingSalonEvents, setWritingSalonEvents] = useState<WorkshopEvent[]>(
+    [],
+  );
+  const [shutUpAndWriteEvents, setShutUpAndWriteEvents] = useState<WorkshopEvent[]>(
+    [],
+  );
+  const [sfWritersWorkshopEvents, setSfWritersWorkshopEvents] = useState<
+    WorkshopEvent[]
+  >([]);
   const [catEvents, setCatEvents] = useState<WorkshopEvent[]>([]);
   const [nyplEvents, setNyplEvents] = useState<WorkshopEvent[]>([]);
   const [centerForFictionEvents, setCenterForFictionEvents] = useState<
@@ -330,6 +324,7 @@ export function WorkshopCalendar({ city }: { city: City }) {
       setScrawlBooksEvents([]);
       setBusboysPoetsEvents([]);
       setMdHumanitiesEvents([]);
+      setPlanetWordEvents([]);
       return;
     }
     const y = year;
@@ -338,7 +333,16 @@ export function WorkshopCalendar({ city }: { city: City }) {
     const q = `year=${y}&month=${m}&cityId=dmv`;
     (async () => {
       try {
-        const [dcRes, mcRes, twcRes, pnpRes, scrawlRes, busboysRes, mdHumRes] =
+        const [
+          dcRes,
+          mcRes,
+          twcRes,
+          pnpRes,
+          scrawlRes,
+          busboysRes,
+          mdHumRes,
+          pwRes,
+        ] =
           await Promise.all([
           fetch(`/api/dcpl/events?${q}`, { signal: ac.signal }),
           fetch(`/api/mcpl/events?${q}`, { signal: ac.signal }),
@@ -355,6 +359,9 @@ export function WorkshopCalendar({ city }: { city: City }) {
             signal: ac.signal,
           }),
           fetch(`/api/mdhumanities/events?year=${y}&month=${m}`, {
+            signal: ac.signal,
+          }),
+          fetch(`/api/planet-word/events?year=${y}&month=${m}`, {
             signal: ac.signal,
           }),
         ]);
@@ -379,6 +386,9 @@ export function WorkshopCalendar({ city }: { city: City }) {
         const mdHumJson = mdHumRes.ok
           ? ((await mdHumRes.json()) as { events?: WorkshopEvent[] })
           : {};
+        const pwJson = pwRes.ok
+          ? ((await pwRes.json()) as { events?: WorkshopEvent[] })
+          : {};
         const dcEv = Array.isArray(dcJson.events) ? dcJson.events : [];
         const mcEv = Array.isArray(mcJson.events) ? mcJson.events : [];
         const twcEv = Array.isArray(twcJson.events) ? twcJson.events : [];
@@ -386,12 +396,14 @@ export function WorkshopCalendar({ city }: { city: City }) {
         const scrawlEv = Array.isArray(scrawlJson.events) ? scrawlJson.events : [];
         const busboysEv = Array.isArray(busboysJson.events) ? busboysJson.events : [];
         const mdHumEv = Array.isArray(mdHumJson.events) ? mdHumJson.events : [];
+        const pwEv = Array.isArray(pwJson.events) ? pwJson.events : [];
         setLibnetEvents([...dcEv, ...mcEv]);
         setWritersCenterEvents(twcEv);
         setPoliticsProseEvents(pnpEv);
         setScrawlBooksEvents(scrawlEv);
         setBusboysPoetsEvents(busboysEv);
         setMdHumanitiesEvents(mdHumEv);
+        setPlanetWordEvents(pwEv);
       } catch (e) {
         if ((e as Error).name === "AbortError") return;
         setLibnetEvents([]);
@@ -400,6 +412,7 @@ export function WorkshopCalendar({ city }: { city: City }) {
         setScrawlBooksEvents([]);
         setBusboysPoetsEvents([]);
         setMdHumanitiesEvents([]);
+        setPlanetWordEvents([]);
       }
     })();
     return () => ac.abort();
@@ -410,6 +423,9 @@ export function WorkshopCalendar({ city }: { city: City }) {
       setLaplEvents([]);
       setLyricHyperionEvents([]);
       setLaAnnualEvents([]);
+      setLastBookstoreEvents([]);
+      setSkylightBooksEvents([]);
+      setWritegirlEvents([]);
       return;
     }
     const y = year;
@@ -417,12 +433,28 @@ export function WorkshopCalendar({ city }: { city: City }) {
     const ac = new AbortController();
     (async () => {
       try {
-        const [laplRes, lyricRes, annualRes] = await Promise.all([
+        const [
+          laplRes,
+          lyricRes,
+          annualRes,
+          lastBookstoreRes,
+          skylightRes,
+          writegirlRes,
+        ] = await Promise.all([
           fetch(`/api/lapl/events?year=${y}&month=${m}`, { signal: ac.signal }),
           fetch(`/api/lyric-hyperion/events?year=${y}&month=${m}`, {
             signal: ac.signal,
           }),
           fetch(`/api/la-literature/annual-events?year=${y}&month=${m}`, {
+            signal: ac.signal,
+          }),
+          fetch(`/api/last-bookstore/events?year=${y}&month=${m}`, {
+            signal: ac.signal,
+          }),
+          fetch(`/api/skylight-books/events?year=${y}&month=${m}`, {
+            signal: ac.signal,
+          }),
+          fetch(`/api/writegirl/events?year=${y}&month=${m}`, {
             signal: ac.signal,
           }),
         ]);
@@ -436,6 +468,15 @@ export function WorkshopCalendar({ city }: { city: City }) {
         const annualBody = annualRes.ok
           ? ((await annualRes.json()) as { events?: WorkshopEvent[] })
           : {};
+        const lastBookstoreBody = lastBookstoreRes.ok
+          ? ((await lastBookstoreRes.json()) as { events?: WorkshopEvent[] })
+          : {};
+        const skylightBody = skylightRes.ok
+          ? ((await skylightRes.json()) as { events?: WorkshopEvent[] })
+          : {};
+        const writegirlBody = writegirlRes.ok
+          ? ((await writegirlRes.json()) as { events?: WorkshopEvent[] })
+          : {};
 
         setLaplEvents(Array.isArray(laplBody.events) ? laplBody.events : []);
         setLyricHyperionEvents(
@@ -444,11 +485,25 @@ export function WorkshopCalendar({ city }: { city: City }) {
         setLaAnnualEvents(
           Array.isArray(annualBody.events) ? annualBody.events : [],
         );
+        setLastBookstoreEvents(
+          Array.isArray(lastBookstoreBody.events)
+            ? lastBookstoreBody.events
+            : [],
+        );
+        setSkylightBooksEvents(
+          Array.isArray(skylightBody.events) ? skylightBody.events : [],
+        );
+        setWritegirlEvents(
+          Array.isArray(writegirlBody.events) ? writegirlBody.events : [],
+        );
       } catch (e) {
         if ((e as Error).name === "AbortError") return;
         setLaplEvents([]);
         setLyricHyperionEvents([]);
         setLaAnnualEvents([]);
+        setLastBookstoreEvents([]);
+        setSkylightBooksEvents([]);
+        setWritegirlEvents([]);
       }
     })();
     return () => ac.abort();
@@ -457,6 +512,9 @@ export function WorkshopCalendar({ city }: { city: City }) {
   useEffect(() => {
     if (city.id !== "sf") {
       setSfplEvents([]);
+      setWritingSalonEvents([]);
+      setShutUpAndWriteEvents([]);
+      setSfWritersWorkshopEvents([]);
       return;
     }
     const y = year;
@@ -464,18 +522,49 @@ export function WorkshopCalendar({ city }: { city: City }) {
     const ac = new AbortController();
     (async () => {
       try {
-        const res = await fetch(`/api/sfpl/events?year=${y}&month=${m}`, {
-          signal: ac.signal,
-        });
-        if (!res.ok) {
-          setSfplEvents([]);
-          return;
-        }
-        const body = (await res.json()) as { events?: WorkshopEvent[] };
-        setSfplEvents(Array.isArray(body.events) ? body.events : []);
+        const [sfplRes, writingSalonRes, shutUpAndWriteRes, sfwwRes] =
+          await Promise.all([
+          fetch(`/api/sfpl/events?year=${y}&month=${m}`, { signal: ac.signal }),
+          fetch(`/api/writing-salon/events?year=${y}&month=${m}`, {
+            signal: ac.signal,
+          }),
+          fetch(`/api/shut-up-and-write/events?year=${y}&month=${m}`, {
+            signal: ac.signal,
+          }),
+          fetch(`/api/sf-writers-workshop/events?year=${y}&month=${m}`, {
+            signal: ac.signal,
+          }),
+        ]);
+        const sfplBody = sfplRes.ok
+          ? ((await sfplRes.json()) as { events?: WorkshopEvent[] })
+          : {};
+        const writingSalonBody = writingSalonRes.ok
+          ? ((await writingSalonRes.json()) as { events?: WorkshopEvent[] })
+          : {};
+        const shutUpAndWriteBody = shutUpAndWriteRes.ok
+          ? ((await shutUpAndWriteRes.json()) as { events?: WorkshopEvent[] })
+          : {};
+        const sfwwBody = sfwwRes.ok
+          ? ((await sfwwRes.json()) as { events?: WorkshopEvent[] })
+          : {};
+        setSfplEvents(Array.isArray(sfplBody.events) ? sfplBody.events : []);
+        setWritingSalonEvents(
+          Array.isArray(writingSalonBody.events) ? writingSalonBody.events : [],
+        );
+        setShutUpAndWriteEvents(
+          Array.isArray(shutUpAndWriteBody.events)
+            ? shutUpAndWriteBody.events
+            : [],
+        );
+        setSfWritersWorkshopEvents(
+          Array.isArray(sfwwBody.events) ? sfwwBody.events : [],
+        );
       } catch (e) {
         if ((e as Error).name === "AbortError") return;
         setSfplEvents([]);
+        setWritingSalonEvents([]);
+        setShutUpAndWriteEvents([]);
+        setSfWritersWorkshopEvents([]);
       }
     })();
     return () => ac.abort();
@@ -775,10 +864,17 @@ export function WorkshopCalendar({ city }: { city: City }) {
     const scrawl = city.id === "dmv" ? scrawlBooksEvents : [];
     const busboys = city.id === "dmv" ? busboysPoetsEvents : [];
     const mdHum = city.id === "dmv" ? mdHumanitiesEvents : [];
+    const pw = city.id === "dmv" ? planetWordEvents : [];
     const lapl = city.id === "la" ? laplEvents : [];
     const lyric = city.id === "la" ? lyricHyperionEvents : [];
     const annual = city.id === "la" ? laAnnualEvents : [];
+    const lastBookstore = city.id === "la" ? lastBookstoreEvents : [];
+    const skylight = city.id === "la" ? skylightBooksEvents : [];
+    const writegirl = city.id === "la" ? writegirlEvents : [];
     const sfpl = city.id === "sf" ? sfplEvents : [];
+    const writingSalon = city.id === "sf" ? writingSalonEvents : [];
+    const shutUpAndWrite = city.id === "sf" ? shutUpAndWriteEvents : [];
+    const sfww = city.id === "sf" ? sfWritersWorkshopEvents : [];
     const wg = city.id === "sf" ? writersGrottoEvents : [];
     const cat = city.id === "sf" ? catEvents : [];
     const nypl = city.id === "nyc" ? nyplEvents : [];
@@ -803,10 +899,17 @@ export function WorkshopCalendar({ city }: { city: City }) {
       ...scrawl,
       ...busboys,
       ...mdHum,
+      ...pw,
       ...lapl,
       ...lyric,
       ...annual,
+      ...lastBookstore,
+      ...skylight,
+      ...writegirl,
       ...sfpl,
+      ...writingSalon,
+      ...shutUpAndWrite,
+      ...sfww,
       ...wg,
       ...cat,
       ...nypl,
@@ -826,10 +929,17 @@ export function WorkshopCalendar({ city }: { city: City }) {
     scrawlBooksEvents,
     busboysPoetsEvents,
     mdHumanitiesEvents,
+    planetWordEvents,
     laplEvents,
     lyricHyperionEvents,
     laAnnualEvents,
+    lastBookstoreEvents,
+    skylightBooksEvents,
+    writegirlEvents,
     sfplEvents,
+    writingSalonEvents,
+    shutUpAndWriteEvents,
+    sfWritersWorkshopEvents,
     writersGrottoEvents,
     catEvents,
     nyplEvents,
@@ -841,10 +951,6 @@ export function WorkshopCalendar({ city }: { city: City }) {
     nuyoricanEvents,
     eventbriteEvents,
   ]);
-  const neighborhoods = useMemo(
-    () => distinctNeighborhoods(cityEvents),
-    [cityEvents],
-  );
   const categoryOptions = useMemo(
     () => distinctCategories(cityEvents),
     [cityEvents],
@@ -974,11 +1080,11 @@ export function WorkshopCalendar({ city }: { city: City }) {
     }
 
     if (city.id === "dmv") {
-      return "No DMV listings for this month from the libraries, Scrawl Books, Busboys and Poets, Maryland Humanities, Politics and Prose, The Writer's Center, or Eventbrite — or one of the feeds could not be reached. Try another month or check your connection.";
+      return "No DMV listings for this month from the libraries, Scrawl Books, Busboys and Poets, Maryland Humanities, Politics and Prose, The Writer's Center, Planet Word, or Eventbrite — or one of the feeds could not be reached. Try another month or check your connection.";
     }
 
     if (city.id === "la") {
-      return "No LA listings for this month from LAPL, Lyric Hyperion, Los Angeles Literature (annual events index), or Eventbrite, or a feed could not be reached. Try another month or check your connection.";
+      return "No LA listings for this month from LAPL, Lyric Hyperion, Los Angeles Literature (annual events index), The Last Bookstore, Skylight Books, WriteGirl, or Eventbrite, or a feed could not be reached. Try another month or check your connection.";
     }
 
     if (eventbriteMeta?.configured === false) {
@@ -993,7 +1099,7 @@ export function WorkshopCalendar({ city }: { city: City }) {
     }
 
     if (city.id === "sf") {
-      return "No SF listings were returned for this month from SFPL or Eventbrite. Try another month or check that Eventbrite org IDs include SF organizers.";
+      return "No SF listings were returned for this month from SFPL, The Writing Salon, San Francisco Writers Workshop, The Writers Grotto, Shut Up & Write!® (Meetup), or Eventbrite. Try another month or check that Eventbrite org IDs include SF organizers.";
     }
 
     return "No verified events loaded for this city yet. Wire ingestion (Eventbrite, library calendars, RSS, etc.) so only real dated listings appear here.";
@@ -1056,25 +1162,16 @@ export function WorkshopCalendar({ city }: { city: City }) {
               <legend className="text-xs text-stone-600 dark:text-stone-400">
                 Format
               </legend>
-              <p className="mt-0.5 text-[11px] text-stone-500 dark:text-stone-500">
-                Highlighted formats are included; tap to exclude one.
-              </p>
-              <div className="mt-2 flex flex-wrap gap-2">
-                {(
-                  ["in-person", "virtual", "hybrid"] as EventFormat[]
-                ).map((f) => (
-                  <FilterChip
+              <div className="mt-2 flex flex-col gap-2">
+                {ALL_EVENT_FORMATS.map((f) => (
+                  <FilterCheckbox
                     key={f}
                     label={FORMAT_LABELS[f]}
-                    active={filters.formats.has(f)}
-                    onClick={() =>
+                    checked={filters.formats.has(f)}
+                    onChange={() =>
                       setFilters((prev) => ({
                         ...prev,
-                        formats: toggleInSet(prev.formats, f, [
-                          "in-person",
-                          "virtual",
-                          "hybrid",
-                        ]),
+                        formats: toggleFilterInSet(prev.formats, f),
                       }))
                     }
                   />
@@ -1085,20 +1182,16 @@ export function WorkshopCalendar({ city }: { city: City }) {
               <legend className="text-xs text-stone-600 dark:text-stone-400">
                 Price
               </legend>
-              <div className="mt-2 flex flex-wrap gap-2">
-                {(["free", "paid", "unknown"] as PriceKind[]).map((p) => (
-                  <FilterChip
+              <div className="mt-2 flex flex-col gap-2">
+                {ALL_PRICE_KINDS.map((p) => (
+                  <FilterCheckbox
                     key={p}
                     label={PRICE_LABELS[p]}
-                    active={filters.prices.has(p)}
-                    onClick={() =>
+                    checked={filters.prices.has(p)}
+                    onChange={() =>
                       setFilters((prev) => ({
                         ...prev,
-                        prices: toggleInSet(prev.prices, p, [
-                          "free",
-                          "paid",
-                          "unknown",
-                        ]),
+                        prices: toggleFilterInSet(prev.prices, p),
                       }))
                     }
                   />
@@ -1109,23 +1202,16 @@ export function WorkshopCalendar({ city }: { city: City }) {
               <legend className="text-xs text-stone-600 dark:text-stone-400">
                 Event type
               </legend>
-              <p className="mt-0.5 text-[11px] text-stone-500 dark:text-stone-500">
-                Tap to narrow; all chips highlighted means every type.
-              </p>
-              <div className="mt-2 flex flex-wrap gap-2">
+              <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
                 {categoryOptions.map((c) => (
-                  <FilterChip
+                  <FilterCheckbox
                     key={c}
                     label={CATEGORY_LABELS[c]}
-                    active={
-                      filters.categoryIncluded === null ||
-                      filters.categoryIncluded.has(c)
-                    }
-                    onClick={() =>
+                    checked={filters.categoryIncluded.has(c)}
+                    onChange={() =>
                       setFilters((prev) => ({
                         ...prev,
-                        categoryIncluded: toggleCategoryIncluded(
-                          categoryOptions,
+                        categoryIncluded: toggleFilterInSet(
                           prev.categoryIncluded,
                           c,
                         ),
@@ -1139,7 +1225,7 @@ export function WorkshopCalendar({ city }: { city: City }) {
 
           <details className="mt-4 rounded-sm border border-stone-200/70 dark:border-stone-700/70">
             <summary className="cursor-pointer px-3 py-2.5 text-sm font-medium text-stone-700 dark:text-stone-300">
-              More filters — dates &amp; neighborhood
+              More filters — dates
             </summary>
             <div className="space-y-4 border-t border-stone-200/70 px-3 py-4 dark:border-stone-700/70">
               <div className="grid gap-3 sm:grid-cols-2">
@@ -1172,28 +1258,6 @@ export function WorkshopCalendar({ city }: { city: City }) {
                   />
                 </label>
               </div>
-              {neighborhoods.length > 0 ? (
-                <label className="flex max-w-md flex-col gap-1 text-sm">
-                  <span className="text-xs text-stone-500">Neighborhood</span>
-                  <select
-                    value={filters.neighborhood}
-                    onChange={(e) =>
-                      setFilters((prev) => ({
-                        ...prev,
-                        neighborhood: e.target.value,
-                      }))
-                    }
-                    className="rounded-sm border border-stone-200 bg-white px-3 py-2 text-sm dark:border-stone-600 dark:bg-stone-950"
-                  >
-                    <option value="">All neighborhoods</option>
-                    {neighborhoods.map((n) => (
-                      <option key={n} value={n}>
-                        {n}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              ) : null}
             </div>
           </details>
         </div>
@@ -1634,28 +1698,25 @@ function formatWhen(ev: WorkshopEvent) {
   return dt.toFormat("ccc, LLL d, h:mm a");
 }
 
-function FilterChip({
+function FilterCheckbox({
   label,
-  active,
-  onClick,
+  checked,
+  onChange,
 }: {
   label: string;
-  active: boolean;
-  onClick: () => void;
+  checked: boolean;
+  onChange: () => void;
 }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={[
-        "min-h-9 rounded-full px-3 py-1.5 text-xs font-medium transition",
-        active
-          ? "bg-stone-900 text-[var(--surface)] dark:bg-stone-100 dark:text-stone-900"
-          : "border border-stone-200 bg-white text-stone-500 line-through decoration-stone-400 dark:border-stone-600 dark:bg-stone-950 dark:text-stone-500",
-      ].join(" ")}
-    >
-      {label}
-    </button>
+    <label className="inline-flex min-h-9 cursor-pointer items-center gap-2 text-sm text-stone-800 dark:text-stone-200">
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={onChange}
+        className="h-4 w-4 shrink-0 rounded border-stone-300 text-rose-900 focus:ring-rose-900/25 dark:border-stone-600 dark:bg-stone-950"
+      />
+      <span>{label}</span>
+    </label>
   );
 }
 

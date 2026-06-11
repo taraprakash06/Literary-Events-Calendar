@@ -24,7 +24,7 @@ jobs:
           MONTH: ${{ inputs.month }}
         run: |
           if [ -z "$BASE_URL" ]; then
-            echo "Missing secret CALENDAR_BASE_URL (e.g. https://your-app.example.com)" >&2
+            echo "Missing secret CALENDAR_BASE_URL (e.g. https://litlist.onrender.com)" >&2
             exit 1
           fi
 

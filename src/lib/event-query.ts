@@ -7,9 +7,6 @@ import type {
 } from "@/lib/workshop-types";
 import { DateTime } from "luxon";
 
-const ALL_FORMATS: EventFormat[] = ["in-person", "virtual", "hybrid"];
-const ALL_PRICES: PriceKind[] = ["free", "paid", "unknown"];
-
 function parseStart(ev: WorkshopEvent): number {
   const dt = DateTime.fromISO(ev.start, { setZone: true });
   const zoned = ev.timeZone ? dt.setZone(ev.timeZone) : dt.toLocal();
@@ -55,55 +52,21 @@ export function matchesSearch(ev: WorkshopEvent, q: string): boolean {
   return hay.includes(s);
 }
 
-function effectiveFormats(filters: EventFilters): Set<EventFormat> {
-  return filters.formats.size === 0
-    ? new Set(ALL_FORMATS)
-    : filters.formats;
-}
-
-function effectivePrices(filters: EventFilters): Set<PriceKind> {
-  return filters.prices.size === 0 ? new Set(ALL_PRICES) : filters.prices;
-}
-
 export function applyEventFilters(
   events: WorkshopEvent[],
   filters: EventFilters,
   search: string,
 ): WorkshopEvent[] {
-  const fmt = effectiveFormats(filters);
-  const price = effectivePrices(filters);
   return events.filter((ev) => {
-    if (!fmt.has(ev.format)) return false;
-    if (!price.has(ev.price)) return false;
-    if (filters.categoryIncluded !== null) {
-      if (
-        filters.categoryIncluded.size === 0 ||
-        !filters.categoryIncluded.has(ev.category)
-      ) {
-        return false;
-      }
-    }
-    if (
-      filters.neighborhood &&
-      (ev.neighborhood ?? "").toLowerCase() !==
-        filters.neighborhood.toLowerCase()
-    ) {
-      return false;
-    }
+    if (!filters.formats.has(ev.format)) return false;
+    if (!filters.prices.has(ev.price)) return false;
+    if (!filters.categoryIncluded.has(ev.category)) return false;
     if (!eventOccursInRange(ev, filters.rangeStart, filters.rangeEnd)) {
       return false;
     }
     if (!matchesSearch(ev, search)) return false;
     return true;
   });
-}
-
-export function distinctNeighborhoods(events: WorkshopEvent[]): string[] {
-  const set = new Set<string>();
-  for (const e of events) {
-    if (e.neighborhood?.trim()) set.add(e.neighborhood.trim());
-  }
-  return [...set].sort((a, b) => a.localeCompare(b));
 }
 
 export function distinctCategories(

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { fetchWritersGrottoEventsForMonth } from "@/lib/writers-grotto";
+import { fetchWritingSalonEventsForMonth } from "@/lib/writing-salon-client";
+import { mapWritingSalonEventToWorkshops } from "@/lib/writing-salon-map";
 
 export const revalidate = 600;
 
@@ -13,14 +14,17 @@ export async function GET(req: Request) {
     Number.isFinite(m) && m >= 1 && m <= 12 ? m - 1 : now.getMonth();
 
   try {
-    const { events, meta } = await fetchWritersGrottoEventsForMonth(year, monthIndex);
+    const raw = await fetchWritingSalonEventsForMonth(year, monthIndex);
+    const events = raw.flatMap((row) => mapWritingSalonEventToWorkshops(row));
+
     return NextResponse.json({
       events,
       meta: {
         year,
         month: monthIndex + 1,
-        source: "https://www.writersgrotto.org/classes-events",
-        ...meta,
+        source: "https://www.writingsalons.com/all-classes/",
+        fetched: raw.length,
+        rowsInMonth: events.length,
       },
     });
   } catch (e) {
@@ -31,4 +35,3 @@ export async function GET(req: Request) {
     );
   }
 }
-

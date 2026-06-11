@@ -4,6 +4,25 @@ import type { EventFormat, WorkshopEvent, WorkshopEventCategory } from "@/lib/wo
 import { DateTime } from "luxon";
 import { decodeHtmlEntities, toShortOverview } from "@/lib/text";
 
+/** Venue codes from busboysandpoets.com/events (see /contactus/). */
+const BUSBOYS_VENUE_ADDRESSES: Record<string, string> = {
+  "14th & V": "2021 14th Street NW, Washington, District of Columbia, 20009",
+  "450K": "450 K St NW, Washington, District of Columbia, 20001",
+  Anacostia: "2004 Martin Luther King Jr Ave SE, Washington, District of Columbia, 20020",
+  Brookland: "625 Monroe St NE, Washington, District of Columbia, 20017",
+  Columbia: "6251 Mango Tree Road, Columbia, Maryland, 21044",
+  Hyattsville: "5331 Baltimore Avenue, Hyattsville, Maryland, 20781",
+  Shirlington: "4251 Campbell Avenue, Arlington, Virginia, 22206",
+  Takoma: "235 Carroll St NW, Washington, District of Columbia, 20012",
+  Baltimore: "3224 St. Paul Street, Baltimore, Maryland, 21218",
+};
+
+function busboysVenueAddress(venueCode: string): string | undefined {
+  const key = venueCode.trim();
+  if (!key) return undefined;
+  return BUSBOYS_VENUE_ADDRESSES[key];
+}
+
 function cleanTitle(raw: string): string {
   return decodeHtmlEntities(raw).replace(/\s+/g, " ").trim();
 }
@@ -47,7 +66,12 @@ function shouldExclude(row: BusboysEventsMoreRow): boolean {
 
 export function mapBusboysRowToWorkshop(
   row: BusboysEventsMoreRow,
-  opts: { monthStart: DateTime; monthEnd: DateTime },
+  opts: {
+    monthStart: DateTime;
+    monthEnd: DateTime;
+    /** Full title from event page when API name is truncated with &hellip; */
+    titleOverride?: string;
+  },
 ): WorkshopEvent | null {
   if (shouldExclude(row)) return null;
 
@@ -55,7 +79,7 @@ export function mapBusboysRowToWorkshop(
   if (!start) return null;
   if (start < opts.monthStart || start > opts.monthEnd) return null;
 
-  const title = cleanTitle(row.name);
+  const title = cleanTitle(opts.titleOverride ?? row.name).replace(/\u2026\s*$/g, "").trim();
   if (!title) return null;
 
   const catLabel = (row.category ?? "").replace(/\|\s*$/g, "").trim();
@@ -89,6 +113,7 @@ export function mapBusboysRowToWorkshop(
     category,
     organizer: "Busboys and Poets",
     venue,
+    address: busboysVenueAddress(venuePart),
     virtualLabel: format === "virtual" ? "Online" : undefined,
     rsvpUrl: row.url?.trim() || undefined,
     source: "Busboys and Poets (busboysandpoets.com)",

@@ -38,7 +38,7 @@ function monthStartQueryDate(year: number, monthIndex: number): string {
   return `${mm}-01-${year}`;
 }
 
-function parseRowStart(row: BusboysEventsMoreRow): DateTime | null {
+export function parseBusboysRowStart(row: BusboysEventsMoreRow): DateTime | null {
   const raw = (row.date ?? "").trim();
   if (!raw) return null;
   const dt = DateTime.fromFormat(raw, "LLL d, yyyy h:mm a", { zone: TZ });
@@ -88,7 +88,7 @@ export async function fetchBusboysPoetsEventRowsFromMonthStart(
     out.push(...batch);
 
     const starts = batch
-      .map(parseRowStart)
+      .map(parseBusboysRowStart)
       .filter((d): d is DateTime => d !== null);
     if (
       starts.length > 0 &&

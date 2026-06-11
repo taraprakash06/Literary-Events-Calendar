@@ -67,14 +67,27 @@ export type WorkshopEvent = {
 };
 
 export type EventFilters = {
+  /** Checked = included; unchecked = excluded */
   formats: Set<EventFormat>;
   prices: Set<PriceKind>;
-  /** `null` = all categories; otherwise only types in the set */
-  categoryIncluded: Set<WorkshopEventCategory> | null;
+  categoryIncluded: Set<WorkshopEventCategory>;
   rangeStart: string;
   rangeEnd: string;
-  neighborhood: string;
 };
+
+export const ALL_EVENT_FORMATS: EventFormat[] = ["in-person", "virtual", "hybrid"];
+export const ALL_PRICE_KINDS: PriceKind[] = ["free", "paid", "unknown"];
+export const ALL_WORKSHOP_CATEGORIES: WorkshopEventCategory[] = [
+  "reading",
+  "workshop",
+  "open-mic",
+  "festival",
+  "book-club",
+  "panel",
+  "launch",
+  "theater",
+  "other",
+];
 
 export const CATEGORY_LABELS: Record<WorkshopEventCategory, string> = {
   reading: "Reading",

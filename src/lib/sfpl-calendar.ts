@@ -80,10 +80,12 @@ function parseTeasers(html: string): SfplRawTeaser[] {
 
     const location =
       decodeHtmlEntities(
-        stripTags(
-          block.match(/field--name-field-event-location[\s\S]*?<\/div>\s*<\/div>/i)?.[0] ?? "",
-        ),
-      ) || "";
+        block.match(/field--name-field-event-location[\s\S]*?<a[^>]*>([^<]+)<\/a>/i)?.[1] ??
+          block.match(
+            /field--name-field-event-location[\s\S]*?field__item[^>]*>([^<]+)</i,
+          )?.[1] ??
+          "",
+      ).trim();
 
     const topicMatches = [...block.matchAll(/field--name-field-event-topic[\s\S]*?<a[^>]*>([^<]+)<\/a>/gi)];
     const topics = topicMatches.map((x) => decodeHtmlEntities(x[1]).trim()).filter(Boolean);
@@ -178,7 +180,10 @@ export function mapSfplTeaserToWorkshop(teaser: SfplRawTeaser): WorkshopEvent | 
     category,
     organizer: "San Francisco Public Library",
     venue: teaser.location || "San Francisco Public Library",
-    neighborhood: teaser.location || undefined,
+    neighborhood:
+      teaser.location && !/field--|field__/.test(teaser.location)
+        ? teaser.location
+        : undefined,
     virtualLabel,
     rsvpUrl,
     source: "SFPL — Events",
