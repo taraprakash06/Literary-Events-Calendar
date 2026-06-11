@@ -24,8 +24,8 @@ type RawCard = {
 function mapCategory(title: string): WorkshopEventCategory {
   const b = title.toLowerCase();
   if (/\bworkshop|class\b/.test(b)) return "workshop";
-  if (/\bpanel|talk|conversation|seminar\b/.test(b)) return "panel";
-  if (/\blaunch\b/.test(b)) return "launch";
+  if (/\bpanel|talk|conversation|seminar\b/.test(b)) return "other";
+  if (/\blaunch\b/.test(b)) return "reading";
   if (/\bread|reading\b/.test(b)) return "reading";
   return "reading";
 }

@@ -1,4 +1,5 @@
 import type { ScrawlEventV2Row, ScrawlStoreInfo } from "@/lib/scrawl-books-client";
+import { isTheaterEventText } from "@/lib/event-category";
 import type { EventFormat, WorkshopEvent, WorkshopEventCategory } from "@/lib/workshop-types";
 import { DateTime } from "luxon";
 import { stripHtmlAndDecode, toShortOverview } from "@/lib/text";
@@ -16,14 +17,14 @@ function publicSiteOrigin(store: ScrawlStoreInfo): string {
 
 function mapCategory(name: string | undefined): WorkshopEventCategory {
   const n = (name ?? "").toLowerCase();
-  if (n.includes("book club")) return "book-club";
+  if (n.includes("book club")) return "other";
   if (n.includes("storytime")) return "reading";
   if (n.includes("workshop") || n.includes("writing")) return "workshop";
-  if (n.includes("panel") || n.includes("discussion")) return "panel";
-  if (n.includes("launch") || n.includes("signing")) return "launch";
-  if (n.includes("festival")) return "festival";
+  if (n.includes("panel") || n.includes("discussion")) return "other";
+  if (n.includes("launch") || n.includes("signing")) return "reading";
+  if (n.includes("festival")) return "other";
   if (n.includes("open mic") || n.includes("open-mic")) return "open-mic";
-  if (n.includes("theater") || n.includes("theatre")) return "theater";
+  if (n.includes("theater") || n.includes("theatre")) return "other";
   if (n.includes("author") || n.includes("reading") || n.includes("offsite")) return "reading";
   return "other";
 }
@@ -77,6 +78,7 @@ export function mapScrawlEventRowToWorkshop(
 
   const title = (row.title ?? "").trim();
   if (!title) return null;
+  if (isTheaterEventText(title, row.summary, row.description)) return null;
 
   const origin = publicSiteOrigin(store);
   const rsvpUrl = `${origin}/events/${row.id}`;

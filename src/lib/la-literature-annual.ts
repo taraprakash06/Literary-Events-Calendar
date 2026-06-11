@@ -42,11 +42,11 @@ function normalizeWhere(where: string): { venue?: string; address?: string; neig
 
 function inferCategory(name: string, about: string): WorkshopEventCategory {
   const b = `${name}\n${about}`.toLowerCase();
-  if (/\b(zine)\b/.test(b)) return "festival";
-  if (/\b(book festival|book fair|litfest|literary festival|festival)\b/.test(b)) return "festival";
-  if (/\b(conference|writers conference)\b/.test(b)) return "festival";
+  if (/\b(zine)\b/.test(b)) return "other";
+  if (/\b(book festival|book fair|litfest|literary festival|festival)\b/.test(b)) return "other";
+  if (/\b(conference|writers conference)\b/.test(b)) return "other";
   if (/\b(workshop|retreat)\b/.test(b)) return "workshop";
-  if (/\b(panel|conversation|talk)\b/.test(b)) return "panel";
+  if (/\b(panel|conversation|talk)\b/.test(b)) return "other";
   if (/\bpoetry\b/.test(b)) return "reading";
   return "other";
 }

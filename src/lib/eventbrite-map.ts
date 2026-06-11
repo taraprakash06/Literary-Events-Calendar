@@ -1,3 +1,4 @@
+import { isTheaterEventText } from "@/lib/event-category";
 import type {
   EventFormat,
   WorkshopEvent,
@@ -101,14 +102,14 @@ function mapCategory(ev: EbEventResource): WorkshopEventCategory {
   ).toLowerCase();
   const hay = `${t}\n${d}`;
 
-  if (/(book\s*club|book\s+discussion|reading\s+group)/.test(hay)) return "book-club";
+  if (/(book\s*club|book\s+discussion|reading\s+group)/.test(hay)) return "other";
   if (/(open\s*mic|mic\s*night|slam)/.test(hay)) return "open-mic";
   if (/(workshop|writing\s+workshop|creative\s+writing|screenwriting|memoir|novel|short\s+story|critique|writers'?(\s+)?group)/.test(hay))
     return "workshop";
   if (/(poetry\s+reading|reading\b|author\s+talk|author\s+reading)/.test(hay)) return "reading";
-  if (/(panel|conversation|in\s+conversation)/.test(hay)) return "panel";
-  if (/(festival)/.test(hay)) return "festival";
-  if (/(launch|book\s+launch)/.test(hay)) return "launch";
+  if (/(panel|conversation|in\s+conversation)/.test(hay)) return "other";
+  if (/(festival)/.test(hay)) return "other";
+  if (/(launch|book\s+launch)/.test(hay)) return "reading";
 
   return "other";
 }
@@ -129,12 +130,15 @@ export function mapEbEventToWorkshop(
   const title = textField(ev.name);
   if (!title) return null;
 
-  const summary = textField(ev.summary);
+  const summaryPlain = textField(ev.summary);
+  const descriptionPlain = textField(ev.description);
+  if (isTheaterEventText(title, summaryPlain, descriptionPlain)) return null;
+
   const description =
     (ev.description?.html ? toShortOverview(ev.description.html, 360) : "") ||
     (ev.summary?.html ? toShortOverview(ev.summary.html, 240) : "") ||
-    textField(ev.description) ||
-    summary ||
+    descriptionPlain ||
+    summaryPlain ||
     "Details on Eventbrite.";
 
   const venue = ev.venue;
@@ -167,7 +171,7 @@ export function mapEbEventToWorkshop(
     id: `eb-${ev.id}`,
     cityId,
     title,
-    tagline: summary || "",
+    tagline: summaryPlain || "",
     description: description.slice(0, 4000),
     start: startIso,
     end: endIso,

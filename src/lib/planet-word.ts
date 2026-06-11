@@ -45,8 +45,8 @@ function categoryFrom(kind: string | undefined, title: string): WorkshopEventCat
   const b = `${kind ?? ""}\n${title}`.toLowerCase();
   if (/\b(workshop|classroom practice)\b/.test(b)) return "workshop";
   if (/\b(poetry|reading)\b/.test(b)) return "reading";
-  if (/\b(festival)\b/.test(b)) return "festival";
-  if (/\b(conversation|discourse|series)\b/.test(b)) return "panel";
+  if (/\b(festival)\b/.test(b)) return "other";
+  if (/\b(conversation|discourse|series)\b/.test(b)) return "other";
   return "other";
 }
 

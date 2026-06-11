@@ -1,3 +1,4 @@
+import { isLibNetTheaterTags, isTheaterEventText } from "@/lib/event-category";
 import type { WorkshopEvent, WorkshopEventCategory } from "@/lib/workshop-types";
 import type { DcplLibnetRawEvent } from "@/lib/dcpl-libnet";
 import { DCPL_DEFAULT_EVENT_TYPE, mapLibNetAttendanceFormat } from "@/lib/dcpl-libnet";
@@ -33,10 +34,10 @@ function stripHtml(html: string): string {
 
 function mapCategory(tags: string[] | undefined): WorkshopEventCategory {
   const t = new Set((tags ?? []).map((x) => x.toLowerCase()));
-  if (t.has("book club")) return "book-club";
+  if (t.has("book club")) return "other";
   if (t.has("open mic") || t.has("open mic / spoken word")) return "open-mic";
-  if (t.has("festival")) return "festival";
-  if (t.has("theater") || t.has("theatre")) return "theater";
+  if (t.has("festival")) return "other";
+  if (t.has("theater") || t.has("theatre")) return "other";
   if (
     t.has("poetry") ||
     t.has("author talk") ||
@@ -68,6 +69,9 @@ export function isMcplLiteraryWritingEvent(raw: McplLibnetRawEvent): boolean {
   const blob = `${title} ${sub} ${desc}`.toLowerCase();
   const tags = raw.tagsArray ?? [];
   const tagsLower = tags.map((t) => t.toLowerCase());
+
+  if (isLibNetTheaterTags(tags)) return false;
+  if (isTheaterEventText(title, sub, desc)) return false;
 
   const titleLower = title.toLowerCase();
 

@@ -103,7 +103,7 @@ function parseElfsightInstant(part: ElfsightDatePart, zone: string): DateTime | 
 function inferCategory(title: string, description: string): WorkshopEventCategory {
   const b = `${title}\n${description}`.toLowerCase();
   if (/\b(open mic|poetry slam)\b/.test(b)) return "open-mic";
-  if (/\b(college|info session)\b/.test(b)) return "panel";
+  if (/\b(college|info session)\b/.test(b)) return "other";
   if (/\b(reading|public reading)\b/.test(b)) return "reading";
   if (/\b(workshop|writing session|songwriting)\b/.test(b)) return "workshop";
   return "workshop";

@@ -68,8 +68,8 @@ function stableId(url: string, start: DateTime): string {
 function mapCategory(title: string, program: string): WorkshopEventCategory {
   const b = `${title}\n${program}`.toLowerCase();
   if (/\bworkshop|class\b/.test(b)) return "workshop";
-  if (/\bpanel|in conversation|talk\b/.test(b)) return "panel";
-  if (/\blaunch\b|book tour/.test(b)) return "launch";
+  if (/\bpanel|in conversation|talk\b/.test(b)) return "other";
+  if (/\blaunch\b|book tour/.test(b)) return "reading";
   return "reading";
 }
 

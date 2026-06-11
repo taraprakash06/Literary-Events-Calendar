@@ -109,11 +109,11 @@ function mapFormat(text: string): EventFormat {
 
 function mapCategory(kind: CffKind, title: string): WorkshopEventCategory {
   const b = `${kind} ${title}`.toLowerCase();
-  if (kind === "reading-groups") return "book-club";
+  if (kind === "reading-groups") return "other";
   if (kind === "writing-workshops") return "workshop";
   if (/\b(workshop|craft|bootcamp|writing)\b/.test(b)) return "workshop";
-  if (/\b(panel|conversation|in conversation|talk|lecture)\b/.test(b)) return "panel";
-  if (/\bfestival|crawl\b/.test(b)) return "festival";
+  if (/\b(panel|conversation|in conversation|talk|lecture)\b/.test(b)) return "other";
+  if (/\bfestival|crawl\b/.test(b)) return "other";
   return "reading";
 }
 

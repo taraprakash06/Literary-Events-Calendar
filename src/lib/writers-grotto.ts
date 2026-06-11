@@ -156,9 +156,9 @@ function mapCategory(title: string, description: string): WorkshopEventCategory 
   if (/\b(reading|aloud\/out loud|aloud)\b/.test(b)) return "reading";
   if (/\b(workshop|class|course|session)\b/.test(b)) return "workshop";
   if (/\b(panel|in conversation|conversation|lecture|info session)\b/.test(b)) {
-    return "panel";
+    return "other";
   }
-  if (/\b(festival|lit crawl|fair)\b/.test(b)) return "festival";
+  if (/\b(festival|lit crawl|fair)\b/.test(b)) return "other";
   return "workshop";
 }
 

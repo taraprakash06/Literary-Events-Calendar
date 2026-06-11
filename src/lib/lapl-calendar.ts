@@ -157,7 +157,7 @@ function inferCategory(
   const catHay = cats.join(" ").toLowerCase();
   const blob = `${title}\n${description}`.toLowerCase();
 
-  if (catHay.includes("book clubs") || /\bbook club\b/.test(blob)) return "book-club";
+  if (catHay.includes("book clubs") || /\bbook club\b/.test(blob)) return "other";
   if (catHay.includes("writing") || /\b(creative writing|writing workshop|writers)\b/.test(blob))
     return "workshop";
   if (
@@ -169,9 +169,9 @@ function inferCategory(
   if (catHay.includes("music & performances") && /\b(poetry|spoken word|reading)\b/.test(blob)) {
     return "reading";
   }
-  if (/\b(panel|conversation)\b/.test(blob)) return "panel";
-  if (/\b(festival)\b/.test(blob)) return "festival";
-  if (/\b(book launch|launch party)\b/.test(blob)) return "launch";
+  if (/\b(panel|conversation)\b/.test(blob)) return "other";
+  if (/\b(festival)\b/.test(blob)) return "other";
+  if (/\b(book launch|launch party)\b/.test(blob)) return "reading";
   if (/\bopen mic\b/.test(blob)) return "open-mic";
   return "other";
 }

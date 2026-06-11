@@ -170,11 +170,11 @@ function parseRsvpUrl(html: string, path: string): string {
 function inferCategory(title: string, description: string): WorkshopEventCategory {
   const b = `${title}\n${description}`.toLowerCase();
   if (/\b(open mic|poetry slam)\b/.test(b)) return "open-mic";
-  if (/\b(panel|in conversation|conversation)\b/.test(b)) return "panel";
+  if (/\b(panel|in conversation|conversation)\b/.test(b)) return "other";
   if (/\b(workshop|class)\b/.test(b)) return "workshop";
   if (/\b(reading|presents|book launch|launch)\b/.test(b)) return "reading";
-  if (/\b(festival)\b/.test(b)) return "festival";
-  if (/\b(book club)\b/.test(b)) return "book-club";
+  if (/\b(festival)\b/.test(b)) return "other";
+  if (/\b(book club)\b/.test(b)) return "other";
   return "reading";
 }
 

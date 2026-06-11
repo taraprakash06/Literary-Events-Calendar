@@ -278,11 +278,11 @@ function inferVenue(text: string): { venue: string; address?: string } {
 
 function inferCategory(title: string, body: string): WorkshopEventCategory {
   const b = `${title}\n${body}`.toLowerCase();
-  if (/\bfundraiser|benefit\b/.test(b)) return "festival";
-  if (/\blit crawl|litquake|festival|beastcrawl\b/.test(b)) return "festival";
+  if (/\bfundraiser|benefit\b/.test(b)) return "other";
+  if (/\blit crawl|litquake|festival|beastcrawl\b/.test(b)) return "other";
   if (/\breading|read their|featured readers\b/.test(b)) return "reading";
   if (/\bworkshop|class\b/.test(b)) return "workshop";
-  if (/\bbook launch|debut\b/.test(b)) return "launch";
+  if (/\bbook launch|debut\b/.test(b)) return "reading";
   return "reading";
 }
 

@@ -170,10 +170,10 @@ function inferCategory(title: string, description: string): WorkshopEventCategor
   if (/\b(open mic|standup|stand-up|comedy)\b/.test(b)) return "open-mic";
   if (/\b(poetry|poet|reading)\b/.test(b)) return "reading";
   if (/\b(workshop|class)\b/.test(b)) return "workshop";
-  if (/\b(panel|conversation|lecture)\b/.test(b)) return "panel";
-  if (/\b(festival|takeover|market|pop-up|popup)\b/.test(b)) return "festival";
-  if (/\b(book launch|launch)\b/.test(b)) return "launch";
-  if (/\b(book club)\b/.test(b)) return "book-club";
+  if (/\b(panel|conversation|lecture)\b/.test(b)) return "other";
+  if (/\b(festival|takeover|market|pop-up|popup)\b/.test(b)) return "other";
+  if (/\b(book launch|launch)\b/.test(b)) return "reading";
+  if (/\b(book club)\b/.test(b)) return "other";
   return "other";
 }
 

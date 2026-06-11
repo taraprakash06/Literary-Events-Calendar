@@ -11,12 +11,10 @@ import { stripHtmlAndDecode, toShortOverview } from "@/lib/text";
 function mapCategory(row: NyplRawRow): WorkshopEventCategory {
   const b = `${row.title} ${slugFromProgramPath(row.programPath)}`.toLowerCase();
   if (/\bopen mic\b/.test(b)) return "open-mic";
-  if (/\b(book club|book discussion|reading|author|novel|memoir|storytime|story time)\b/.test(b))
-    return "book-club";
   if (/\b(workshop|writing)\b/.test(b)) return "workshop";
-  if (/\b(panel|lecture|conversation|seminar|conference)\b/.test(b)) return "panel";
-  if (/\b(festival|bookfest|history day)\b/.test(b)) return "festival";
-  return "reading";
+  if (/\b(reading|author|novel|memoir|storytime|story time)\b/.test(b)) return "reading";
+  if (/\b(book club|book discussion)\b/.test(b)) return "other";
+  return "other";
 }
 
 function mapFormat(row: NyplRawRow): EventFormat {

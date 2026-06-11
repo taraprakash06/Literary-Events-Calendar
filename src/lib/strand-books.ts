@@ -110,9 +110,9 @@ function priceFromLine(priceLine: string): PriceKind {
 function categoryFromTitle(title: string): WorkshopEventCategory {
   const b = title.toLowerCase();
   if (/\bstorytime\b/.test(b)) return "reading";
-  if (/\bpanel\b|\bin conversation\b|\bconversation\b/.test(b)) return "panel";
+  if (/\bpanel\b|\bin conversation\b|\bconversation\b/.test(b)) return "other";
   if (/\bworkshop\b/.test(b)) return "workshop";
-  if (/\blaunch\b/.test(b)) return "launch";
+  if (/\blaunch\b/.test(b)) return "reading";
   return "reading";
 }
 

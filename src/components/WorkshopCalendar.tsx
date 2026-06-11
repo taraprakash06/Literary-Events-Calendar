@@ -85,13 +85,8 @@ function eventQualityScore(ev: WorkshopEvent): number {
   const catBoost: Record<WorkshopEventCategory, number> = {
     workshop: 12,
     reading: 10,
-    "book-club": 9,
-    panel: 8,
-    launch: 7,
-    "open-mic": 6,
-    festival: 5,
-    theater: 3,
-    other: 1,
+    "open-mic": 8,
+    other: 4,
   };
   score += catBoost[ev.category] ?? 0;
 

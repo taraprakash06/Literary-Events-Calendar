@@ -102,10 +102,10 @@ function parseDateTime(dateLine: string, timeStart: string): DateTime | null {
 function categoryFromText(title: string, desc: string): WorkshopEventCategory {
   const b = `${title}\n${desc}`.toLowerCase();
   if (/\b(workshop|writing center|open hours|writing)\b/.test(b)) return "workshop";
-  if (/\b(reading group|book club|discussion group|reading & discussion)\b/.test(b)) return "book-club";
+  if (/\b(reading group|book club|discussion group|reading & discussion)\b/.test(b)) return "other";
   if (/\b(open mic|literary café|lit[-\s]?cafe)\b/.test(b)) return "open-mic";
-  if (/\b(panel|conversation|lecture|talk|in conversation)\b/.test(b)) return "panel";
-  if (/\b(fair|conference|festival|crawl)\b/.test(b)) return "festival";
+  if (/\b(panel|conversation|lecture|talk|in conversation)\b/.test(b)) return "other";
+  if (/\b(fair|conference|festival|crawl)\b/.test(b)) return "other";
   return "reading";
 }
 

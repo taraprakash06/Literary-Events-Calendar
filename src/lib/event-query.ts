@@ -1,3 +1,4 @@
+import { isTheaterWorkshopEvent } from "@/lib/event-category";
 import type {
   EventFilters,
   EventFormat,
@@ -58,6 +59,7 @@ export function applyEventFilters(
   search: string,
 ): WorkshopEvent[] {
   return events.filter((ev) => {
+    if (isTheaterWorkshopEvent(ev)) return false;
     if (!filters.formats.has(ev.format)) return false;
     if (!filters.prices.has(ev.price)) return false;
     if (!filters.categoryIncluded.has(ev.category)) return false;

@@ -132,10 +132,10 @@ export function mapLibNetAttendanceFormat(raw: DcplLibnetRawEvent): EventFormat 
 
 function mapCategory(tags: string[] | undefined): WorkshopEventCategory {
   const t = new Set((tags ?? []).map((x) => x.toLowerCase()));
-  if (t.has("book club")) return "book-club";
+  if (t.has("book club")) return "other";
   if (t.has("open mic") || t.has("open mic / spoken word")) return "open-mic";
-  if (t.has("festival")) return "festival";
-  if (t.has("theater") || t.has("theatre")) return "theater";
+  if (t.has("festival")) return "other";
+  if (t.has("theater") || t.has("theatre")) return "other";
   if (t.has("author talk") || t.has("poetry month") || t.has("lecture"))
     return "reading";
   if (t.has("workshop") || t.has("educational program")) return "workshop";

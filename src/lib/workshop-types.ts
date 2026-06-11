@@ -2,16 +2,11 @@ export type EventFormat = "in-person" | "virtual" | "hybrid";
 
 export type PriceKind = "free" | "paid" | "unknown";
 
-/** High-level category for filtering; extend as you add cities. */
+/** High-level category for filtering. */
 export type WorkshopEventCategory =
-  | "reading"
   | "workshop"
   | "open-mic"
-  | "festival"
-  | "book-club"
-  | "panel"
-  | "launch"
-  | "theater"
+  | "reading"
   | "other";
 
 export type City = {
@@ -78,26 +73,16 @@ export type EventFilters = {
 export const ALL_EVENT_FORMATS: EventFormat[] = ["in-person", "virtual", "hybrid"];
 export const ALL_PRICE_KINDS: PriceKind[] = ["free", "paid", "unknown"];
 export const ALL_WORKSHOP_CATEGORIES: WorkshopEventCategory[] = [
-  "reading",
   "workshop",
   "open-mic",
-  "festival",
-  "book-club",
-  "panel",
-  "launch",
-  "theater",
+  "reading",
   "other",
 ];
 
 export const CATEGORY_LABELS: Record<WorkshopEventCategory, string> = {
-  reading: "Reading",
   workshop: "Workshop",
   "open-mic": "Open mic",
-  festival: "Festival",
-  "book-club": "Book club",
-  panel: "Panel",
-  launch: "Launch",
-  theater: "Theater",
+  reading: "Reading",
   other: "Other",
 };
 

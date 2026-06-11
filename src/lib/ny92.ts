@@ -24,8 +24,8 @@ function isIncapsula(html: string): boolean {
 function mapCategory(title: string): WorkshopEventCategory {
   const b = title.toLowerCase();
   if (/\bworkshop|writing\b/.test(b)) return "workshop";
-  if (/\bpanel|conversation|talk\b/.test(b)) return "panel";
-  if (/\blaunch\b/.test(b)) return "launch";
+  if (/\bpanel|conversation|talk\b/.test(b)) return "other";
+  if (/\blaunch\b/.test(b)) return "reading";
   return "reading";
 }
 

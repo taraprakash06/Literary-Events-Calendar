@@ -77,9 +77,9 @@ function inferCategory(title: string, description: string): WorkshopEventCategor
   const b = `${title}\n${description}`.toLowerCase();
   if (/\b(open mic|open-mic|slam)\b/.test(b)) return "open-mic";
   if (/\b(workshop|class)\b/.test(b)) return "workshop";
-  if (/\b(panel|in conversation|talk|lecture)\b/.test(b)) return "panel";
-  if (/\b(festival|conference)\b/.test(b)) return "festival";
-  if (/\b(book club|reading group)\b/.test(b)) return "book-club";
+  if (/\b(panel|in conversation|talk|lecture)\b/.test(b)) return "other";
+  if (/\b(festival|conference)\b/.test(b)) return "other";
+  if (/\b(book club|reading group)\b/.test(b)) return "other";
   if (/\b(reading|poetry|poet|spoken word)\b/.test(b)) return "reading";
   return "other";
 }

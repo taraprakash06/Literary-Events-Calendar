@@ -76,21 +76,64 @@ function venueLine(ev: MdHumTribeEvent): string | undefined {
   return parts.join(" · ");
 }
 
-function mapCategory(ev: MdHumTribeEvent): WorkshopEventCategory {
+function eventTextBlob(ev: MdHumTribeEvent): string {
+  const t = safeTitle(ev.title);
+  const catNames = (ev.categories ?? []).map((c) => c.name ?? "").join(" ");
+  const excerpt = (ev.excerpt ?? "").trim();
+  const desc = (ev.description ?? "").trim();
+  return `${t} ${catNames} ${excerpt} ${desc}`.toLowerCase();
+}
+
+/** Maryland Humanities publishes some statewide programs that are not literary. */
+export function isMdHumanitiesLiteraryEvent(ev: MdHumTribeEvent): boolean {
   const t = safeTitle(ev.title).toLowerCase();
   const slugs = new Set(categorySlugs(ev));
-  const catNames = (ev.categories ?? [])
-    .map((c) => (c.name ?? "").toLowerCase())
-    .join(" ");
+  const blob = eventTextBlob(ev);
+
+  if (t.includes("history day") || slugs.has("maryland-history-day")) return false;
+  if (/\bmaryland history day\b/.test(blob)) return false;
+  if (/\bhistory day\b/.test(blob) && /\bshowcase\b/.test(blob)) return false;
+  if (t.includes("annual meeting")) return false;
+  if (t.includes("conference") && !/\b(book|writing|literary|author|poetry|humanities)\b/.test(blob)) {
+    return false;
+  }
+  if (t.includes("webinar") && !/\b(book|writing|literary|author|poetry)\b/.test(blob)) {
+    return false;
+  }
+  if (/\bshowcase\b/.test(t) && !/\b(book|writing|literary|author|poetry|creative writing)\b/.test(blob)) {
+    return false;
+  }
+
+  if (t.includes("open mic")) return true;
+  if (t.includes("bookfest") || t.includes("book fest") || blob.includes("one maryland one book")) {
+    return true;
+  }
+  if (
+    /\b(book|author|poetry|poet|fiction|memoir|creative writing|writing workshop|literary|literature|zine|storytelling|read aloud)\b/.test(
+      blob,
+    )
+  ) {
+    return true;
+  }
+  if (t.includes("workshop") && /\b(writing|creative|poetry|fiction|memoir|story)\b/.test(blob)) {
+    return true;
+  }
+
+  return false;
+}
+
+function mapCategory(ev: MdHumTribeEvent): WorkshopEventCategory {
+  const t = safeTitle(ev.title).toLowerCase();
+  const blob = eventTextBlob(ev);
 
   if (t.includes("open mic")) return "open-mic";
-  if (t.includes("history day") || slugs.has("maryland-history-day")) return "festival";
-  if (t.includes("conference") || t.includes("annual meeting")) return "panel";
-  if (t.includes("bookfest") || t.includes("book fest") || catNames.includes("one maryland one book"))
+  if (t.includes("bookfest") || t.includes("book fest") || blob.includes("one maryland one book")) {
     return "reading";
-  if (t.includes("webinar") || slugs.has("online")) return "panel";
-  if (t.includes("showcase")) return "reading";
-  if (t.includes("workshop")) return "workshop";
+  }
+  if (t.includes("workshop") && /\b(writing|creative|poetry|fiction|memoir|story)\b/.test(blob)) {
+    return "workshop";
+  }
+  if (/\b(reading|author talk|book signing|poetry)\b/.test(blob)) return "reading";
   return "other";
 }
 
@@ -123,6 +166,8 @@ function parseStartEnd(ev: MdHumTribeEvent): { start: DateTime; end: DateTime | 
 }
 
 export function mapMdHumTribeEventToWorkshop(ev: MdHumTribeEvent): WorkshopEvent | null {
+  if (!isMdHumanitiesLiteraryEvent(ev)) return null;
+
   const span = parseStartEnd(ev);
   if (!span) return null;
 

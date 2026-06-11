@@ -133,7 +133,7 @@ function mapWorkshopCategory(title: string, description: string): WorkshopEventC
   const b = `${title}\n${description}`.toLowerCase();
   if (/\b(open mic|poetry slam)\b/.test(b)) return "open-mic";
   if (/\b(reading|salon|meetup)\b/.test(b)) return "reading";
-  if (/\b(panel|publishing|professional)\b/.test(b)) return "panel";
+  if (/\b(panel|publishing|professional)\b/.test(b)) return "other";
   if (/\b(round robin|workshop|class|course)\b/.test(b)) return "workshop";
   return "workshop";
 }

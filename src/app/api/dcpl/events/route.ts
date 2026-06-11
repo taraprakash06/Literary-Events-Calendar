@@ -1,5 +1,9 @@
 import { NextResponse } from "next/server";
 import {
+  isLibNetTheaterTags,
+  isTheaterEventText,
+} from "@/lib/event-category";
+import {
   DCPL_DEFAULT_EVENT_TYPE,
   DCPL_DEFAULT_TYPE_FILTERS,
   buildDcplEeventCalReq,
@@ -61,9 +65,13 @@ export async function GET(req: Request) {
         { status: 502 },
       );
     }
-    const events = (data as DcplLibnetRawEvent[]).map((row) =>
-      mapDcplLibnetRowToWorkshopEvent(row, workshopCityId),
-    );
+    const events = (data as DcplLibnetRawEvent[])
+      .filter(
+        (row) =>
+          !isLibNetTheaterTags(row.tagsArray) &&
+          !isTheaterEventText(row.title, row.sub_title, row.description),
+      )
+      .map((row) => mapDcplLibnetRowToWorkshopEvent(row, workshopCityId));
     return NextResponse.json({
       events,
       meta: {

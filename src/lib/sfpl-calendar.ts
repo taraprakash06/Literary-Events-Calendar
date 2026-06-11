@@ -141,7 +141,7 @@ function inferFormat(teaser: SfplRawTeaser): { format: EventFormat; virtualLabel
 
 function inferCategory(teaser: SfplRawTeaser): WorkshopEventCategory {
   const blob = `${teaser.title}\n${teaser.topics.join(" ")}\n${teaser.audiences.join(" ")}`.toLowerCase();
-  if (/\bbook club|book discussion|reading group\b/.test(blob)) return "book-club";
+  if (/\bbook club|book discussion|reading group\b/.test(blob)) return "other";
   if (/\bworkshop|writing\b|creative writing|writers\b/.test(blob)) return "workshop";
   if (/\bpoetry\b|author\b|reading\b|lecture\b|talk\b/.test(blob)) return "reading";
   if (/\bopen mic\b|spoken word\b/.test(blob)) return "open-mic";

@@ -40,12 +40,12 @@ function mapCategory(catRaw: string | undefined): WorkshopEventCategory {
   const c = (catRaw ?? "").toLowerCase();
   if (c.includes("book") || c.includes("author")) return "reading";
   if (c.includes("open mic") || c.includes("poetry")) return "open-mic";
-  if (c.includes("panel") || c.includes("discussion")) return "panel";
+  if (c.includes("panel") || c.includes("discussion")) return "other";
   if (c.includes("workshop")) return "workshop";
-  if (c.includes("festival")) return "festival";
-  if (c.includes("launch") || c.includes("signing")) return "launch";
+  if (c.includes("festival")) return "other";
+  if (c.includes("launch") || c.includes("signing")) return "reading";
   if (c.includes("performance") || c.includes("theater") || c.includes("theatre"))
-    return "theater";
+    return "other";
   return "other";
 }
 
@@ -57,10 +57,18 @@ function mapFormat(row: BusboysEventsMoreRow): EventFormat {
 
 function shouldExclude(row: BusboysEventsMoreRow): boolean {
   const n = cleanTitle(row.name).toLowerCase();
+  const c = (row.category ?? "").toLowerCase();
   if (n.includes("cancelled")) return true;
   if (n.includes("private event")) return true;
   if (n.includes("admin staff")) return true;
   if (n.includes("staff retreat")) return true;
+  if (
+    c.includes("performance") ||
+    c.includes("theater") ||
+    c.includes("theatre")
+  ) {
+    return true;
+  }
   return false;
 }
 
