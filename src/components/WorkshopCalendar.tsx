@@ -297,6 +297,17 @@ export function WorkshopCalendar({ city }: { city: City }) {
   const [shutUpAndWriteEvents, setShutUpAndWriteEvents] = useState<WorkshopEvent[]>(
     [],
   );
+  const [doTheBayOpenMicEvents, setDoTheBayOpenMicEvents] = useState<
+    WorkshopEvent[]
+  >([]);
+  const [bazaarCafeOpenMicEvents, setBazaarCafeOpenMicEvents] = useState<
+    WorkshopEvent[]
+  >([]);
+  const [decenteredOpenMicEvents, setDecenteredOpenMicEvents] = useState<
+    WorkshopEvent[]
+  >([]);
+  const [galeriaEvents, setGaleriaEvents] = useState<WorkshopEvent[]>([]);
+  const [curatedSfEbEvents, setCuratedSfEbEvents] = useState<WorkshopEvent[]>([]);
   const [sfWritersWorkshopEvents, setSfWritersWorkshopEvents] = useState<
     WorkshopEvent[]
   >([]);
@@ -510,6 +521,11 @@ export function WorkshopCalendar({ city }: { city: City }) {
       setWritingSalonEvents([]);
       setShutUpAndWriteEvents([]);
       setSfWritersWorkshopEvents([]);
+      setDoTheBayOpenMicEvents([]);
+      setBazaarCafeOpenMicEvents([]);
+      setDecenteredOpenMicEvents([]);
+      setGaleriaEvents([]);
+      setCuratedSfEbEvents([]);
       return;
     }
     const y = year;
@@ -517,8 +533,17 @@ export function WorkshopCalendar({ city }: { city: City }) {
     const ac = new AbortController();
     (async () => {
       try {
-        const [sfplRes, writingSalonRes, shutUpAndWriteRes, sfwwRes] =
-          await Promise.all([
+        const [
+          sfplRes,
+          writingSalonRes,
+          shutUpAndWriteRes,
+          sfwwRes,
+          doTheBayRes,
+          bazaarCafeRes,
+          decenteredRes,
+          galeriaRes,
+          curatedEbRes,
+        ] = await Promise.all([
           fetch(`/api/sfpl/events?year=${y}&month=${m}`, { signal: ac.signal }),
           fetch(`/api/writing-salon/events?year=${y}&month=${m}`, {
             signal: ac.signal,
@@ -527,6 +552,21 @@ export function WorkshopCalendar({ city }: { city: City }) {
             signal: ac.signal,
           }),
           fetch(`/api/sf-writers-workshop/events?year=${y}&month=${m}`, {
+            signal: ac.signal,
+          }),
+          fetch(`/api/dothebay-poetry-open-mic/events?year=${y}&month=${m}`, {
+            signal: ac.signal,
+          }),
+          fetch(`/api/bazaar-cafe-open-mic/events?year=${y}&month=${m}`, {
+            signal: ac.signal,
+          }),
+          fetch(`/api/decentered-open-mic/events?year=${y}&month=${m}`, {
+            signal: ac.signal,
+          }),
+          fetch(`/api/galeria-de-la-raza/events?year=${y}&month=${m}`, {
+            signal: ac.signal,
+          }),
+          fetch(`/api/curated-sf-eventbrite/events?year=${y}&month=${m}`, {
             signal: ac.signal,
           }),
         ]);
@@ -542,6 +582,21 @@ export function WorkshopCalendar({ city }: { city: City }) {
         const sfwwBody = sfwwRes.ok
           ? ((await sfwwRes.json()) as { events?: WorkshopEvent[] })
           : {};
+        const doTheBayBody = doTheBayRes.ok
+          ? ((await doTheBayRes.json()) as { events?: WorkshopEvent[] })
+          : {};
+        const bazaarCafeBody = bazaarCafeRes.ok
+          ? ((await bazaarCafeRes.json()) as { events?: WorkshopEvent[] })
+          : {};
+        const decenteredBody = decenteredRes.ok
+          ? ((await decenteredRes.json()) as { events?: WorkshopEvent[] })
+          : {};
+        const galeriaBody = galeriaRes.ok
+          ? ((await galeriaRes.json()) as { events?: WorkshopEvent[] })
+          : {};
+        const curatedEbBody = curatedEbRes.ok
+          ? ((await curatedEbRes.json()) as { events?: WorkshopEvent[] })
+          : {};
         setSfplEvents(Array.isArray(sfplBody.events) ? sfplBody.events : []);
         setWritingSalonEvents(
           Array.isArray(writingSalonBody.events) ? writingSalonBody.events : [],
@@ -554,12 +609,32 @@ export function WorkshopCalendar({ city }: { city: City }) {
         setSfWritersWorkshopEvents(
           Array.isArray(sfwwBody.events) ? sfwwBody.events : [],
         );
+        setDoTheBayOpenMicEvents(
+          Array.isArray(doTheBayBody.events) ? doTheBayBody.events : [],
+        );
+        setBazaarCafeOpenMicEvents(
+          Array.isArray(bazaarCafeBody.events) ? bazaarCafeBody.events : [],
+        );
+        setDecenteredOpenMicEvents(
+          Array.isArray(decenteredBody.events) ? decenteredBody.events : [],
+        );
+        setGaleriaEvents(
+          Array.isArray(galeriaBody.events) ? galeriaBody.events : [],
+        );
+        setCuratedSfEbEvents(
+          Array.isArray(curatedEbBody.events) ? curatedEbBody.events : [],
+        );
       } catch (e) {
         if ((e as Error).name === "AbortError") return;
         setSfplEvents([]);
         setWritingSalonEvents([]);
         setShutUpAndWriteEvents([]);
         setSfWritersWorkshopEvents([]);
+        setDoTheBayOpenMicEvents([]);
+        setBazaarCafeOpenMicEvents([]);
+        setDecenteredOpenMicEvents([]);
+        setGaleriaEvents([]);
+        setCuratedSfEbEvents([]);
       }
     })();
     return () => ac.abort();
@@ -869,6 +944,11 @@ export function WorkshopCalendar({ city }: { city: City }) {
     const sfpl = city.id === "sf" ? sfplEvents : [];
     const writingSalon = city.id === "sf" ? writingSalonEvents : [];
     const shutUpAndWrite = city.id === "sf" ? shutUpAndWriteEvents : [];
+    const doTheBayOpenMic = city.id === "sf" ? doTheBayOpenMicEvents : [];
+    const bazaarCafeOpenMic = city.id === "sf" ? bazaarCafeOpenMicEvents : [];
+    const decenteredOpenMic = city.id === "sf" ? decenteredOpenMicEvents : [];
+    const galeria = city.id === "sf" ? galeriaEvents : [];
+    const curatedSfEb = city.id === "sf" ? curatedSfEbEvents : [];
     const sfww = city.id === "sf" ? sfWritersWorkshopEvents : [];
     const wg = city.id === "sf" ? writersGrottoEvents : [];
     const cat = city.id === "sf" ? catEvents : [];
@@ -904,6 +984,11 @@ export function WorkshopCalendar({ city }: { city: City }) {
       ...sfpl,
       ...writingSalon,
       ...shutUpAndWrite,
+      ...doTheBayOpenMic,
+      ...bazaarCafeOpenMic,
+      ...decenteredOpenMic,
+      ...galeria,
+      ...curatedSfEb,
       ...sfww,
       ...wg,
       ...cat,
@@ -934,6 +1019,11 @@ export function WorkshopCalendar({ city }: { city: City }) {
     sfplEvents,
     writingSalonEvents,
     shutUpAndWriteEvents,
+    doTheBayOpenMicEvents,
+    bazaarCafeOpenMicEvents,
+    decenteredOpenMicEvents,
+    galeriaEvents,
+    curatedSfEbEvents,
     sfWritersWorkshopEvents,
     writersGrottoEvents,
     catEvents,
@@ -1094,7 +1184,7 @@ export function WorkshopCalendar({ city }: { city: City }) {
     }
 
     if (city.id === "sf") {
-      return "No SF listings were returned for this month from SFPL, The Writing Salon, San Francisco Writers Workshop, The Writers Grotto, Shut Up & Write!® (Meetup), or Eventbrite. Try another month or check that Eventbrite org IDs include SF organizers.";
+      return "No SF listings were returned for this month from SFPL, The Writing Salon, San Francisco Writers Workshop, The Writers Grotto, Shut Up & Write!® (Meetup), DoTheBay (Poetry Open Mic), Bazaar Cafe (Open Mic), Decentered Studio (Open Mic), Galería de la Raza, or Eventbrite. Try another month or check that Eventbrite org IDs include SF organizers.";
     }
 
     return "No verified events loaded for this city yet. Wire ingestion (Eventbrite, library calendars, RSS, etc.) so only real dated listings appear here.";
