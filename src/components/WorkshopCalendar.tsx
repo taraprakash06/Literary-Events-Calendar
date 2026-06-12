@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type MutableRefObject } from "react";
 import { DateTime } from "luxon";
 import { CITIES } from "@/data/cities";
 import { eventsForCity } from "@/data/workshop-events";
@@ -181,6 +181,21 @@ function pickWeeklyHighlights(events: WorkshopEvent[], min = 5, max = 7): Worksh
 
 type ViewMode = "calendar" | "list";
 
+function beginSourceLoad(
+  epochRef: MutableRefObject<number>,
+  pendingRef: MutableRefObject<number>,
+  setLoading: (loading: boolean) => void,
+): () => void {
+  const epoch = epochRef.current;
+  pendingRef.current += 1;
+  setLoading(true);
+  return () => {
+    if (epoch !== epochRef.current) return;
+    pendingRef.current = Math.max(0, pendingRef.current - 1);
+    if (pendingRef.current === 0) setLoading(false);
+  };
+}
+
 function useIsMobile(breakpoint = 768) {
   const [isMobile, setIsMobile] = useState(false);
   useEffect(() => {
@@ -343,6 +358,16 @@ export function WorkshopCalendar({ city }: { city: City }) {
     };
   });
 
+  const loadEpochRef = useRef(0);
+  const pendingLoadsRef = useRef(0);
+  const [sourcesLoading, setSourcesLoading] = useState(true);
+
+  useEffect(() => {
+    loadEpochRef.current += 1;
+    pendingLoadsRef.current = 0;
+    setSourcesLoading(true);
+  }, [city.id, year, monthIndex]);
+
   useEffect(() => {
     // Keep the date-range filter aligned with the currently viewed month.
     // If a user explicitly sets a custom range within the month, we leave it alone.
@@ -452,6 +477,7 @@ export function WorkshopCalendar({ city }: { city: City }) {
     const y = year;
     const m = monthIndex + 1;
     const ac = new AbortController();
+    const finishLoad = beginSourceLoad(loadEpochRef, pendingLoadsRef, setSourcesLoading);
     const q = `year=${y}&month=${m}&cityId=dmv`;
     (async () => {
       try {
@@ -535,6 +561,8 @@ export function WorkshopCalendar({ city }: { city: City }) {
         setBusboysPoetsEvents([]);
         setMdHumanitiesEvents([]);
         setPlanetWordEvents([]);
+      } finally {
+        finishLoad();
       }
     })();
     return () => ac.abort();
@@ -557,6 +585,7 @@ export function WorkshopCalendar({ city }: { city: City }) {
     const y = year;
     const m = monthIndex + 1;
     const ac = new AbortController();
+    const finishLoad = beginSourceLoad(loadEpochRef, pendingLoadsRef, setSourcesLoading);
     (async () => {
       try {
         const [
@@ -678,6 +707,8 @@ export function WorkshopCalendar({ city }: { city: City }) {
         setWorldStageEvents([]);
         setStoriesLaEvents([]);
         setLaPoetSocietyEvents([]);
+      } finally {
+        finishLoad();
       }
     })();
     return () => ac.abort();
@@ -699,6 +730,7 @@ export function WorkshopCalendar({ city }: { city: City }) {
     const y = year;
     const m = monthIndex + 1;
     const ac = new AbortController();
+    const finishLoad = beginSourceLoad(loadEpochRef, pendingLoadsRef, setSourcesLoading);
     (async () => {
       try {
         const [
@@ -803,6 +835,8 @@ export function WorkshopCalendar({ city }: { city: City }) {
         setDecenteredOpenMicEvents([]);
         setGaleriaEvents([]);
         setCuratedSfEbEvents([]);
+      } finally {
+        finishLoad();
       }
     })();
     return () => ac.abort();
@@ -816,6 +850,7 @@ export function WorkshopCalendar({ city }: { city: City }) {
     const y = year;
     const m = monthIndex + 1;
     const ac = new AbortController();
+    const finishLoad = beginSourceLoad(loadEpochRef, pendingLoadsRef, setSourcesLoading);
     (async () => {
       try {
         const res = await fetch(`/api/writers-grotto/events?year=${y}&month=${m}`, {
@@ -830,6 +865,8 @@ export function WorkshopCalendar({ city }: { city: City }) {
       } catch (e) {
         if ((e as Error).name === "AbortError") return;
         setWritersGrottoEvents([]);
+      } finally {
+        finishLoad();
       }
     })();
     return () => ac.abort();
@@ -843,6 +880,7 @@ export function WorkshopCalendar({ city }: { city: City }) {
     const y = year;
     const m = monthIndex + 1;
     const ac = new AbortController();
+    const finishLoad = beginSourceLoad(loadEpochRef, pendingLoadsRef, setSourcesLoading);
     (async () => {
       try {
         const res = await fetch(`/api/cat/events?year=${y}&month=${m}`, {
@@ -857,6 +895,8 @@ export function WorkshopCalendar({ city }: { city: City }) {
       } catch (e) {
         if ((e as Error).name === "AbortError") return;
         setCatEvents([]);
+      } finally {
+        finishLoad();
       }
     })();
     return () => ac.abort();
@@ -870,6 +910,7 @@ export function WorkshopCalendar({ city }: { city: City }) {
     const y = year;
     const m = monthIndex + 1;
     const ac = new AbortController();
+    const finishLoad = beginSourceLoad(loadEpochRef, pendingLoadsRef, setSourcesLoading);
     (async () => {
       try {
         const res = await fetch(`/api/nypl/events?year=${y}&month=${m}`, {
@@ -884,6 +925,8 @@ export function WorkshopCalendar({ city }: { city: City }) {
       } catch (e) {
         if ((e as Error).name === "AbortError") return;
         setNyplEvents([]);
+      } finally {
+        finishLoad();
       }
     })();
     return () => ac.abort();
@@ -897,6 +940,7 @@ export function WorkshopCalendar({ city }: { city: City }) {
     const y = year;
     const m = monthIndex + 1;
     const ac = new AbortController();
+    const finishLoad = beginSourceLoad(loadEpochRef, pendingLoadsRef, setSourcesLoading);
     (async () => {
       try {
         const res = await fetch(
@@ -912,6 +956,8 @@ export function WorkshopCalendar({ city }: { city: City }) {
       } catch (e) {
         if ((e as Error).name === "AbortError") return;
         setCenterForFictionEvents([]);
+      } finally {
+        finishLoad();
       }
     })();
     return () => ac.abort();
@@ -925,6 +971,7 @@ export function WorkshopCalendar({ city }: { city: City }) {
     const y = year;
     const m = monthIndex + 1;
     const ac = new AbortController();
+    const finishLoad = beginSourceLoad(loadEpochRef, pendingLoadsRef, setSourcesLoading);
     (async () => {
       try {
         const res = await fetch(`/api/just-buffalo/events?year=${y}&month=${m}`, {
@@ -939,6 +986,8 @@ export function WorkshopCalendar({ city }: { city: City }) {
       } catch (e) {
         if ((e as Error).name === "AbortError") return;
         setJustBuffaloEvents([]);
+      } finally {
+        finishLoad();
       }
     })();
     return () => ac.abort();
@@ -952,6 +1001,7 @@ export function WorkshopCalendar({ city }: { city: City }) {
     const y = year;
     const m = monthIndex + 1;
     const ac = new AbortController();
+    const finishLoad = beginSourceLoad(loadEpochRef, pendingLoadsRef, setSourcesLoading);
     (async () => {
       try {
         const res = await fetch(`/api/poets-house/events?year=${y}&month=${m}`, {
@@ -966,6 +1016,8 @@ export function WorkshopCalendar({ city }: { city: City }) {
       } catch (e) {
         if ((e as Error).name === "AbortError") return;
         setPoetsHouseEvents([]);
+      } finally {
+        finishLoad();
       }
     })();
     return () => ac.abort();
@@ -979,6 +1031,7 @@ export function WorkshopCalendar({ city }: { city: City }) {
     const y = year;
     const m = monthIndex + 1;
     const ac = new AbortController();
+    const finishLoad = beginSourceLoad(loadEpochRef, pendingLoadsRef, setSourcesLoading);
     (async () => {
       try {
         const res = await fetch(`/api/strand/events?year=${y}&month=${m}`, {
@@ -993,6 +1046,8 @@ export function WorkshopCalendar({ city }: { city: City }) {
       } catch (e) {
         if ((e as Error).name === "AbortError") return;
         setStrandEvents([]);
+      } finally {
+        finishLoad();
       }
     })();
     return () => ac.abort();
@@ -1006,6 +1061,7 @@ export function WorkshopCalendar({ city }: { city: City }) {
     const y = year;
     const m = monthIndex + 1;
     const ac = new AbortController();
+    const finishLoad = beginSourceLoad(loadEpochRef, pendingLoadsRef, setSourcesLoading);
     (async () => {
       try {
         const res = await fetch(`/api/92ny/events?year=${y}&month=${m}`, {
@@ -1020,6 +1076,8 @@ export function WorkshopCalendar({ city }: { city: City }) {
       } catch (e) {
         if ((e as Error).name === "AbortError") return;
         setNy92Events([]);
+      } finally {
+        finishLoad();
       }
     })();
     return () => ac.abort();
@@ -1033,6 +1091,7 @@ export function WorkshopCalendar({ city }: { city: City }) {
     const y = year;
     const m = monthIndex + 1;
     const ac = new AbortController();
+    const finishLoad = beginSourceLoad(loadEpochRef, pendingLoadsRef, setSourcesLoading);
     (async () => {
       try {
         const res = await fetch(`/api/nuyorican/events?year=${y}&month=${m}`, {
@@ -1047,6 +1106,8 @@ export function WorkshopCalendar({ city }: { city: City }) {
       } catch (e) {
         if ((e as Error).name === "AbortError") return;
         setNuyoricanEvents([]);
+      } finally {
+        finishLoad();
       }
     })();
     return () => ac.abort();
@@ -1066,6 +1127,7 @@ export function WorkshopCalendar({ city }: { city: City }) {
     const y = year;
     const m = monthIndex + 1;
     const ac = new AbortController();
+    const finishLoad = beginSourceLoad(loadEpochRef, pendingLoadsRef, setSourcesLoading);
     const q = `cityId=${encodeURIComponent(city.id)}&year=${y}&month=${m}`;
     (async () => {
       try {
@@ -1089,6 +1151,8 @@ export function WorkshopCalendar({ city }: { city: City }) {
         if ((e as Error).name === "AbortError") return;
         setEventbriteEvents([]);
         setEventbriteMeta(null);
+      } finally {
+        finishLoad();
       }
     })();
     return () => ac.abort();
@@ -1335,9 +1399,12 @@ export function WorkshopCalendar({ city }: { city: City }) {
     ? (byDay.get(dayPanelKey) ?? [])
     : [];
 
+  const showLoadingEvents = sourcesLoading && cityEvents.length === 0;
+
   const emptyFiltered =
-    (showCalendar && inVisibleMonth.length === 0) ||
-    (showList && listSorted.length === 0);
+    !showLoadingEvents &&
+    ((showCalendar && inVisibleMonth.length === 0) ||
+      (showList && listSorted.length === 0));
 
   const emptyMessage = (() => {
     if (cityEvents.length > 0) {
@@ -1586,7 +1653,7 @@ export function WorkshopCalendar({ city }: { city: City }) {
         )}
       </div>
 
-      {weeklyHighlights.length > 0 ? (
+      {!showLoadingEvents && weeklyHighlights.length > 0 ? (
         <section
           aria-label="This week’s picks"
           className="rounded-sm border border-stone-200/90 bg-[var(--surface)] p-5 shadow-sm dark:border-stone-700/80 dark:bg-stone-900/30"
@@ -1685,7 +1752,18 @@ export function WorkshopCalendar({ city }: { city: City }) {
           </div>
 
           <div className="p-3 sm:p-5">
-            {emptyFiltered ? (
+            {showLoadingEvents ? (
+              <div
+                className="flex flex-col items-center justify-center gap-3 py-16"
+                role="status"
+                aria-live="polite"
+              >
+                <div className="h-6 w-6 animate-spin rounded-full border-2 border-stone-300 border-t-rose-900/80 dark:border-stone-600 dark:border-t-rose-300/80" />
+                <p className="text-sm text-stone-600 dark:text-stone-400">
+                  Loading events…
+                </p>
+              </div>
+            ) : emptyFiltered ? (
               <p className="py-16 text-center text-sm leading-relaxed text-stone-600 dark:text-stone-400">
                 {emptyMessage}
               </p>
