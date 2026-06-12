@@ -15,6 +15,27 @@ export type DoTheBayPoetryOpenMicMeta = {
   pageFetched: boolean;
   recurring: boolean;
   instancesInMonth: number;
+  /** True when DoTheBay JSON was unreachable and we used the known weekly schedule. */
+  usedFallback?: boolean;
+};
+
+/** Verified recurring schedule when DoTheBay blocks datacenter IPs (HTTP 403). */
+const FALLBACK_EVENT: DoStuffEvent = {
+  id: 1082169,
+  title: "Poetry Open Mic",
+  description:
+    "Poetry. Open mic sign-ups begin at 7:00pm with readings from 7:30pm to 10:00pm. " +
+    "Each poet recites for 10 minutes.",
+  tz_adjusted_begin_date: "2013-10-30T19:00:00-07:00",
+  tz_adjusted_end_date: "2013-10-30T22:00:00-07:00",
+  repeating: true,
+  dow: 3,
+  absolute_url: DOTHEBAY_POETRY_OPEN_MIC_URL,
+  is_free: true,
+  venue: {
+    title: "Sacred Grounds Cafe",
+    full_address: "2095 Hayes, San Francisco, CA",
+  },
 };
 
 type DoStuffVenue = {
@@ -111,45 +132,44 @@ function mapInstance(
   };
 }
 
-export async function fetchDoTheBayPoetryOpenMicForMonth(
+async function loadDoTheBayEvent(
+  signal?: AbortSignal,
+): Promise<{ raw: DoStuffEvent; pageFetched: boolean }> {
+  try {
+    const res = await fetch(JSON_URL, {
+      signal,
+      headers: {
+        Accept: "application/json",
+        "User-Agent": UA,
+        Referer: DOTHEBAY_POETRY_OPEN_MIC_URL,
+      },
+      next: { revalidate: 600 },
+    });
+    if (!res.ok) {
+      return { raw: FALLBACK_EVENT, pageFetched: false };
+    }
+    const data = (await res.json()) as { event?: DoStuffEvent };
+    if (!data.event?.tz_adjusted_begin_date) {
+      return { raw: FALLBACK_EVENT, pageFetched: false };
+    }
+    return { raw: data.event, pageFetched: true };
+  } catch {
+    return { raw: FALLBACK_EVENT, pageFetched: false };
+  }
+}
+
+function eventsForRaw(
+  raw: DoStuffEvent,
   year: number,
   monthIndex: number,
-  signal?: AbortSignal,
-): Promise<{ events: WorkshopEvent[]; meta: DoTheBayPoetryOpenMicMeta }> {
-  const res = await fetch(JSON_URL, {
-    signal,
-    headers: {
-      Accept: "application/json",
-      "User-Agent": UA,
-      Referer: DOTHEBAY_POETRY_OPEN_MIC_URL,
-    },
-    next: { revalidate: 600 },
-  });
-  if (!res.ok) {
-    throw new Error(`DoTheBay HTTP ${res.status}`);
-  }
-
-  const data = (await res.json()) as { event?: DoStuffEvent };
-  const raw = data.event;
-  if (!raw?.tz_adjusted_begin_date) {
-    return {
-      events: [],
-      meta: { pageFetched: true, recurring: false, instancesInMonth: 0 },
-    };
-  }
-
-  const anchor = DateTime.fromISO(raw.tz_adjusted_begin_date, { setZone: true }).setZone(
+): WorkshopEvent[] {
+  const anchor = DateTime.fromISO(raw.tz_adjusted_begin_date!, { setZone: true }).setZone(
     TZ,
   );
   const endAnchor = raw.tz_adjusted_end_date
     ? DateTime.fromISO(raw.tz_adjusted_end_date, { setZone: true }).setZone(TZ)
-    : anchor.plus({ hours: 2 });
-  if (!anchor.isValid) {
-    return {
-      events: [],
-      meta: { pageFetched: true, recurring: false, instancesInMonth: 0 },
-    };
-  }
+    : anchor.plus({ hours: 3 });
+  if (!anchor.isValid) return [];
 
   const monthStart = DateTime.fromObject(
     { year, month: monthIndex + 1, day: 1 },
@@ -166,16 +186,27 @@ export async function fetchDoTheBayPoetryOpenMicForMonth(
       ? [{ start: anchor, end: endAnchor }]
       : [];
 
-  const events = slots
+  return slots
     .map((slot) => mapInstance(raw, slot.start, slot.end))
     .sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime());
+}
+
+export async function fetchDoTheBayPoetryOpenMicForMonth(
+  year: number,
+  monthIndex: number,
+  signal?: AbortSignal,
+): Promise<{ events: WorkshopEvent[]; meta: DoTheBayPoetryOpenMicMeta }> {
+  const { raw, pageFetched } = await loadDoTheBayEvent(signal);
+  const events = eventsForRaw(raw, year, monthIndex);
+  const usedFallback = !pageFetched;
 
   return {
     events,
     meta: {
-      pageFetched: true,
-      recurring,
+      pageFetched,
+      recurring: raw.repeating === true,
       instancesInMonth: events.length,
+      ...(usedFallback ? { usedFallback: true } : {}),
     },
   };
 }

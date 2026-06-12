@@ -75,6 +75,43 @@ function sameMonthAs(ev: Pick<WorkshopEvent, "start" | "timeZone">, year: number
   return d.year === year && d.month === monthIndex + 1;
 }
 
+type EventWhen = "past" | "today" | "future";
+
+function eventWhenStatus(
+  ev: Pick<WorkshopEvent, "start" | "timeZone">,
+  now: DateTime = DateTime.now(),
+): EventWhen {
+  const evDay = eventZonedDateTime(ev).startOf("day");
+  if (!evDay.isValid) return "future";
+  const zone = ev.timeZone ?? now.zoneName ?? "local";
+  const today = now.setZone(zone).startOf("day");
+  if (evDay < today) return "past";
+  if (evDay.equals(today)) return "today";
+  return "future";
+}
+
+function dateKeyWhenStatus(dateKey: string, now: DateTime = DateTime.now()): EventWhen {
+  const dt = DateTime.fromISO(dateKey, { zone: now.zoneName ?? "local" }).startOf("day");
+  if (!dt.isValid) return "future";
+  const today = now.startOf("day");
+  if (dt < today) return "past";
+  if (dt.equals(today)) return "today";
+  return "future";
+}
+
+function eventWhenItemClasses(when: EventWhen): string {
+  if (when === "past") return "opacity-[0.62] saturate-[0.88] hover:opacity-[0.78]";
+  return "";
+}
+
+function eventWhenChipClasses(when: EventWhen): string {
+  const base = eventWhenItemClasses(when);
+  if (when === "today") {
+    return [base, "ring-1 ring-rose-900/25 dark:ring-rose-400/35"].filter(Boolean).join(" ");
+  }
+  return base;
+}
+
 function eventQualityScore(ev: WorkshopEvent): number {
   let score = 0;
   if (ev.listingProvenance === "live") score += 20;
@@ -97,8 +134,14 @@ function eventQualityScore(ev: WorkshopEvent): number {
   return score;
 }
 
+function isPostponedEvent(ev: WorkshopEvent): boolean {
+  const blob = `${ev.title}\n${ev.tagline ?? ""}\n${ev.description ?? ""}`.toLowerCase();
+  return /\bpostponed\b/.test(blob);
+}
+
 function pickWeeklyHighlights(events: WorkshopEvent[], min = 5, max = 7): WorkshopEvent[] {
-  const sorted = [...events].sort((a, b) => {
+  const eligible = events.filter((ev) => !isPostponedEvent(ev));
+  const sorted = [...eligible].sort((a, b) => {
     const s = eventQualityScore(b) - eventQualityScore(a);
     if (s !== 0) return s;
     return eventZonedDateTime(a).toMillis() - eventZonedDateTime(b).toMillis();
@@ -155,6 +198,71 @@ function toggleFilterInSet<T extends string>(set: Set<T>, value: T): Set<T> {
   if (next.has(value)) next.delete(value);
   else next.add(value);
   return next;
+}
+
+function allFilterSelections(): Pick<
+  EventFilters,
+  "formats" | "prices" | "categoryIncluded"
+> {
+  return {
+    formats: new Set(ALL_EVENT_FORMATS),
+    prices: new Set(ALL_PRICE_KINDS),
+    categoryIncluded: new Set(ALL_WORKSHOP_CATEGORIES),
+  };
+}
+
+function noFilterSelections(): Pick<
+  EventFilters,
+  "formats" | "prices" | "categoryIncluded"
+> {
+  return {
+    formats: new Set(),
+    prices: new Set(),
+    categoryIncluded: new Set(),
+  };
+}
+
+function EventStatusLabel({
+  when,
+  className,
+}: {
+  when: EventWhen;
+  className?: string;
+}) {
+  if (when === "future") {
+    return (
+      <span
+        className={
+          className ??
+          "shrink-0 text-xs font-semibold text-rose-900/90 dark:text-rose-300/90"
+        }
+      >
+        Open
+      </span>
+    );
+  }
+  if (when === "today") {
+    return (
+      <span
+        className={
+          className ??
+          "shrink-0 rounded-full bg-rose-900/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-rose-900 dark:bg-rose-400/15 dark:text-rose-200"
+        }
+      >
+        Today
+      </span>
+    );
+  }
+  return (
+    <span
+      className={
+        className ??
+        "shrink-0 rounded-full bg-stone-200/90 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-stone-600 dark:bg-stone-700/90 dark:text-stone-300"
+      }
+    >
+      Past
+    </span>
+  );
 }
 
 function FormatGlyph({ format }: { format: EventFormat }) {
@@ -287,6 +395,14 @@ export function WorkshopCalendar({ city }: { city: City }) {
     [],
   );
   const [writegirlEvents, setWritegirlEvents] = useState<WorkshopEvent[]>([]);
+  const [daPoetryLoungeEvents, setDaPoetryLoungeEvents] = useState<
+    WorkshopEvent[]
+  >([]);
+  const [worldStageEvents, setWorldStageEvents] = useState<WorkshopEvent[]>([]);
+  const [storiesLaEvents, setStoriesLaEvents] = useState<WorkshopEvent[]>([]);
+  const [laPoetSocietyEvents, setLaPoetSocietyEvents] = useState<
+    WorkshopEvent[]
+  >([]);
   const [sfplEvents, setSfplEvents] = useState<WorkshopEvent[]>([]);
   const [writersGrottoEvents, setWritersGrottoEvents] = useState<WorkshopEvent[]>(
     [],
@@ -432,6 +548,10 @@ export function WorkshopCalendar({ city }: { city: City }) {
       setLastBookstoreEvents([]);
       setSkylightBooksEvents([]);
       setWritegirlEvents([]);
+      setDaPoetryLoungeEvents([]);
+      setWorldStageEvents([]);
+      setStoriesLaEvents([]);
+      setLaPoetSocietyEvents([]);
       return;
     }
     const y = year;
@@ -446,6 +566,10 @@ export function WorkshopCalendar({ city }: { city: City }) {
           lastBookstoreRes,
           skylightRes,
           writegirlRes,
+          daPoetryLoungeRes,
+          worldStageRes,
+          storiesLaRes,
+          laPoetSocietyRes,
         ] = await Promise.all([
           fetch(`/api/lapl/events?year=${y}&month=${m}`, { signal: ac.signal }),
           fetch(`/api/lyric-hyperion/events?year=${y}&month=${m}`, {
@@ -461,6 +585,18 @@ export function WorkshopCalendar({ city }: { city: City }) {
             signal: ac.signal,
           }),
           fetch(`/api/writegirl/events?year=${y}&month=${m}`, {
+            signal: ac.signal,
+          }),
+          fetch(`/api/da-poetry-lounge-open-mic/events?year=${y}&month=${m}`, {
+            signal: ac.signal,
+          }),
+          fetch(`/api/world-stage/events?year=${y}&month=${m}`, {
+            signal: ac.signal,
+          }),
+          fetch(`/api/stories-la/events?year=${y}&month=${m}`, {
+            signal: ac.signal,
+          }),
+          fetch(`/api/la-poet-society/events?year=${y}&month=${m}`, {
             signal: ac.signal,
           }),
         ]);
@@ -483,6 +619,18 @@ export function WorkshopCalendar({ city }: { city: City }) {
         const writegirlBody = writegirlRes.ok
           ? ((await writegirlRes.json()) as { events?: WorkshopEvent[] })
           : {};
+        const daPoetryLoungeBody = daPoetryLoungeRes.ok
+          ? ((await daPoetryLoungeRes.json()) as { events?: WorkshopEvent[] })
+          : {};
+        const worldStageBody = worldStageRes.ok
+          ? ((await worldStageRes.json()) as { events?: WorkshopEvent[] })
+          : {};
+        const storiesLaBody = storiesLaRes.ok
+          ? ((await storiesLaRes.json()) as { events?: WorkshopEvent[] })
+          : {};
+        const laPoetSocietyBody = laPoetSocietyRes.ok
+          ? ((await laPoetSocietyRes.json()) as { events?: WorkshopEvent[] })
+          : {};
 
         setLaplEvents(Array.isArray(laplBody.events) ? laplBody.events : []);
         setLyricHyperionEvents(
@@ -502,6 +650,22 @@ export function WorkshopCalendar({ city }: { city: City }) {
         setWritegirlEvents(
           Array.isArray(writegirlBody.events) ? writegirlBody.events : [],
         );
+        setDaPoetryLoungeEvents(
+          Array.isArray(daPoetryLoungeBody.events)
+            ? daPoetryLoungeBody.events
+            : [],
+        );
+        setWorldStageEvents(
+          Array.isArray(worldStageBody.events) ? worldStageBody.events : [],
+        );
+        setStoriesLaEvents(
+          Array.isArray(storiesLaBody.events) ? storiesLaBody.events : [],
+        );
+        setLaPoetSocietyEvents(
+          Array.isArray(laPoetSocietyBody.events)
+            ? laPoetSocietyBody.events
+            : [],
+        );
       } catch (e) {
         if ((e as Error).name === "AbortError") return;
         setLaplEvents([]);
@@ -510,6 +674,10 @@ export function WorkshopCalendar({ city }: { city: City }) {
         setLastBookstoreEvents([]);
         setSkylightBooksEvents([]);
         setWritegirlEvents([]);
+        setDaPoetryLoungeEvents([]);
+        setWorldStageEvents([]);
+        setStoriesLaEvents([]);
+        setLaPoetSocietyEvents([]);
       }
     })();
     return () => ac.abort();
@@ -941,6 +1109,10 @@ export function WorkshopCalendar({ city }: { city: City }) {
     const lastBookstore = city.id === "la" ? lastBookstoreEvents : [];
     const skylight = city.id === "la" ? skylightBooksEvents : [];
     const writegirl = city.id === "la" ? writegirlEvents : [];
+    const daPoetryLounge = city.id === "la" ? daPoetryLoungeEvents : [];
+    const worldStage = city.id === "la" ? worldStageEvents : [];
+    const storiesLa = city.id === "la" ? storiesLaEvents : [];
+    const laPoetSociety = city.id === "la" ? laPoetSocietyEvents : [];
     const sfpl = city.id === "sf" ? sfplEvents : [];
     const writingSalon = city.id === "sf" ? writingSalonEvents : [];
     const shutUpAndWrite = city.id === "sf" ? shutUpAndWriteEvents : [];
@@ -981,6 +1153,10 @@ export function WorkshopCalendar({ city }: { city: City }) {
       ...lastBookstore,
       ...skylight,
       ...writegirl,
+      ...daPoetryLounge,
+      ...worldStage,
+      ...storiesLa,
+      ...laPoetSociety,
       ...sfpl,
       ...writingSalon,
       ...shutUpAndWrite,
@@ -1016,6 +1192,10 @@ export function WorkshopCalendar({ city }: { city: City }) {
     lastBookstoreEvents,
     skylightBooksEvents,
     writegirlEvents,
+    daPoetryLoungeEvents,
+    worldStageEvents,
+    storiesLaEvents,
+    laPoetSocietyEvents,
     sfplEvents,
     writingSalonEvents,
     shutUpAndWriteEvents,
@@ -1169,7 +1349,7 @@ export function WorkshopCalendar({ city }: { city: City }) {
     }
 
     if (city.id === "la") {
-      return "No LA listings for this month from LAPL, Lyric Hyperion, Los Angeles Literature (annual events index), The Last Bookstore, Skylight Books, WriteGirl, or Eventbrite, or a feed could not be reached. Try another month or check your connection.";
+      return "No LA listings for this month from LAPL, Lyric Hyperion, Los Angeles Literature (annual events index), The Last Bookstore, Skylight Books, WriteGirl, Da Poetry Lounge (Open Mic), The World Stage, Stories Books & Cafe, Los Angeles Poet Society, or Eventbrite, or a feed could not be reached. Try another month or check your connection.";
     }
 
     if (eventbriteMeta?.configured === false) {
@@ -1239,21 +1419,46 @@ export function WorkshopCalendar({ city }: { city: City }) {
           role="search"
           aria-label="Filter events"
         >
-          <p className="text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-stone-500 dark:text-stone-400">
-            Filters
-          </p>
+          <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
+            <p className="text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-stone-500 dark:text-stone-400">
+              Filters
+            </p>
+            <div className="flex items-center gap-1.5 text-xs text-stone-500 dark:text-stone-400">
+              <button
+                type="button"
+                onClick={() =>
+                  setFilters((prev) => ({ ...prev, ...allFilterSelections() }))
+                }
+                className="font-medium text-stone-600 underline-offset-2 hover:text-stone-900 hover:underline dark:text-stone-400 dark:hover:text-stone-200"
+              >
+                Select All
+              </button>
+              <span aria-hidden className="text-stone-300 dark:text-stone-600">
+                |
+              </span>
+              <button
+                type="button"
+                onClick={() =>
+                  setFilters((prev) => ({ ...prev, ...noFilterSelections() }))
+                }
+                className="font-medium text-stone-600 underline-offset-2 hover:text-stone-900 hover:underline dark:text-stone-400 dark:hover:text-stone-200"
+              >
+                Clear All
+              </button>
+            </div>
+          </div>
           <div className="mt-3 flex flex-col gap-4 lg:flex-row lg:flex-wrap lg:items-start lg:gap-6">
             <fieldset className="min-w-0">
               <legend className="text-xs text-stone-600 dark:text-stone-400">
                 Format
               </legend>
-              <div className="mt-2 flex flex-col gap-2">
+              <div className="mt-2 flex flex-wrap gap-1.5">
                 {ALL_EVENT_FORMATS.map((f) => (
-                  <FilterCheckbox
+                  <FilterPill
                     key={f}
                     label={FORMAT_LABELS[f]}
-                    checked={filters.formats.has(f)}
-                    onChange={() =>
+                    selected={filters.formats.has(f)}
+                    onToggle={() =>
                       setFilters((prev) => ({
                         ...prev,
                         formats: toggleFilterInSet(prev.formats, f),
@@ -1267,13 +1472,13 @@ export function WorkshopCalendar({ city }: { city: City }) {
               <legend className="text-xs text-stone-600 dark:text-stone-400">
                 Price
               </legend>
-              <div className="mt-2 flex flex-col gap-2">
+              <div className="mt-2 flex flex-wrap gap-1.5">
                 {ALL_PRICE_KINDS.map((p) => (
-                  <FilterCheckbox
+                  <FilterPill
                     key={p}
                     label={PRICE_LABELS[p]}
-                    checked={filters.prices.has(p)}
-                    onChange={() =>
+                    selected={filters.prices.has(p)}
+                    onToggle={() =>
                       setFilters((prev) => ({
                         ...prev,
                         prices: toggleFilterInSet(prev.prices, p),
@@ -1287,13 +1492,13 @@ export function WorkshopCalendar({ city }: { city: City }) {
               <legend className="text-xs text-stone-600 dark:text-stone-400">
                 Event type
               </legend>
-              <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+              <div className="mt-2 flex flex-wrap gap-1.5">
                 {categoryOptions.map((c) => (
-                  <FilterCheckbox
+                  <FilterPill
                     key={c}
                     label={CATEGORY_LABELS[c]}
-                    checked={filters.categoryIncluded.has(c)}
-                    onChange={() =>
+                    selected={filters.categoryIncluded.has(c)}
+                    onToggle={() =>
                       setFilters((prev) => ({
                         ...prev,
                         categoryIncluded: toggleFilterInSet(
@@ -1402,13 +1607,17 @@ export function WorkshopCalendar({ city }: { city: City }) {
             <div className="flex min-w-full gap-3 pb-1">
               {weeklyHighlights.map((ev) => {
                 const dt = eventZonedDateTime(ev);
-                const when = dt.isValid ? dt.toFormat("ccc, LLL d · h:mm a") : "";
+                const whenLabel = dt.isValid ? dt.toFormat("ccc, LLL d · h:mm a") : "";
+                const whenStatus = eventWhenStatus(ev);
                 return (
                   <button
                     key={ev.id}
                     type="button"
                     onClick={() => openEventDetail(ev)}
-                    className="min-h-14 w-[min(22rem,85vw)] shrink-0 rounded-sm border border-stone-200/90 bg-white/90 p-4 text-left shadow-sm transition hover:border-stone-300 hover:bg-stone-50 dark:border-stone-700/80 dark:bg-stone-950/60 dark:hover:bg-stone-900/40"
+                    className={[
+                      "group min-h-14 w-[min(22rem,85vw)] shrink-0 rounded-sm border border-stone-200/90 bg-white/90 p-4 text-left shadow-sm transition hover:border-stone-300 hover:bg-stone-50 dark:border-stone-700/80 dark:bg-stone-950/60 dark:hover:bg-stone-900/40",
+                      eventWhenChipClasses(whenStatus),
+                    ].join(" ")}
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0 flex-1">
@@ -1430,13 +1639,11 @@ export function WorkshopCalendar({ city }: { city: City }) {
                           {ev.tagline || ev.organizer}
                         </p>
                         <p className="mt-2 text-xs text-stone-500 dark:text-stone-500">
-                          {when}
+                          {whenLabel}
                           {ev.venue ? ` · ${ev.venue}` : ""}
                         </p>
                       </div>
-                      <span className="shrink-0 text-xs font-semibold text-rose-900/90 dark:text-rose-300/90">
-                        Open
-                      </span>
+                      <EventStatusLabel when={whenStatus} />
                     </div>
                   </button>
                 );
@@ -1503,6 +1710,8 @@ export function WorkshopCalendar({ city }: { city: City }) {
                     const dayEvents = key ? (byDay.get(key) ?? []) : [];
                     const visible = dayEvents.slice(0, 3);
                     const more = dayEvents.length - visible.length;
+                    const dayWhen = key ? dateKeyWhenStatus(key) : null;
+                    const cellIsToday = day !== null && isToday(day);
 
                     return (
                       <div
@@ -1524,26 +1733,47 @@ export function WorkshopCalendar({ city }: { city: City }) {
                               dayEvents.length
                                 ? "cursor-pointer hover:bg-rose-50/40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-900/25 dark:hover:bg-stone-800/60"
                                 : "cursor-default",
-                              isToday(day)
-                                ? "ring-1 ring-rose-900/25 ring-inset dark:ring-rose-400/25"
+                              dayWhen === "past"
+                                ? "bg-stone-50/70 dark:bg-stone-900/20"
+                                : "",
+                              cellIsToday
+                                ? "ring-1 ring-rose-900/30 ring-inset dark:ring-rose-400/30"
                                 : "",
                             ].join(" ")}
                           >
-                            <div className="flex shrink-0 justify-end">
-                              <span className="text-xs font-semibold tabular-nums text-stone-600 dark:text-stone-300">
+                            <div className="flex shrink-0 items-center justify-end gap-1">
+                              {cellIsToday ? (
+                                <span className="rounded-full bg-rose-900/10 px-1.5 py-px text-[8px] font-semibold uppercase tracking-wide text-rose-900 dark:bg-rose-400/15 dark:text-rose-200 sm:text-[9px]">
+                                  Today
+                                </span>
+                              ) : null}
+                              <span
+                                className={[
+                                  "text-xs font-semibold tabular-nums",
+                                  dayWhen === "past"
+                                    ? "text-stone-400 dark:text-stone-500"
+                                    : "text-stone-600 dark:text-stone-300",
+                                ].join(" ")}
+                              >
                                 {day}
                               </span>
                             </div>
                             <div className="mt-1 flex min-h-0 flex-1 flex-col gap-1 overflow-hidden">
-                              {visible.map((ev) => (
+                              {visible.map((ev) => {
+                                const evWhen = eventWhenStatus(ev);
+                                return (
                                 <div key={ev.id} className="min-w-0">
                                   <button
                                     type="button"
+                                    title={evWhen === "past" ? "Past event" : undefined}
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       openEventDetail(ev);
                                     }}
-                                    className="w-full rounded-[2px] border border-stone-200/90 bg-white/90 px-1.5 py-1 text-left shadow-sm transition hover:border-stone-300 hover:shadow dark:border-stone-600 dark:bg-stone-950/80 dark:hover:border-stone-500"
+                                    className={[
+                                      "group relative w-full rounded-[2px] border border-stone-200/90 bg-white/90 px-1.5 py-1 text-left shadow-sm transition hover:border-stone-300 hover:shadow dark:border-stone-600 dark:bg-stone-950/80 dark:hover:border-stone-500",
+                                      eventWhenChipClasses(evWhen),
+                                    ].join(" ")}
                                   >
                                     <div className="flex items-start gap-1">
                                       <FormatGlyph format={ev.format} />
@@ -1561,9 +1791,15 @@ export function WorkshopCalendar({ city }: { city: City }) {
                                         </span>
                                       </div>
                                     </div>
+                                    {evWhen === "past" ? (
+                                      <span className="pointer-events-none absolute right-1 top-1 hidden rounded bg-stone-600/85 px-1 py-px text-[8px] font-semibold uppercase tracking-wide text-white group-hover:inline">
+                                        Past
+                                      </span>
+                                    ) : null}
                                   </button>
                                 </div>
-                              ))}
+                              );
+                              })}
                               {more > 0 ? (
                                 <button
                                   type="button"
@@ -1586,12 +1822,20 @@ export function WorkshopCalendar({ city }: { city: City }) {
               </>
             ) : (
               <ul className="scroll-smooth divide-y divide-stone-200/90 dark:divide-stone-700/80">
-                {listSorted.map((ev) => (
+                {listSorted.map((ev) => {
+                  const evWhen = eventWhenStatus(ev);
+                  return (
                   <li key={ev.id} className="py-4 first:pt-0">
                     <button
                       type="button"
                       onClick={() => openEventDetail(ev)}
-                      className="flex w-full min-h-12 flex-col gap-2 rounded-sm px-1 text-left transition hover:bg-rose-50/50 dark:hover:bg-stone-800/40 sm:flex-row sm:items-start sm:justify-between sm:gap-4"
+                      className={[
+                        "flex w-full min-h-12 flex-col gap-2 rounded-sm px-1 text-left transition hover:bg-rose-50/50 dark:hover:bg-stone-800/40 sm:flex-row sm:items-start sm:justify-between sm:gap-4",
+                        eventWhenItemClasses(evWhen),
+                        evWhen === "today"
+                          ? "ring-1 ring-rose-900/15 ring-inset dark:ring-rose-400/20"
+                          : "",
+                      ].join(" ")}
                     >
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center gap-2">
@@ -1618,12 +1862,11 @@ export function WorkshopCalendar({ city }: { city: City }) {
                           {ev.neighborhood ? ` · ${ev.neighborhood}` : ""}
                         </p>
                       </div>
-                      <span className="shrink-0 text-xs font-semibold text-rose-900/90 dark:text-rose-300/90">
-                        Open
-                      </span>
+                      <EventStatusLabel when={evWhen} />
                     </button>
                   </li>
-                ))}
+                );
+                })}
               </ul>
             )}
           </div>
@@ -1678,14 +1921,18 @@ function DayPanelBody({
     day: "numeric",
     year: "numeric",
   });
+  const dayWhen = dateKeyWhenStatus(dateKey);
 
   return (
     <div className="flex max-h-[calc(100vh-6rem)] flex-col">
       <div className="flex items-start justify-between gap-3 border-b border-stone-200/80 px-4 py-4 dark:border-stone-700/80">
         <div>
-          <p className="text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-stone-500">
-            This day
-          </p>
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-stone-500">
+              This day
+            </p>
+            {dayWhen !== "future" ? <EventStatusLabel when={dayWhen} /> : null}
+          </div>
           <p className="mt-1 font-serif text-lg font-semibold text-stone-900 dark:text-stone-50">
             {heading}
           </p>
@@ -1699,12 +1946,17 @@ function DayPanelBody({
         </button>
       </div>
       <ul className="flex-1 overflow-y-auto px-3 py-3">
-        {events.map((ev) => (
+        {events.map((ev) => {
+          const evWhen = eventWhenStatus(ev);
+          return (
           <li key={ev.id} className="border-b border-stone-100 py-3 last:border-0 dark:border-stone-800">
             <button
               type="button"
               onClick={() => onPick(ev)}
-              className="flex w-full flex-col gap-1 text-left"
+              className={[
+                "flex w-full flex-col gap-1 text-left",
+                eventWhenItemClasses(evWhen),
+              ].join(" ")}
             >
               <div className="flex items-center gap-2">
                 <FormatGlyph format={ev.format} />
@@ -1716,6 +1968,16 @@ function DayPanelBody({
                 >
                   {CATEGORY_LABELS[ev.category]}
                 </span>
+                {evWhen !== "future" ? (
+                  <EventStatusLabel
+                    when={evWhen}
+                    className={
+                      evWhen === "today"
+                        ? "rounded-full bg-rose-900/10 px-1.5 py-px text-[9px] font-semibold uppercase tracking-wide text-rose-900 dark:bg-rose-400/15 dark:text-rose-200"
+                        : "rounded-full bg-stone-200/90 px-1.5 py-px text-[9px] font-semibold uppercase tracking-wide text-stone-600 dark:bg-stone-700/90 dark:text-stone-300"
+                    }
+                  />
+                ) : null}
               </div>
               <span className="font-serif text-sm font-semibold text-stone-900 dark:text-stone-50">
                 {ev.title}
@@ -1725,7 +1987,8 @@ function DayPanelBody({
               </span>
             </button>
           </li>
-        ))}
+        );
+        })}
       </ul>
     </div>
   );
@@ -1783,25 +2046,30 @@ function formatWhen(ev: WorkshopEvent) {
   return dt.toFormat("ccc, LLL d, h:mm a");
 }
 
-function FilterCheckbox({
+function FilterPill({
   label,
-  checked,
-  onChange,
+  selected,
+  onToggle,
 }: {
   label: string;
-  checked: boolean;
-  onChange: () => void;
+  selected: boolean;
+  onToggle: () => void;
 }) {
   return (
-    <label className="inline-flex min-h-9 cursor-pointer items-center gap-2 text-sm text-stone-800 dark:text-stone-200">
-      <input
-        type="checkbox"
-        checked={checked}
-        onChange={onChange}
-        className="h-4 w-4 shrink-0 rounded border-stone-300 text-rose-900 focus:ring-rose-900/25 dark:border-stone-600 dark:bg-stone-950"
-      />
-      <span>{label}</span>
-    </label>
+    <button
+      type="button"
+      role="checkbox"
+      aria-checked={selected}
+      onClick={onToggle}
+      className={[
+        "rounded-full px-3 py-1.5 text-xs font-medium transition-colors",
+        selected
+          ? "border border-stone-800 bg-stone-800 text-stone-50 dark:border-stone-200 dark:bg-stone-200 dark:text-stone-900"
+          : "border border-stone-300 bg-transparent text-stone-600 hover:border-stone-400 dark:border-stone-600 dark:text-stone-400 dark:hover:border-stone-500",
+      ].join(" ")}
+    >
+      {label}
+    </button>
   );
 }
 
@@ -1842,6 +2110,7 @@ function EventDetailModal({
         : DateTime.fromISO(event.end, { setZone: true }).toLocal())
     : null;
   const isSample = event.listingProvenance === "sample";
+  const whenStatus = eventWhenStatus(event);
   const [synopsis, setSynopsis] = useState<string | null>(null);
 
   useEffect(() => {
@@ -1889,11 +2158,16 @@ function EventDetailModal({
         <div className="border-b border-stone-200/90 px-6 pb-5 pt-6 dark:border-stone-700/80">
           <div className="flex items-start justify-between gap-4">
             <div className="min-w-0">
-              <p className="text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-stone-500 dark:text-stone-400">
-                {CATEGORY_LABELS[event.category]}
-                {" · "}
-                {FORMAT_LABELS[event.format]}
-              </p>
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-stone-500 dark:text-stone-400">
+                  {CATEGORY_LABELS[event.category]}
+                  {" · "}
+                  {FORMAT_LABELS[event.format]}
+                </p>
+                {whenStatus !== "future" ? (
+                  <EventStatusLabel when={whenStatus} />
+                ) : null}
+              </div>
               <h2
                 id="event-detail-title"
                 className="mt-3 font-serif text-2xl font-semibold leading-snug tracking-tight text-stone-900 dark:text-stone-50 sm:text-3xl"

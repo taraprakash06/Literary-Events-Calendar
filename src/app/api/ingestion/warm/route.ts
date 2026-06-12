@@ -61,6 +61,10 @@ function endpointsForCity(cityId: string): string[] {
       "/api/last-bookstore/events",
       "/api/skylight-books/events",
       "/api/writegirl/events",
+      "/api/da-poetry-lounge-open-mic/events",
+      "/api/world-stage/events",
+      "/api/stories-la/events",
+      "/api/la-poet-society/events",
       "/api/eventbrite/events",
     ];
   }

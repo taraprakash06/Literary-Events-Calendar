@@ -1,0 +1,40 @@
+import { NextResponse } from "next/server";
+import {
+  STORIES_LA_EVENTS_URL,
+  fetchStoriesLaEventRowsForMonth,
+} from "@/lib/stories-la-client";
+import { mapStoriesLaEventRowToWorkshop } from "@/lib/stories-la-map";
+
+export const revalidate = 600;
+
+export async function GET(req: Request) {
+  const { searchParams } = new URL(req.url);
+  const y = Number(searchParams.get("year"));
+  const m = Number(searchParams.get("month"));
+  const now = new Date();
+  const year = Number.isFinite(y) && y >= 2000 && y <= 2100 ? y : now.getFullYear();
+  const monthIndex =
+    Number.isFinite(m) && m >= 1 && m <= 12 ? m - 1 : now.getMonth();
+
+  try {
+    const { rows, store } = await fetchStoriesLaEventRowsForMonth(year, monthIndex);
+    const events = rows
+      .map((row) => mapStoriesLaEventRowToWorkshop(row, store))
+      .filter((e): e is NonNullable<typeof e> => e !== null);
+
+    return NextResponse.json({
+      events,
+      meta: {
+        year,
+        month: monthIndex + 1,
+        source: STORIES_LA_EVENTS_URL,
+        store: store.name,
+        fetched: rows.length,
+        literary: events.length,
+      },
+    });
+  } catch (e) {
+    const message = e instanceof Error ? e.message : "fetch failed";
+    return NextResponse.json({ error: message, events: [] }, { status: 502 });
+  }
+}
