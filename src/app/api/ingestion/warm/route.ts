@@ -38,6 +38,7 @@ function endpointsForCity(cityId: string): string[] {
       "/api/busboys-poets/events",
       "/api/mdhumanities/events",
       "/api/planet-word/events",
+      "/api/write-to-right/events",
       "/api/eventbrite/events",
     ];
   }
