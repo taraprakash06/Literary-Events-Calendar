@@ -1435,7 +1435,10 @@ export function WorkshopCalendar({ city }: { city: City }) {
     ? (byDay.get(dayPanelKey) ?? [])
     : [];
 
-  const showLoadingEvents = sourcesLoading && cityEvents.length === 0;
+  // While sources are fetching, prefer a loading state over "no events" /
+  // "filters" messaging — leftover events from the previous month still count
+  // in cityEvents but get filtered out of the visible month.
+  const showLoadingEvents = sourcesLoading && inVisibleMonth.length === 0;
 
   const emptyFiltered =
     !showLoadingEvents &&
@@ -1796,7 +1799,7 @@ export function WorkshopCalendar({ city }: { city: City }) {
               >
                 <div className="h-6 w-6 animate-spin rounded-full border-2 border-stone-300 border-t-rose-900/80 dark:border-stone-600 dark:border-t-rose-300/80" />
                 <p className="text-sm text-stone-600 dark:text-stone-400">
-                  Loading events…
+                  Loading calendar…
                 </p>
               </div>
             ) : emptyFiltered ? (
