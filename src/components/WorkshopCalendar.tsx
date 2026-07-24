@@ -466,6 +466,7 @@ export function WorkshopCalendar({ city }: { city: City }) {
   const [strandEvents, setStrandEvents] = useState<WorkshopEvent[]>([]);
   const [ny92Events, setNy92Events] = useState<WorkshopEvent[]>([]);
   const [nuyoricanEvents, setNuyoricanEvents] = useState<WorkshopEvent[]>([]);
+  const [tennesseeEvents, setTennesseeEvents] = useState<WorkshopEvent[]>([]);
 
   useEffect(() => {
     if (city.id !== "dmv") {
@@ -1144,6 +1145,36 @@ export function WorkshopCalendar({ city }: { city: City }) {
   }, [city.id, year, monthIndex]);
 
   useEffect(() => {
+    if (city.id !== "tn") {
+      setTennesseeEvents([]);
+      return;
+    }
+    const y = year;
+    const m = monthIndex + 1;
+    const ac = new AbortController();
+    const finishLoad = beginSourceLoad(loadEpochRef, pendingLoadsRef, setSourcesLoading);
+    (async () => {
+      try {
+        const res = await fetch(`/api/tennessee/events?year=${y}&month=${m}`, {
+          signal: ac.signal,
+        });
+        if (!res.ok) {
+          setTennesseeEvents([]);
+          return;
+        }
+        const body = (await res.json()) as { events?: WorkshopEvent[] };
+        setTennesseeEvents(Array.isArray(body.events) ? body.events : []);
+      } catch (e) {
+        if ((e as Error).name === "AbortError") return;
+        setTennesseeEvents([]);
+      } finally {
+        finishLoad();
+      }
+    })();
+    return () => ac.abort();
+  }, [city.id, year, monthIndex]);
+
+  useEffect(() => {
     if (
       city.id !== "dmv" &&
       city.id !== "nyc" &&
@@ -1227,6 +1258,7 @@ export function WorkshopCalendar({ city }: { city: City }) {
     const strand = city.id === "nyc" ? strandEvents : [];
     const ny92 = city.id === "nyc" ? ny92Events : [];
     const nycafe = city.id === "nyc" ? nuyoricanEvents : [];
+    const tn = city.id === "tn" ? tennesseeEvents : [];
     const eb =
       city.id === "dmv" ||
       city.id === "nyc" ||
@@ -1273,6 +1305,7 @@ export function WorkshopCalendar({ city }: { city: City }) {
       ...strand,
       ...ny92,
       ...nycafe,
+      ...tn,
       ...eb,
     ];
   }, [
@@ -1314,6 +1347,7 @@ export function WorkshopCalendar({ city }: { city: City }) {
     strandEvents,
     ny92Events,
     nuyoricanEvents,
+    tennesseeEvents,
     eventbriteEvents,
   ]);
   const categoryOptions = useMemo(
@@ -1471,6 +1505,10 @@ export function WorkshopCalendar({ city }: { city: City }) {
 
     if (city.id === "sf") {
       return "No SF listings were returned for this month from SFPL, The Writing Salon, San Francisco Writers Workshop, The Writers Grotto, Shut Up & Write!® (Meetup), DoTheBay (Poetry Open Mic), Bazaar Cafe (Open Mic), Decentered Studio (Open Mic), Galería de la Raza, or Eventbrite. Try another month or check that Eventbrite org IDs include SF organizers.";
+    }
+
+    if (city.id === "tn") {
+      return "No Tennessee listings for this month yet. Try another month or check your connection.";
     }
 
     return "No verified events loaded for this city yet. Wire ingestion (Eventbrite, library calendars, RSS, etc.) so only real dated listings appear here.";

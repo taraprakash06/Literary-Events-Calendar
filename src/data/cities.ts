@@ -28,6 +28,12 @@ export const CITIES: City[] = [
     name: "San Francisco Bay Area, CA",
     label: "SF",
   },
+  {
+    id: "tn",
+    slug: "tennessee",
+    name: "Tennessee",
+    label: "TN",
+  },
 ];
 
 const bySlug = new Map(CITIES.map((c) => [c.slug, c] as const));

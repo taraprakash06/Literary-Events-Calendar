@@ -85,6 +85,9 @@ function endpointsForCity(cityId: string): string[] {
       "/api/eventbrite/events",
     ];
   }
+  if (cityId === "tn") {
+    return ["/api/tennessee/events"];
+  }
   return [];
 }
 
