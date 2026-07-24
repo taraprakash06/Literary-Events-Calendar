@@ -432,6 +432,7 @@ export function WorkshopCalendar({ city }: { city: City }) {
   const [laPoetSocietyEvents, setLaPoetSocietyEvents] = useState<
     WorkshopEvent[]
   >([]);
+  const [laCuratedEvents, setLaCuratedEvents] = useState<WorkshopEvent[]>([]);
   const [sfplEvents, setSfplEvents] = useState<WorkshopEvent[]>([]);
   const [writersGrottoEvents, setWritersGrottoEvents] = useState<WorkshopEvent[]>(
     [],
@@ -453,6 +454,7 @@ export function WorkshopCalendar({ city }: { city: City }) {
   >([]);
   const [galeriaEvents, setGaleriaEvents] = useState<WorkshopEvent[]>([]);
   const [curatedSfEbEvents, setCuratedSfEbEvents] = useState<WorkshopEvent[]>([]);
+  const [sfCuratedEvents, setSfCuratedEvents] = useState<WorkshopEvent[]>([]);
   const [sfWritersWorkshopEvents, setSfWritersWorkshopEvents] = useState<
     WorkshopEvent[]
   >([]);
@@ -611,6 +613,7 @@ export function WorkshopCalendar({ city }: { city: City }) {
       setWorldStageEvents([]);
       setStoriesLaEvents([]);
       setLaPoetSocietyEvents([]);
+      setLaCuratedEvents([]);
       return;
     }
     const y = year;
@@ -630,6 +633,7 @@ export function WorkshopCalendar({ city }: { city: City }) {
           worldStageRes,
           storiesLaRes,
           laPoetSocietyRes,
+          laCuratedRes,
         ] = await Promise.all([
           fetch(`/api/lapl/events?year=${y}&month=${m}`, { signal: ac.signal }),
           fetch(`/api/lyric-hyperion/events?year=${y}&month=${m}`, {
@@ -657,6 +661,9 @@ export function WorkshopCalendar({ city }: { city: City }) {
             signal: ac.signal,
           }),
           fetch(`/api/la-poet-society/events?year=${y}&month=${m}`, {
+            signal: ac.signal,
+          }),
+          fetch(`/api/la-curated/events?year=${y}&month=${m}`, {
             signal: ac.signal,
           }),
         ]);
@@ -690,6 +697,9 @@ export function WorkshopCalendar({ city }: { city: City }) {
           : {};
         const laPoetSocietyBody = laPoetSocietyRes.ok
           ? ((await laPoetSocietyRes.json()) as { events?: WorkshopEvent[] })
+          : {};
+        const laCuratedBody = laCuratedRes.ok
+          ? ((await laCuratedRes.json()) as { events?: WorkshopEvent[] })
           : {};
 
         setLaplEvents(Array.isArray(laplBody.events) ? laplBody.events : []);
@@ -726,6 +736,9 @@ export function WorkshopCalendar({ city }: { city: City }) {
             ? laPoetSocietyBody.events
             : [],
         );
+        setLaCuratedEvents(
+          Array.isArray(laCuratedBody.events) ? laCuratedBody.events : [],
+        );
       } catch (e) {
         if ((e as Error).name === "AbortError") return;
         setLaplEvents([]);
@@ -738,6 +751,7 @@ export function WorkshopCalendar({ city }: { city: City }) {
         setWorldStageEvents([]);
         setStoriesLaEvents([]);
         setLaPoetSocietyEvents([]);
+        setLaCuratedEvents([]);
       } finally {
         finishLoad();
       }
@@ -756,6 +770,7 @@ export function WorkshopCalendar({ city }: { city: City }) {
       setDecenteredOpenMicEvents([]);
       setGaleriaEvents([]);
       setCuratedSfEbEvents([]);
+      setSfCuratedEvents([]);
       return;
     }
     const y = year;
@@ -774,6 +789,7 @@ export function WorkshopCalendar({ city }: { city: City }) {
           decenteredRes,
           galeriaRes,
           curatedEbRes,
+          sfCuratedRes,
         ] = await Promise.all([
           fetch(`/api/sfpl/events?year=${y}&month=${m}`, { signal: ac.signal }),
           fetch(`/api/writing-salon/events?year=${y}&month=${m}`, {
@@ -798,6 +814,9 @@ export function WorkshopCalendar({ city }: { city: City }) {
             signal: ac.signal,
           }),
           fetch(`/api/curated-sf-eventbrite/events?year=${y}&month=${m}`, {
+            signal: ac.signal,
+          }),
+          fetch(`/api/sf-curated/events?year=${y}&month=${m}`, {
             signal: ac.signal,
           }),
         ]);
@@ -828,6 +847,9 @@ export function WorkshopCalendar({ city }: { city: City }) {
         const curatedEbBody = curatedEbRes.ok
           ? ((await curatedEbRes.json()) as { events?: WorkshopEvent[] })
           : {};
+        const sfCuratedBody = sfCuratedRes.ok
+          ? ((await sfCuratedRes.json()) as { events?: WorkshopEvent[] })
+          : {};
         setSfplEvents(Array.isArray(sfplBody.events) ? sfplBody.events : []);
         setWritingSalonEvents(
           Array.isArray(writingSalonBody.events) ? writingSalonBody.events : [],
@@ -855,6 +877,9 @@ export function WorkshopCalendar({ city }: { city: City }) {
         setCuratedSfEbEvents(
           Array.isArray(curatedEbBody.events) ? curatedEbBody.events : [],
         );
+        setSfCuratedEvents(
+          Array.isArray(sfCuratedBody.events) ? sfCuratedBody.events : [],
+        );
       } catch (e) {
         if ((e as Error).name === "AbortError") return;
         setSfplEvents([]);
@@ -866,6 +891,7 @@ export function WorkshopCalendar({ city }: { city: City }) {
         setDecenteredOpenMicEvents([]);
         setGaleriaEvents([]);
         setCuratedSfEbEvents([]);
+        setSfCuratedEvents([]);
       } finally {
         finishLoad();
       }
@@ -1240,6 +1266,7 @@ export function WorkshopCalendar({ city }: { city: City }) {
     const worldStage = city.id === "la" ? worldStageEvents : [];
     const storiesLa = city.id === "la" ? storiesLaEvents : [];
     const laPoetSociety = city.id === "la" ? laPoetSocietyEvents : [];
+    const laCurated = city.id === "la" ? laCuratedEvents : [];
     const sfpl = city.id === "sf" ? sfplEvents : [];
     const writingSalon = city.id === "sf" ? writingSalonEvents : [];
     const shutUpAndWrite = city.id === "sf" ? shutUpAndWriteEvents : [];
@@ -1248,6 +1275,7 @@ export function WorkshopCalendar({ city }: { city: City }) {
     const decenteredOpenMic = city.id === "sf" ? decenteredOpenMicEvents : [];
     const galeria = city.id === "sf" ? galeriaEvents : [];
     const curatedSfEb = city.id === "sf" ? curatedSfEbEvents : [];
+    const sfCurated = city.id === "sf" ? sfCuratedEvents : [];
     const sfww = city.id === "sf" ? sfWritersWorkshopEvents : [];
     const wg = city.id === "sf" ? writersGrottoEvents : [];
     const cat = city.id === "sf" ? catEvents : [];
@@ -1287,6 +1315,7 @@ export function WorkshopCalendar({ city }: { city: City }) {
       ...worldStage,
       ...storiesLa,
       ...laPoetSociety,
+      ...laCurated,
       ...sfpl,
       ...writingSalon,
       ...shutUpAndWrite,
@@ -1295,6 +1324,7 @@ export function WorkshopCalendar({ city }: { city: City }) {
       ...decenteredOpenMic,
       ...galeria,
       ...curatedSfEb,
+      ...sfCurated,
       ...sfww,
       ...wg,
       ...cat,
@@ -1329,6 +1359,7 @@ export function WorkshopCalendar({ city }: { city: City }) {
     worldStageEvents,
     storiesLaEvents,
     laPoetSocietyEvents,
+    laCuratedEvents,
     sfplEvents,
     writingSalonEvents,
     shutUpAndWriteEvents,
@@ -1337,6 +1368,7 @@ export function WorkshopCalendar({ city }: { city: City }) {
     decenteredOpenMicEvents,
     galeriaEvents,
     curatedSfEbEvents,
+    sfCuratedEvents,
     sfWritersWorkshopEvents,
     writersGrottoEvents,
     catEvents,

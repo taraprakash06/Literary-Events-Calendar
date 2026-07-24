@@ -67,6 +67,7 @@ function endpointsForCity(cityId: string): string[] {
       "/api/world-stage/events",
       "/api/stories-la/events",
       "/api/la-poet-society/events",
+      "/api/la-curated/events",
       "/api/eventbrite/events",
     ];
   }
@@ -80,6 +81,7 @@ function endpointsForCity(cityId: string): string[] {
       "/api/decentered-open-mic/events",
       "/api/galeria-de-la-raza/events",
       "/api/curated-sf-eventbrite/events",
+      "/api/sf-curated/events",
       "/api/sf-writers-workshop/events",
       "/api/writers-grotto/events",
       "/api/eventbrite/events",
