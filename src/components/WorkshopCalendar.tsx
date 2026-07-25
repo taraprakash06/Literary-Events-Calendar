@@ -13,6 +13,12 @@ import {
   monthRangeISO,
 } from "@/lib/event-query";
 import {
+  cityTimeNote,
+  formatEventDateTimeDetail,
+  formatEventWhen,
+  formatEventWhenCompact,
+} from "@/lib/event-time-display";
+import {
   CATEGORY_LABELS,
   FORMAT_LABELS,
   PRICE_LABELS,
@@ -1589,6 +1595,9 @@ export function WorkshopCalendar({ city }: { city: City }) {
             />
           </div>
         </div>
+        <p className="text-xs leading-relaxed text-stone-500 dark:text-stone-400">
+          {cityTimeNote(city)}
+        </p>
 
         <div
           className="border-t border-stone-200/80 pt-5 dark:border-stone-700/80"
@@ -1782,8 +1791,7 @@ export function WorkshopCalendar({ city }: { city: City }) {
           <div className="mt-4 -mx-5 overflow-x-auto px-5">
             <div className="flex min-w-full gap-3 pb-1">
               {weeklyHighlights.map((ev) => {
-                const dt = eventZonedDateTime(ev);
-                const whenLabel = dt.isValid ? dt.toFormat("ccc, LLL d · h:mm a") : "";
+                const whenLabel = formatEventWhenCompact(ev, city);
                 const whenStatus = eventWhenStatus(ev);
                 return (
                   <button
@@ -2043,7 +2051,7 @@ export function WorkshopCalendar({ city }: { city: City }) {
                           {ev.tagline}
                         </p>
                         <p className="mt-2 text-xs text-stone-500 dark:text-stone-500">
-                          {formatWhen(ev)}
+                          {formatEventWhen(ev, city)}
                           {" · "}
                           {PRICE_LABELS[ev.price]}
                           {ev.neighborhood ? ` · ${ev.neighborhood}` : ""}
@@ -2066,6 +2074,7 @@ export function WorkshopCalendar({ city }: { city: City }) {
           >
             <DayPanelBody
               dateKey={dayPanelKey}
+              city={city}
               events={dayPanelEvents}
               onClose={() => setDayPanelKey(null)}
               onPick={openEventDetail}
@@ -2077,6 +2086,7 @@ export function WorkshopCalendar({ city }: { city: City }) {
       {dayPanelKey && isMobile ? (
         <DayEventsOverlay
           dateKey={dayPanelKey}
+          city={city}
           events={dayPanelEvents}
           onClose={() => setDayPanelKey(null)}
           onPick={openEventDetail}
@@ -2084,7 +2094,11 @@ export function WorkshopCalendar({ city }: { city: City }) {
       ) : null}
 
       {detail ? (
-        <EventDetailModal event={detail} onClose={() => setDetail(null)} />
+        <EventDetailModal
+          event={detail}
+          city={city}
+          onClose={() => setDetail(null)}
+        />
       ) : null}
     </div>
   );
@@ -2092,11 +2106,13 @@ export function WorkshopCalendar({ city }: { city: City }) {
 
 function DayPanelBody({
   dateKey,
+  city,
   events,
   onClose,
   onPick,
 }: {
   dateKey: string;
+  city: City;
   events: WorkshopEvent[];
   onClose: () => void;
   onPick: (ev: WorkshopEvent) => void;
@@ -2170,7 +2186,7 @@ function DayPanelBody({
                 {ev.title}
               </span>
               <span className="text-xs text-stone-500">
-                {formatWhen(ev)} · {PRICE_LABELS[ev.price]}
+                {formatEventWhen(ev, city)} · {PRICE_LABELS[ev.price]}
               </span>
             </button>
           </li>
@@ -2183,11 +2199,13 @@ function DayPanelBody({
 
 function DayEventsOverlay({
   dateKey,
+  city,
   events,
   onClose,
   onPick,
 }: {
   dateKey: string;
+  city: City;
   events: WorkshopEvent[];
   onClose: () => void;
   onPick: (ev: WorkshopEvent) => void;
@@ -2208,6 +2226,7 @@ function DayEventsOverlay({
       <div className="max-h-[85vh] overflow-hidden rounded-t-2xl border border-stone-200 bg-[var(--surface)] shadow-2xl dark:border-stone-700 dark:bg-stone-950">
         <DayPanelBody
           dateKey={dateKey}
+          city={city}
           events={events}
           onClose={onClose}
           onPick={onPick}
@@ -2225,12 +2244,6 @@ function useEscapeKey(onClose: () => void) {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
-}
-
-function formatWhen(ev: WorkshopEvent) {
-  const dt = eventZonedDateTime(ev);
-  if (!dt.isValid) return new Date(ev.start).toLocaleString("en-US");
-  return dt.toFormat("ccc, LLL d, h:mm a");
 }
 
 function FilterPill({
@@ -2283,19 +2296,15 @@ function locationSummary(event: WorkshopEvent): string {
 
 function EventDetailModal({
   event,
+  city,
   onClose,
 }: {
   event: WorkshopEvent;
+  city: City;
   onClose: () => void;
 }) {
   useEscapeKey(onClose);
 
-  const start = eventZonedDateTime(event);
-  const end = event.end
-    ? (event.timeZone
-        ? DateTime.fromISO(event.end, { setZone: true }).setZone(event.timeZone)
-        : DateTime.fromISO(event.end, { setZone: true }).toLocal())
-    : null;
   const isSample = event.listingProvenance === "sample";
   const whenStatus = eventWhenStatus(event);
   const [synopsis, setSynopsis] = useState<string | null>(null);
@@ -2391,22 +2400,7 @@ function EventDetailModal({
               Date &amp; time
             </p>
             <p className="mt-2 text-sm leading-relaxed text-stone-800 dark:text-stone-200">
-              {start.isValid
-                ? start.toFormat("cccc, LLLL d, yyyy 'at' h:mm a")
-                : new Date(event.start).toLocaleString("en-US", {
-                    weekday: "long",
-                    month: "long",
-                    day: "numeric",
-                    year: "numeric",
-                    hour: "numeric",
-                    minute: "2-digit",
-                  })}
-              {end
-                ? end.isValid
-                  ? ` · ends ${end.toFormat("h:mm a")}`
-                  : null
-                : null}
-              {event.timeZone ? ` · ${event.timeZone}` : null}
+              {formatEventDateTimeDetail(event, city)}
             </p>
           </div>
 

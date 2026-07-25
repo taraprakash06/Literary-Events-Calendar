@@ -14,6 +14,13 @@ export type City = {
   slug: string;
   name: string;
   label: string;
+  /** Primary IANA zone for in-person display in this region. */
+  timeZone: string;
+  /**
+   * When true (e.g. Tennessee), in-person events keep their venue zone and
+   * show an abbreviation (ET/CT) on each listing.
+   */
+  multiTimeZone?: boolean;
 };
 
 /** Ingestion channel this row would map to in production. */

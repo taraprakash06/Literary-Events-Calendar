@@ -47,6 +47,10 @@ type NplRow = {
   canceled?: boolean;
   category?: WorkshopEventCategory;
   description?: string;
+  /** Optional list/chip preview; defaults to NPL · branch. */
+  tagline?: string;
+  /** Optional deep link; defaults to the NPL events list. */
+  rsvpUrl?: string;
   slug: string;
 };
 
@@ -118,7 +122,7 @@ function nplEvent(row: NplRow): CuratedSpec {
     timeZone: TZ_CENTRAL,
     canceled: row.canceled,
     title: row.title,
-    tagline: `Nashville Public Library · ${row.branch}`,
+    tagline: row.tagline ?? `Nashville Public Library · ${row.branch}`,
     description:
       (row.description ??
         `${row.title} at Nashville Public Library (${row.branch}).`) +
@@ -128,7 +132,7 @@ function nplEvent(row: NplRow): CuratedSpec {
     venue: loc.venue,
     address: row.address ?? loc.address,
     neighborhood: loc.neighborhood,
-    rsvpUrl: NPL_EVENTS_URL,
+    rsvpUrl: row.rsvpUrl ?? NPL_EVENTS_URL,
     sourceChannel: "library",
   };
 }
@@ -153,6 +157,14 @@ const NPL_WRITING_EVENTS: CuratedSpec[] = [
     branch: "Madison",
     category: "other",
     slug: "madison-carnegie-writers",
+    tagline:
+      "Every 4th Sunday · write, share readings & grow as writers · Free · Madison Library",
+    description:
+      "Every 4th Sunday. We write, talk about writing, listen to readings, and guest speakers, " +
+      "collaborate, and grow as creative and professional writers. Free to attend. Come join us, " +
+      "and invite a family member or friend, too.",
+    rsvpUrl:
+      "https://events.library.nashville.org/cal/event/eventView.do?b=de&href=/public/cals/MainCal/CAL-8a3e8e4c-9d1c2614-019d-20b8785b-000070c9.ics%2320260726T193000Z",
   }),
   nplEvent({
     date: "2026-07-27",
@@ -277,6 +289,12 @@ const NPL_WRITING_EVENTS: CuratedSpec[] = [
     branch: "Madison",
     category: "other",
     slug: "madison-carnegie-writers",
+    tagline:
+      "Every 4th Sunday · write, share readings & grow as writers · Free · Madison Library",
+    description:
+      "Every 4th Sunday. We write, talk about writing, listen to readings, and guest speakers, " +
+      "collaborate, and grow as creative and professional writers. Free to attend. Come join us, " +
+      "and invite a family member or friend, too.",
   }),
   nplEvent({
     date: "2026-08-24",
@@ -346,6 +364,12 @@ const NPL_WRITING_EVENTS: CuratedSpec[] = [
     branch: "Madison",
     category: "other",
     slug: "madison-carnegie-writers",
+    tagline:
+      "Every 4th Sunday · write, share readings & grow as writers · Free · Madison Library",
+    description:
+      "Every 4th Sunday. We write, talk about writing, listen to readings, and guest speakers, " +
+      "collaborate, and grow as creative and professional writers. Free to attend. Come join us, " +
+      "and invite a family member or friend, too.",
   }),
   nplEvent({
     date: "2026-09-29",
@@ -390,6 +414,12 @@ const NPL_WRITING_EVENTS: CuratedSpec[] = [
     branch: "Madison",
     category: "other",
     slug: "madison-carnegie-writers",
+    tagline:
+      "Every 4th Sunday · write, share readings & grow as writers · Free · Madison Library",
+    description:
+      "Every 4th Sunday. We write, talk about writing, listen to readings, and guest speakers, " +
+      "collaborate, and grow as creative and professional writers. Free to attend. Come join us, " +
+      "and invite a family member or friend, too.",
   }),
   nplEvent({
     date: "2026-11-03",
@@ -1341,12 +1371,11 @@ const EVENTS: CuratedSpec[] = [
     year: 2026,
     monthIndex: 6,
     day: 25,
-    hour: 12,
-    minute: 0,
+    hour: 13,
+    minute: 30,
     timeZone: TZ_EAST,
-    timeTbd: true,
     title: "Exphrastic Poetry Performance — Beauford Delaney",
-    tagline: "UT Downtown Gallery · Knoxville · Poetry inspired by visual art",
+    tagline: "UT Downtown Gallery · Knoxville · 1:30 PM",
     description:
       "An afternoon of poetry inspired by Beauford Delaney's art at the UT Downtown Gallery in Knoxville. " +
       "Featuring readings by award-winning local and international poets.",
@@ -1358,18 +1387,20 @@ const EVENTS: CuratedSpec[] = [
     rsvpUrl:
       "https://www.facebook.com/events/106-s-gay-st-knoxville-tn-united-states-tennessee-37902/exphrastic-poetry-performance-beauford-delaney-degrees-of-separation/26223691273970442/",
     sourceChannel: "literary_org",
+    price: "free",
   },
   {
     id: "tn-book-lovers-warehouse-signings-20260725",
     year: 2026,
     monthIndex: 6,
     day: 25,
-    hour: 12,
+    hour: 11,
     minute: 0,
+    endHour: 15,
+    endMinute: 0,
     timeZone: TZ_EAST,
-    timeTbd: true,
     title: "Local Author Signings — Nancy Wade, Marcy Brennan & Paulette Buchanan",
-    tagline: "Book Lover's Warehouse · Johnson City",
+    tagline: "Book Lover's Warehouse · Johnson City · 11:00 AM–3:00 PM",
     description:
       "Local author signings at Book Lover's Warehouse in Johnson City with Nancy Wade, Marcy Brennan, and Paulette Buchanan.",
     category: "reading",
@@ -1380,18 +1411,20 @@ const EVENTS: CuratedSpec[] = [
     rsvpUrl:
       "https://www.facebook.com/events/3302-w-market-st-johnson-city-tn-united-states-tennessee-37604/july-2026-local-author-signings-at-book-lovers-warehouse/1200543188879480/",
     sourceChannel: "bookstore",
+    price: "free",
   },
   {
     id: "tn-michael-c-hardy-sycamore-shoals-20260725",
     year: 2026,
     monthIndex: 6,
     day: 25,
-    hour: 12,
+    hour: 14,
     minute: 0,
+    endHour: 16,
+    endMinute: 0,
     timeZone: TZ_EAST,
-    timeTbd: true,
     title: "Meet the Author — Michael C. Hardy",
-    tagline: "Sycamore Shoals State Historic Park · Elizabethton",
+    tagline: "Sycamore Shoals State Historic Park · Elizabethton · 2:00 PM",
     description:
       "Meet the Author with Michael C. Hardy at Sycamore Shoals State Historic Park in Elizabethton, " +
       "discussing the American Revolution in the back-country.",
@@ -1403,18 +1436,18 @@ const EVENTS: CuratedSpec[] = [
     rsvpUrl:
       "https://www.facebook.com/events/1651-w-elk-ave-elizabethton-tn-united-states-tennessee-37643/meet-the-author-michael-c-hardy/1644918296572374/",
     sourceChannel: "literary_org",
+    price: "free",
   },
   {
     id: "tn-new-romantics-book-club-fever-dream-20260726",
     year: 2026,
     monthIndex: 6,
     day: 26,
-    hour: 12,
+    hour: 14,
     minute: 0,
     timeZone: TZ_CENTRAL,
-    timeTbd: true,
     title: "The New Romantics Book Club — Fever Dream",
-    tagline: "novel. · Memphis",
+    tagline: "novel. · Memphis · 2:00 PM",
     description:
       "The New Romantics Book Club meets at novel. in Memphis to discuss Fever Dream.",
     category: "other",
@@ -1425,39 +1458,43 @@ const EVENTS: CuratedSpec[] = [
     rsvpUrl:
       "https://www.facebook.com/events/387-perkins-ext-memphis-tn-united-states-tennessee-38117/the-new-romantics-book-club-fever-dream/1324142156536899/",
     sourceChannel: "bookstore",
+    price: "free",
   },
   {
     id: "tn-dw-gillespie-parnassus-20260729",
     year: 2026,
     monthIndex: 6,
     day: 29,
-    hour: 12,
-    minute: 0,
+    hour: 18,
+    minute: 30,
     timeZone: TZ_CENTRAL,
-    timeTbd: true,
     title: "D.W. Gillespie Reading — The Doll House",
-    tagline: "Parnassus Books · Nashville",
+    tagline: "Parnassus Books · Nashville · 6:30 PM · Free",
     description:
-      "D.W. Gillespie reading for The Doll House at Parnassus Books in Nashville.",
+      "Author D.W. Gillespie visits Parnassus Books for a reading of The Doll House. " +
+      "This is the final event in the Summerween lineup. Attendees should bring their passport " +
+      "to collect a stamp and enter the sweepstakes before the August 3rd deadline.",
     category: "reading",
     organizer: "Parnassus Books",
     venue: "Parnassus Books",
-    address: "Nashville, TN",
+    address: "3900 Hillsboro Pike, Ste 14, Nashville, TN",
     neighborhood: "Nashville",
     rsvpUrl: "https://ma.to/event/dw-gillespie-the-doll-house-29-jul-2026",
     sourceChannel: "bookstore",
+    price: "free",
   },
   {
     id: "tn-emily-b-martin-fable-hollow-20260730",
     year: 2026,
     monthIndex: 6,
     day: 30,
-    hour: 12,
+    hour: 19,
     minute: 0,
+    endHour: 21,
+    endMinute: 0,
     timeZone: TZ_EAST,
-    timeTbd: true,
     title: "Emily B. Martin Author Event — Nell O'Dell Hates Quests",
-    tagline: "Fable Hollow Coffee & Bookshoppe · Knoxville",
+    tagline: "Fable Hollow Coffee & Bookshoppe · Knoxville · 7:00 PM",
     description:
       "Emily B. Martin author event at Fable Hollow Coffee & Bookshoppe in Knoxville, " +
       "discussing Nell O'Dell Hates Quests.",
@@ -1468,6 +1505,7 @@ const EVENTS: CuratedSpec[] = [
     neighborhood: "Knoxville",
     rsvpUrl: "https://www.instagram.com/p/Daf1rQNOKYb/",
     sourceChannel: "bookstore",
+    price: "free",
   },
   {
     id: "tn-mitchell-karnes-landmark-20260731",

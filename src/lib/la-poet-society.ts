@@ -102,34 +102,9 @@ const PROGRAMS: LaPoetSocietyProgram[] = [
     neighborhood: "San Fernando",
     rsvpUrl: "mailto:losangelespoetsociety@gmail.com",
   },
-  {
-    slug: "reading-in-bed",
-    title: "Reading in Bed with Jessica",
-    tagline: "LA Poet Society · Wednesdays on Radio Ollin",
-    description:
-      "Weekly literary showcase on Radio Ollin. Listen on KROJ 101.5 FM in the San Fernando Valley or at radioollin.org.",
-    recurrence: { kind: "weekly", weekday: 3 },
-    start: { hour: 18, minute: 0 },
-    end: { hour: 20, minute: 0 },
-    format: "virtual",
-    category: "reading",
-    virtualLabel: "Radio Ollin (KROJ 101.5 FM)",
-    rsvpUrl: "https://www.radioollin.org",
-  },
-  {
-    slug: "voices-of-color",
-    title: "Voices of Color",
-    tagline: "LA Poet Society · 4th Sundays",
-    description:
-      "Real talk that amplifies Black and Brown creatives. Live on Instagram @losangelespoetsociety.",
-    recurrence: { kind: "nth", weekday: 7, n: 4 },
-    start: { hour: 18, minute: 0 },
-    end: { hour: 20, minute: 0 },
-    format: "virtual",
-    category: "reading",
-    virtualLabel: "Instagram Live",
-    rsvpUrl: "https://www.instagram.com/losangelespoetsociety",
-  },
+  // Virtual radio / Instagram Live programs with only generic station or
+  // profile homepage links (e.g. radioollin.org) are intentionally omitted —
+  // they are not dated event pages.
   {
     slug: "poetry-on-demand",
     title: "Poetry on Demand",
