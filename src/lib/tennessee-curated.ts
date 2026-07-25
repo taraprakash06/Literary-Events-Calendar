@@ -183,6 +183,8 @@ const NPL_WRITING_EVENTS: CuratedSpec[] = [
     branch: "Hermitage",
     category: "workshop",
     slug: "hermitage-write-in",
+    rsvpUrl:
+      "https://events.library.nashville.org/cal/event/eventView.do?b=de&href=/public/cals/MainCal/CAL-8a3e8e4b-9e2e7865-019e-3c778ff0-000022fb.ics%2320260729T223000Z",
   }),
   nplEvent({
     date: "2026-08-03",
