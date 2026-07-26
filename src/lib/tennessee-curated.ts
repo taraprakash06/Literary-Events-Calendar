@@ -2314,6 +2314,347 @@ const EVENTS: CuratedSpec[] = [
   ...PLENTY_ONE_OFFS,
   ...UNION_AVE_EVENTS,
   ...NPL_WRITING_EVENTS,
+  // ── Fall 2026 bookstore & festival additions (Nashville / Memphis) ──
+  {
+    id: "tn-parnassus-ariel-lawhon-pirate-queen-20260908",
+    year: 2026,
+    monthIndex: 8,
+    day: 8,
+    hour: 18,
+    minute: 30,
+    endHour: 20,
+    endMinute: 0,
+    timeZone: TZ_CENTRAL,
+    title: "Ariel Lawhon — The Pirate Queen (with J.T. Ellison)",
+    tagline: "Parnassus Books · Vanderbilt Student Life Center · Nashville · Ticketed",
+    description:
+      "Parnassus Books, Vanderbilt University Libraries, and Dialogue Vanderbilt present New York Times bestseller " +
+      "Ariel Lawhon in conversation with J.T. Ellison to celebrate her new historical novel The Pirate Queen, inspired by " +
+      "the life of Irish folk heroine Grace O'Malley. In the Commodore Ballroom of the Student Life Center; doors 5:30 PM. " +
+      "Each $35.25 ticket includes admission and a signed copy, with a signing line following the conversation.",
+    category: "reading",
+    organizer: "Parnassus Books",
+    venue: "Vanderbilt University — Student Life Center (Commodore Ballroom)",
+    address: "310 25th Avenue South, Nashville, TN 37212",
+    neighborhood: "Nashville",
+    rsvpUrl:
+      "https://parnassusbooks.net/event/2026-09-08/ariel-lawhon-pirate-queen",
+    sourceChannel: "bookstore",
+    price: "paid",
+  },
+  {
+    id: "tn-novel-skaja-wicker-poetry-20260908",
+    year: 2026,
+    monthIndex: 8,
+    day: 8,
+    hour: 18,
+    minute: 0,
+    endHour: 19,
+    endMinute: 30,
+    timeZone: TZ_CENTRAL,
+    title: "Emily Skaja & Marcus Wicker — Black Lake & Dear Mothership",
+    tagline: "Novel · Memphis · Poetry · Free",
+    description:
+      "Novel welcomes University of Memphis poets Emily Skaja and Marcus Wicker to celebrate their new collections, " +
+      "Black Lake (Skaja) and Dear Mothership (Wicker). Skaja is the author of Brute, winner of the Academy of American " +
+      "Poets First Book Award; Wicker is a National Endowment for the Arts fellow and author of Silencer and Maybe the " +
+      "Saddest Thing. A free in-store reading and signing.",
+    category: "reading",
+    organizer: "Novel",
+    venue: "Novel",
+    address: "387 Perkins Ext, Memphis, TN 38117",
+    neighborhood: "Memphis",
+    rsvpUrl:
+      "https://novelmemphis.com/event/2026-09-08/emily-skaja-marcus-wicker-black-lake-dear-mothership",
+    sourceChannel: "bookstore",
+    price: "free",
+  },
+  {
+    id: "tn-parnassus-emily-st-john-mandel-exit-party-20260914",
+    year: 2026,
+    monthIndex: 8,
+    day: 14,
+    hour: 18,
+    minute: 30,
+    endHour: 20,
+    endMinute: 0,
+    timeZone: TZ_CENTRAL,
+    title: "Emily St. John Mandel — Exit Party (with Adam Ross)",
+    tagline: "Parnassus Books · Montgomery Bell Academy · Nashville · Ticketed",
+    description:
+      "Parnassus Books and Montgomery Bell Academy welcome Emily St. John Mandel — author of Station Eleven and The Glass " +
+      "Hotel — in conversation with Adam Ross to celebrate her new novel Exit Party. Held in MBA's Dead Poets Society Room; " +
+      "doors 5:30 PM. Each $37.50 ticket includes admission and a signed copy, with a personalization signing line following.",
+    category: "reading",
+    organizer: "Parnassus Books",
+    venue: "Montgomery Bell Academy — Dead Poets Society Room",
+    address: "4001 Harding Pike, Nashville, TN 37205",
+    neighborhood: "Nashville",
+    rsvpUrl:
+      "https://parnassusbooks.net/event/2026-09-14/emily-st-john-mandel-exit-party-adam-ross",
+    sourceChannel: "bookstore",
+    price: "paid",
+  },
+  {
+    id: "tn-novel-cody-wayne-morris-same-house-20260926",
+    year: 2026,
+    monthIndex: 8,
+    day: 26,
+    hour: 18,
+    minute: 0,
+    endHour: 19,
+    endMinute: 30,
+    timeZone: TZ_CENTRAL,
+    title: "Cody Wayne Morris — The Same House",
+    tagline: "Novel · Memphis · Free",
+    description:
+      "Novel welcomes Cody Wayne Morris to celebrate the release of his adult thriller The Same House. Morris — known " +
+      "online as CodyTheWriter — writes chilling tales and hosts live writing sprints. A free in-store reading and signing.",
+    category: "reading",
+    organizer: "Novel",
+    venue: "Novel",
+    address: "387 Perkins Ext, Memphis, TN 38117",
+    neighborhood: "Memphis",
+    rsvpUrl:
+      "https://novelmemphis.com/event/2026-09-26/cody-wayne-morris-same-house",
+    sourceChannel: "bookstore",
+    price: "free",
+  },
+  {
+    id: "tn-parnassus-jodi-picoult-hollow-bones-20260928",
+    year: 2026,
+    monthIndex: 8,
+    day: 28,
+    hour: 18,
+    minute: 30,
+    endHour: 20,
+    endMinute: 0,
+    timeZone: TZ_CENTRAL,
+    title: "Jodi Picoult — Hollow Bones",
+    tagline: "Parnassus Books · Vanderbilt Student Life Center · Nashville · Ticketed",
+    description:
+      "Parnassus Books, Vanderbilt University Libraries, and Dialogue Vanderbilt present an evening with #1 New York Times " +
+      "bestselling author Jodi Picoult for her new book Hollow Bones, in conversation with a special guest. Doors 5:30 PM. " +
+      "Each $37.50 ticket includes admission and one pre-signed copy (no personalizations or signing line).",
+    category: "reading",
+    organizer: "Parnassus Books",
+    venue: "Vanderbilt University — Student Life Center",
+    address: "310 25th Avenue South, Nashville, TN 37212",
+    neighborhood: "Nashville",
+    rsvpUrl:
+      "https://www.eventbrite.com/e/author-event-with-jodi-picoult-tickets-1991794386628",
+    sourceChannel: "bookstore",
+    price: "paid",
+  },
+  {
+    id: "tn-parnassus-john-green-hollywood-ending-20260930",
+    year: 2026,
+    monthIndex: 8,
+    day: 30,
+    hour: 18,
+    minute: 30,
+    endHour: 20,
+    endMinute: 0,
+    timeZone: TZ_CENTRAL,
+    title: "John Green — Hollywood, Ending",
+    tagline: "Parnassus Books · Montgomery Bell Academy · Nashville · Ticketed",
+    description:
+      "Parnassus Books and Montgomery Bell Academy present an evening with bestselling author John Green, in conversation " +
+      "with a special guest, to celebrate his new book Hollywood, Ending. Held in Currey Hall within the Burkholder " +
+      "Wellness Center at MBA. Each $36.75 ticket includes admission and a signed copy.",
+    category: "reading",
+    organizer: "Parnassus Books",
+    venue: "Montgomery Bell Academy — Currey Hall",
+    address: "4001 Harding Pike, Nashville, TN 37205",
+    neighborhood: "Nashville",
+    rsvpUrl:
+      "https://www.eventbrite.com/e/author-event-with-john-green-tickets-1992769985671",
+    sourceChannel: "bookstore",
+    price: "paid",
+  },
+  {
+    id: "tn-novel-freida-mcfadden-the-witch-20261006",
+    year: 2026,
+    monthIndex: 9,
+    day: 6,
+    hour: 18,
+    minute: 0,
+    endHour: 19,
+    endMinute: 30,
+    timeZone: TZ_CENTRAL,
+    title: "Freida McFadden Release Party — The Witch",
+    tagline: "Novel · Memphis · Preorder = entry",
+    description:
+      "Novel celebrates the release of The Witch, a new thriller from #1 New York Times bestselling author Freida McFadden " +
+      "(The Housemaid), with a party. Signed copies available while supplies last to anyone who preorders; preorder attendees " +
+      "also receive Freida swag while supplies last. Your preorder is your ticket to the event.",
+    category: "reading",
+    organizer: "Novel",
+    venue: "Novel",
+    address: "387 Perkins Ext, Memphis, TN 38117",
+    neighborhood: "Memphis",
+    rsvpUrl:
+      "https://novelmemphis.com/event/2026-10-06/freida-mcfadden-release-party-witch",
+    sourceChannel: "bookstore",
+    price: "paid",
+  },
+  {
+    id: "tn-parnassus-yotam-ottolenghi-simple-too-20261007",
+    year: 2026,
+    monthIndex: 9,
+    day: 7,
+    hour: 19,
+    minute: 0,
+    endHour: 20,
+    endMinute: 30,
+    timeZone: TZ_CENTRAL,
+    title: "Yotam Ottolenghi — Simple Too (with Ann Patchett)",
+    tagline: "Parnassus Books · Montgomery Bell Academy · Nashville · Ticketed",
+    description:
+      "Parnassus Books and Montgomery Bell Academy present an evening with Yotam Ottolenghi, in conversation with Ann " +
+      "Patchett, celebrating his new cookbook Simple Too — the long-awaited follow-up to Ottolenghi Simple. In the Paschall " +
+      "Theater on the MBA campus; doors 6:00 PM. Each $49.50 ticket includes admission and a signed copy.",
+    category: "reading",
+    organizer: "Parnassus Books",
+    venue: "Montgomery Bell Academy — Paschall Theater",
+    address: "4001 Harding Pike, Nashville, TN 37205",
+    neighborhood: "Nashville",
+    rsvpUrl:
+      "https://parnassusbooks.net/event/2026-10-07/yotam-ottolenghi-simple-too-cookbook-ann-patchett",
+    sourceChannel: "bookstore",
+    price: "paid",
+  },
+  {
+    id: "tn-parnassus-barbara-kingsolver-partita-20261011",
+    year: 2026,
+    monthIndex: 9,
+    day: 11,
+    hour: 18,
+    minute: 30,
+    endHour: 20,
+    endMinute: 0,
+    timeZone: TZ_CENTRAL,
+    title: "Barbara Kingsolver — Partita (with Ann Patchett)",
+    tagline: "Parnassus Books · Langford Auditorium · Nashville · Ticketed",
+    description:
+      "Parnassus Books, Vanderbilt University Libraries, and the Southern Festival of Books present Pulitzer Prize winner " +
+      "Barbara Kingsolver (Demon Copperhead) for her new book Partita, in conversation with Ann Patchett, with pianist Amy " +
+      "Dorfman performing. In Langford Auditorium on the Vanderbilt campus; doors 5:30 PM. Each $35.25 ticket includes " +
+      "admission and an (unsigned) copy of Partita.",
+    category: "reading",
+    organizer: "Parnassus Books",
+    venue: "Langford Auditorium — Vanderbilt University",
+    address: "2209 Garland Avenue, Nashville, TN 37232",
+    neighborhood: "Nashville",
+    rsvpUrl:
+      "https://www.eventbrite.com/e/author-event-with-barbara-kingsolver-tickets-1990578356449",
+    sourceChannel: "bookstore",
+    price: "paid",
+  },
+  {
+    id: "tn-novel-nate-powell-diana-20261016",
+    year: 2026,
+    monthIndex: 9,
+    day: 16,
+    hour: 18,
+    minute: 0,
+    endHour: 19,
+    endMinute: 30,
+    timeZone: TZ_CENTRAL,
+    title: "Nate Powell — Diana: The Punk Singer Who Ripped Through Time",
+    tagline: "Novel · Memphis · Free",
+    description:
+      "Novel welcomes National Book Award–winning cartoonist Nate Powell (March trilogy) to celebrate his new graphic novel " +
+      "Diana: The Punk Singer Who Ripped Through Time, a time-tripping story for fans of intense, genre-bending comics. " +
+      "A free in-store event and signing.",
+    category: "reading",
+    organizer: "Novel",
+    venue: "Novel",
+    address: "387 Perkins Ext, Memphis, TN 38117",
+    neighborhood: "Memphis",
+    rsvpUrl:
+      "https://novelmemphis.com/event/2026-10-16/nate-powell-diana-punk-singer-who-ripped-through-time",
+    sourceChannel: "bookstore",
+    price: "free",
+  },
+  {
+    id: "tn-southern-festival-of-books-day1-20261017",
+    year: 2026,
+    monthIndex: 9,
+    day: 17,
+    hour: 9,
+    minute: 0,
+    endHour: 18,
+    endMinute: 0,
+    timeZone: TZ_CENTRAL,
+    title: "Southern Festival of Books — Day 1",
+    tagline: "Humanities Tennessee · Bicentennial Capitol Mall · Nashville · Free",
+    description:
+      "The 38th annual Southern Festival of Books, presented by Humanities Tennessee and Vanderbilt University — one of the " +
+      "oldest and largest literary festivals in the country. More than 175 authors and 25,000 guests for panels, readings, " +
+      "signings, live performances, food trucks, and a children's area, across Bicentennial Capitol Mall State Park, the " +
+      "Tennessee State Museum, and the Tennessee State Library and Archives. Free and open to the public, 9 AM–6 PM Saturday.",
+    category: "other",
+    organizer: "Humanities Tennessee",
+    venue: "Bicentennial Capitol Mall State Park",
+    address: "600 James Robertson Pkwy, Nashville, TN 37243",
+    neighborhood: "Nashville",
+    rsvpUrl: "https://www.sofestofbooks.org/",
+    sourceChannel: "literary_org",
+    price: "free",
+  },
+  {
+    id: "tn-southern-festival-of-books-day2-20261018",
+    year: 2026,
+    monthIndex: 9,
+    day: 18,
+    hour: 10,
+    minute: 0,
+    endHour: 17,
+    endMinute: 0,
+    timeZone: TZ_CENTRAL,
+    title: "Southern Festival of Books — Day 2",
+    tagline: "Humanities Tennessee · Bicentennial Capitol Mall · Nashville · Free",
+    description:
+      "Day two of the 38th annual Southern Festival of Books, presented by Humanities Tennessee and Vanderbilt University. " +
+      "Author panels, discussions, readings, and signings featuring approximately 175 authors, plus book vendors, live " +
+      "performances, and a children's area across Bicentennial Capitol Mall, the Tennessee State Museum, and the Tennessee " +
+      "State Library and Archives. Free and open to the public, 10 AM–5 PM Sunday.",
+    category: "other",
+    organizer: "Humanities Tennessee",
+    venue: "Bicentennial Capitol Mall State Park",
+    address: "600 James Robertson Pkwy, Nashville, TN 37243",
+    neighborhood: "Nashville",
+    rsvpUrl: "https://www.sofestofbooks.org/",
+    sourceChannel: "literary_org",
+    price: "free",
+  },
+  {
+    id: "tn-novel-bradley-sides-charlotte-donlon-20261022",
+    year: 2026,
+    monthIndex: 9,
+    day: 22,
+    hour: 18,
+    minute: 0,
+    endHour: 19,
+    endMinute: 30,
+    timeZone: TZ_CENTRAL,
+    title: "Bradley Sides & Charlotte Donlon — The Volcano Keeper & Spiritual Direction for Writers",
+    tagline: "Novel · Memphis · Free",
+    description:
+      "Novel welcomes Bradley Sides and Charlotte Donlon to celebrate their new books: Sides's magical-realist novella The " +
+      "Volcano Keeper (Regal House) and Donlon's Spiritual Direction for Writers: Everyday Rituals for Your Writing Life. " +
+      "A free reading and conversation for fiction readers and writers alike.",
+    category: "reading",
+    organizer: "Novel",
+    venue: "Novel",
+    address: "387 Perkins Ext, Memphis, TN 38117",
+    neighborhood: "Memphis",
+    rsvpUrl:
+      "https://novelmemphis.com/event/2026-10-22/bradley-sides-charlotte-donlon-volcano-keeper-spiritual-direction-writers",
+    sourceChannel: "bookstore",
+    price: "free",
+  },
 ];
 
 export type TennesseeCuratedMeta = {

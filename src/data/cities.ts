@@ -40,6 +40,13 @@ export const CITIES: City[] = [
     timeZone: "America/Chicago",
     multiTimeZone: true,
   },
+  {
+    id: "ne",
+    slug: "omaha-lincoln",
+    name: "Omaha / Lincoln, NE",
+    label: "Omaha/Lincoln",
+    timeZone: "America/Chicago",
+  },
 ];
 
 const bySlug = new Map(CITIES.map((c) => [c.slug, c] as const));

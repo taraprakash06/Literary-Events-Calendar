@@ -90,6 +90,9 @@ function endpointsForCity(cityId: string): string[] {
   if (cityId === "tn") {
     return ["/api/tennessee/events"];
   }
+  if (cityId === "ne") {
+    return ["/api/nebraska/events"];
+  }
   return [];
 }
 

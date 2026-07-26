@@ -475,6 +475,7 @@ export function WorkshopCalendar({ city }: { city: City }) {
   const [ny92Events, setNy92Events] = useState<WorkshopEvent[]>([]);
   const [nuyoricanEvents, setNuyoricanEvents] = useState<WorkshopEvent[]>([]);
   const [tennesseeEvents, setTennesseeEvents] = useState<WorkshopEvent[]>([]);
+  const [nebraskaEvents, setNebraskaEvents] = useState<WorkshopEvent[]>([]);
 
   useEffect(() => {
     if (city.id !== "dmv") {
@@ -1207,6 +1208,36 @@ export function WorkshopCalendar({ city }: { city: City }) {
   }, [city.id, year, monthIndex]);
 
   useEffect(() => {
+    if (city.id !== "ne") {
+      setNebraskaEvents([]);
+      return;
+    }
+    const y = year;
+    const m = monthIndex + 1;
+    const ac = new AbortController();
+    const finishLoad = beginSourceLoad(loadEpochRef, pendingLoadsRef, setSourcesLoading);
+    (async () => {
+      try {
+        const res = await fetch(`/api/nebraska/events?year=${y}&month=${m}`, {
+          signal: ac.signal,
+        });
+        if (!res.ok) {
+          setNebraskaEvents([]);
+          return;
+        }
+        const body = (await res.json()) as { events?: WorkshopEvent[] };
+        setNebraskaEvents(Array.isArray(body.events) ? body.events : []);
+      } catch (e) {
+        if ((e as Error).name === "AbortError") return;
+        setNebraskaEvents([]);
+      } finally {
+        finishLoad();
+      }
+    })();
+    return () => ac.abort();
+  }, [city.id, year, monthIndex]);
+
+  useEffect(() => {
     if (
       city.id !== "dmv" &&
       city.id !== "nyc" &&
@@ -1293,6 +1324,7 @@ export function WorkshopCalendar({ city }: { city: City }) {
     const ny92 = city.id === "nyc" ? ny92Events : [];
     const nycafe = city.id === "nyc" ? nuyoricanEvents : [];
     const tn = city.id === "tn" ? tennesseeEvents : [];
+    const ne = city.id === "ne" ? nebraskaEvents : [];
     const eb =
       city.id === "dmv" ||
       city.id === "nyc" ||
@@ -1342,6 +1374,7 @@ export function WorkshopCalendar({ city }: { city: City }) {
       ...ny92,
       ...nycafe,
       ...tn,
+      ...ne,
       ...eb,
     ];
   }, [
@@ -1386,6 +1419,7 @@ export function WorkshopCalendar({ city }: { city: City }) {
     ny92Events,
     nuyoricanEvents,
     tennesseeEvents,
+    nebraskaEvents,
     eventbriteEvents,
   ]);
   const categoryOptions = useMemo(
@@ -1547,6 +1581,9 @@ export function WorkshopCalendar({ city }: { city: City }) {
 
     if (city.id === "tn") {
       return "No Tennessee listings for this month yet. Try another month or check your connection.";
+    }
+    if (city.id === "ne") {
+      return "No Omaha / Lincoln listings for this month yet. Try another month or check your connection.";
     }
 
     return "No verified events loaded for this city yet. Wire ingestion (Eventbrite, library calendars, RSS, etc.) so only real dated listings appear here.";

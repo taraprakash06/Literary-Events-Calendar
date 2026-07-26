@@ -27,10 +27,11 @@ export default async function CityCalendarPage({
             </h1>
           </div>
           <p className="max-w-3xl text-lg leading-relaxed text-stone-700 dark:text-stone-300">
-            This calendar platform is designed to strengthen literary communities by
-            making existing events easier to find, attend, and support. Browse through
-            events happening in your area this month to see what you would want to
-            attend!
+            This calendar platform compiles (and filters) all the literary events
+            happening near you, taking them from Instagram posts, Eventbrite listings,
+            public library pages, and other scattered spaces and putting them in one
+            place. Browse through the events happening in your area to see what you
+            want to attend!
           </p>
           <p className="text-sm font-medium uppercase tracking-[0.12em] text-stone-500 dark:text-stone-400">
             {city.name}
