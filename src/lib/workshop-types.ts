@@ -21,6 +21,11 @@ export type City = {
    * show an abbreviation (ET/CT) on each listing.
    */
   multiTimeZone?: boolean;
+  /**
+   * When true, show a zone abbreviation (e.g. CT) on in-person event times
+   * even in a single-zone region.
+   */
+  showTimezoneAbbr?: boolean;
 };
 
 /** Ingestion channel this row would map to in production. */

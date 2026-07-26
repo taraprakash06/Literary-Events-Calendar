@@ -47,14 +47,14 @@ export function inferEventCategory(
 
   if (/\bopen\s*mic\b|\bpoetry slam\b/.test(b)) return "open-mic";
   if (
-    /\b(workshop|writing class|write-?in|writers?\s+group|creative writing|course|retreat|songwriting)\b/.test(
+    /\b(workshops?|writing class|write-?in|writers?\s+group|creative writing|course|retreat|songwriting)\b/.test(
       b,
     )
   ) {
     return "workshop";
   }
   if (
-    /\b(reading|author talk|book signing|story\s*time|poetry reading|memoir reading|reads aloud|read aloud|storytime|book launch|launch party|debut)\b/.test(
+    /\b(reading|book club|author talk|book signing|story\s*time|poetry reading|memoir reading|reads aloud|read aloud|storytime|book launch|launch party|debut)\b/.test(
       b,
     )
   ) {

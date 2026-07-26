@@ -13,8 +13,6 @@ const LARKSONG_ADDRESS = "1600 N. Cotner Blvd, Lincoln, NE 68505";
 const LOCAL_ART_PLUG_ADDRESS = "1722 St. Marys Ave Suite 110, Omaha, NE 68102";
 const BENSON_BRANCH_ADDRESS = "6015 Binney Street, Omaha, NE 68104";
 const CENTRAL_LIBRARY_ADDRESS = "7205 Dodge St, Omaha, NE 68114";
-const ELKHORN_BRANCH_ADDRESS = "2100 Reading Plz, Elkhorn, NE 68022";
-const SWANSON_BRANCH_ADDRESS = "9101 W Dodge Rd, Omaha, NE 68114";
 
 type CuratedSpec = {
   id: string;
@@ -637,104 +635,6 @@ const CURATED: CuratedSpec[] = [
     rsvpIsGeneralCalendar: true,
     sourceChannel: "literary_org",
     price: "paid",
-  },
-
-  // ── Omaha Public Library book clubs ───────────────────────────────
-  {
-    id: "ne-opl-reading-challenge-book-club-20260912",
-    year: 2026,
-    monthIndex: 8,
-    day: 12,
-    hour: 14,
-    minute: 0,
-    endHour: 15,
-    endMinute: 0,
-    timeZone: TZ,
-    title: "Reading Challenge Book Club",
-    tagline: "Omaha Public Library · Swanson Branch · Free",
-    description:
-      "Join OPL on the second Saturday for a lively discussion of this month's featured title tied to the OPL Reading Challenge. Limited copies available at W. Clarke Swanson Branch.",
-    category: "other",
-    organizer: "Omaha Public Library",
-    venue: "W. Clarke Swanson Branch",
-    address: SWANSON_BRANCH_ADDRESS,
-    neighborhood: "Omaha",
-    rsvpUrl:
-      "https://omaha.bibliocommons.com/v2/events?series=693726ad7ed7c62f00a96a3c",
-    sourceChannel: "library",
-    price: "free",
-  },
-  {
-    id: "ne-opl-lets-get-literary-20260928",
-    year: 2026,
-    monthIndex: 8,
-    day: 28,
-    hour: 18,
-    minute: 30,
-    endHour: 19,
-    endMinute: 30,
-    timeZone: TZ,
-    title: "Let's Get Lit-erary Book Club",
-    tagline: "Omaha Public Library · Elkhorn Branch · Free",
-    description:
-      "Join OPL on the fourth Monday for a lively discussion of this month's featured book at Bess Johnson Elkhorn Branch. Limited copies available at the branch.",
-    category: "other",
-    organizer: "Omaha Public Library",
-    venue: "Bess Johnson Elkhorn Branch",
-    address: ELKHORN_BRANCH_ADDRESS,
-    neighborhood: "Elkhorn",
-    rsvpUrl:
-      "https://omaha.bibliocommons.com/v2/events?series=68bf424be56ab2b832a70f08",
-    sourceChannel: "library",
-    price: "free",
-  },
-  {
-    id: "ne-opl-reading-challenge-book-club-20261010",
-    year: 2026,
-    monthIndex: 9,
-    day: 10,
-    hour: 14,
-    minute: 0,
-    endHour: 15,
-    endMinute: 0,
-    timeZone: TZ,
-    title: "Reading Challenge Book Club",
-    tagline: "Omaha Public Library · Swanson Branch · Free",
-    description:
-      "Second-Saturday book club for OPL's Reading Challenge titles at W. Clarke Swanson Branch.",
-    category: "other",
-    organizer: "Omaha Public Library",
-    venue: "W. Clarke Swanson Branch",
-    address: SWANSON_BRANCH_ADDRESS,
-    neighborhood: "Omaha",
-    rsvpUrl:
-      "https://omaha.bibliocommons.com/v2/events?series=693726ad7ed7c62f00a96a3c",
-    sourceChannel: "library",
-    price: "free",
-  },
-  {
-    id: "ne-opl-lets-get-literary-20261026",
-    year: 2026,
-    monthIndex: 9,
-    day: 26,
-    hour: 18,
-    minute: 30,
-    endHour: 19,
-    endMinute: 30,
-    timeZone: TZ,
-    title: "Let's Get Lit-erary Book Club",
-    tagline: "Omaha Public Library · Elkhorn Branch · Free",
-    description:
-      "Fourth-Monday book club at Bess Johnson Elkhorn Branch. See OPL for this month's title and holds.",
-    category: "other",
-    organizer: "Omaha Public Library",
-    venue: "Bess Johnson Elkhorn Branch",
-    address: ELKHORN_BRANCH_ADDRESS,
-    neighborhood: "Elkhorn",
-    rsvpUrl:
-      "https://omaha.bibliocommons.com/v2/events?series=68bf424be56ab2b832a70f08",
-    sourceChannel: "library",
-    price: "free",
   },
 
   // ── Community / bookstore trail ───────────────────────────────────

@@ -476,6 +476,7 @@ export function WorkshopCalendar({ city }: { city: City }) {
   const [nuyoricanEvents, setNuyoricanEvents] = useState<WorkshopEvent[]>([]);
   const [tennesseeEvents, setTennesseeEvents] = useState<WorkshopEvent[]>([]);
   const [nebraskaEvents, setNebraskaEvents] = useState<WorkshopEvent[]>([]);
+  const [omahaLibraryEvents, setOmahaLibraryEvents] = useState<WorkshopEvent[]>([]);
 
   useEffect(() => {
     if (city.id !== "dmv") {
@@ -1238,6 +1239,37 @@ export function WorkshopCalendar({ city }: { city: City }) {
   }, [city.id, year, monthIndex]);
 
   useEffect(() => {
+    if (city.id !== "ne") {
+      setOmahaLibraryEvents([]);
+      return;
+    }
+    const y = year;
+    const m = monthIndex + 1;
+    const ac = new AbortController();
+    const finishLoad = beginSourceLoad(loadEpochRef, pendingLoadsRef, setSourcesLoading);
+    (async () => {
+      try {
+        const res = await fetch(
+          `/api/omaha-public-library/events?year=${y}&month=${m}`,
+          { signal: ac.signal },
+        );
+        if (!res.ok) {
+          setOmahaLibraryEvents([]);
+          return;
+        }
+        const body = (await res.json()) as { events?: WorkshopEvent[] };
+        setOmahaLibraryEvents(Array.isArray(body.events) ? body.events : []);
+      } catch (e) {
+        if ((e as Error).name === "AbortError") return;
+        setOmahaLibraryEvents([]);
+      } finally {
+        finishLoad();
+      }
+    })();
+    return () => ac.abort();
+  }, [city.id, year, monthIndex]);
+
+  useEffect(() => {
     if (
       city.id !== "dmv" &&
       city.id !== "nyc" &&
@@ -1325,6 +1357,7 @@ export function WorkshopCalendar({ city }: { city: City }) {
     const nycafe = city.id === "nyc" ? nuyoricanEvents : [];
     const tn = city.id === "tn" ? tennesseeEvents : [];
     const ne = city.id === "ne" ? nebraskaEvents : [];
+    const opl = city.id === "ne" ? omahaLibraryEvents : [];
     const eb =
       city.id === "dmv" ||
       city.id === "nyc" ||
@@ -1375,6 +1408,7 @@ export function WorkshopCalendar({ city }: { city: City }) {
       ...nycafe,
       ...tn,
       ...ne,
+      ...opl,
       ...eb,
     ];
   }, [
@@ -1420,6 +1454,7 @@ export function WorkshopCalendar({ city }: { city: City }) {
     nuyoricanEvents,
     tennesseeEvents,
     nebraskaEvents,
+    omahaLibraryEvents,
     eventbriteEvents,
   ]);
   const categoryOptions = useMemo(
@@ -1583,7 +1618,7 @@ export function WorkshopCalendar({ city }: { city: City }) {
       return "No Tennessee listings for this month yet. Try another month or check your connection.";
     }
     if (city.id === "ne") {
-      return "No Omaha / Lincoln listings for this month yet. Try another month or check your connection.";
+      return "No Omaha / Lincoln listings for this month from curated bookstores, Nebraska Writers Collective, or Omaha Public Library — or a feed could not be reached. Try another month or check your connection.";
     }
 
     return "No verified events loaded for this city yet. Wire ingestion (Eventbrite, library calendars, RSS, etc.) so only real dated listings appear here.";

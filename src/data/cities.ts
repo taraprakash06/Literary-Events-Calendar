@@ -46,6 +46,7 @@ export const CITIES: City[] = [
     name: "Omaha / Lincoln, NE",
     label: "Omaha/Lincoln",
     timeZone: "America/Chicago",
+    showTimezoneAbbr: true,
   },
 ];
 

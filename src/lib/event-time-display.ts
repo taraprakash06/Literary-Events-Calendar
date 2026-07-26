@@ -60,7 +60,7 @@ export function shouldShowTimezoneAbbr(
   city: City,
 ): boolean {
   if (ev.format === "virtual" || ev.format === "hybrid") return true;
-  return Boolean(city.multiTimeZone);
+  return Boolean(city.multiTimeZone || city.showTimezoneAbbr);
 }
 
 export function eventDisplayDateTime(
