@@ -105,9 +105,13 @@ type CuratedSpec = {
   address: string;
   neighborhood: string;
   rsvpUrl?: string;
+  /** True when rsvpUrl is a full events list, not a single-event page. */
+  rsvpIsGeneralCalendar?: boolean;
   sourceChannel: WorkshopEvent["sourceChannel"];
   price?: WorkshopEvent["price"];
 };
+
+const PLENTY_EVENTS_URL = "https://www.plentybookshop.org/events";
 
 type NplRow = {
   /** yyyy-mm-dd */
@@ -1075,7 +1079,8 @@ const PLENTY_SECOND_SATURDAYS: CuratedSpec[] = [
     venue: "PLENTY Downtown Bookshop",
     address: "41 W Broad St, Cookeville, TN 38501",
     neighborhood: "Cookeville",
-    // No per-date registration page on Plenty yet — omit RSVP vs linking the general calendar.
+    rsvpUrl: PLENTY_EVENTS_URL,
+    rsvpIsGeneralCalendar: true,
     sourceChannel: "bookstore",
     price: "free",
   };
@@ -1170,6 +1175,7 @@ const PLENTY_BOOKED_AND_UNPLUGGED: CuratedSpec[] = [
   { date: "2026-12-18" },
 ].map(({ date, rsvpUrl }: { date: string; rsvpUrl?: string }) => {
   const [y, m, d] = date.split("-").map(Number);
+  const hasDirect = Boolean(rsvpUrl);
   return {
     id: `tn-plenty-booked-and-unplugged-${date.replaceAll("-", "")}`,
     year: y,
@@ -1189,7 +1195,8 @@ const PLENTY_BOOKED_AND_UNPLUGGED: CuratedSpec[] = [
     venue: "PLENTY Downtown Bookshop",
     address: "41 W Broad St, Cookeville, TN 38501",
     neighborhood: "Cookeville",
-    rsvpUrl,
+    rsvpUrl: rsvpUrl ?? PLENTY_EVENTS_URL,
+    rsvpIsGeneralCalendar: !hasDirect,
     sourceChannel: "bookstore",
   };
 });
@@ -1418,6 +1425,7 @@ const PLENTY_SAWMILL_POETRY: CuratedSpec[] = [
   { date: "2026-12-07" },
 ].map(({ date, rsvpUrl }) => {
   const [y, m, d] = date.split("-").map(Number);
+  const hasDirect = Boolean(rsvpUrl);
   return {
     id: `tn-plenty-sawmill-poetry-${date.replaceAll("-", "")}`,
     year: y,
@@ -1441,7 +1449,8 @@ const PLENTY_SAWMILL_POETRY: CuratedSpec[] = [
     venue: "PLENTY Downtown Bookshop",
     address: "41 W Broad St, Cookeville, TN 38501",
     neighborhood: "Cookeville",
-    rsvpUrl,
+    rsvpUrl: rsvpUrl ?? PLENTY_EVENTS_URL,
+    rsvpIsGeneralCalendar: !hasDirect,
     sourceChannel: "bookstore",
     price: "free",
   };
@@ -2268,6 +2277,8 @@ const EVENTS: CuratedSpec[] = [
     venue: "PLENTY Downtown Bookshop",
     address: "41 W Broad St, Cookeville, TN 38501",
     neighborhood: "Cookeville",
+    rsvpUrl: PLENTY_EVENTS_URL,
+    rsvpIsGeneralCalendar: true,
     sourceChannel: "bookstore",
   },
   ...PLENTY_WRITE_INS,
@@ -2340,6 +2351,7 @@ function mapSpec(spec: CuratedSpec): WorkshopEvent {
     address: spec.address,
     neighborhood: spec.neighborhood,
     rsvpUrl: spec.rsvpUrl,
+    rsvpIsGeneralCalendar: spec.rsvpIsGeneralCalendar,
     source: "Tennessee curated listings",
     sourceChannel: spec.sourceChannel,
     listingProvenance: "live",

@@ -2432,14 +2432,23 @@ function EventDetailModal({
           </div>
 
           {event.rsvpUrl ? (
-            <a
-              href={event.rsvpUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex min-h-12 w-full items-center justify-center rounded-sm bg-stone-900 px-5 py-3 text-sm font-semibold text-[var(--surface)] transition hover:bg-stone-800 dark:bg-stone-100 dark:text-stone-900 dark:hover:bg-white"
-            >
-              RSVP / Learn more
-            </a>
+            <div className="space-y-2">
+              {event.rsvpIsGeneralCalendar ? (
+                <p className="text-sm text-stone-500 dark:text-stone-400">
+                  No direct link to this event — the full events list is here:
+                </p>
+              ) : null}
+              <a
+                href={event.rsvpUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex min-h-12 w-full items-center justify-center rounded-sm bg-stone-900 px-5 py-3 text-sm font-semibold text-[var(--surface)] transition hover:bg-stone-800 dark:bg-stone-100 dark:text-stone-900 dark:hover:bg-white"
+              >
+                {event.rsvpIsGeneralCalendar
+                  ? "View full events calendar"
+                  : "RSVP / Learn more"}
+              </a>
+            </div>
           ) : (
             <p className="text-sm text-stone-500 dark:text-stone-400">
               No direct link on file — visit the organizer&apos;s site.

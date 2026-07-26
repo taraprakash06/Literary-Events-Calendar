@@ -60,6 +60,11 @@ export type WorkshopEvent = {
   neighborhood?: string;
   virtualLabel?: string;
   rsvpUrl?: string;
+  /**
+   * When true, `rsvpUrl` is an organizer's full events calendar (not a
+   * per-event page). UI should say there is no direct event link.
+   */
+  rsvpIsGeneralCalendar?: boolean;
   /** Human-readable publisher or feed name once live. */
   source?: string;
   /** Which connector this listing belongs to in the ingestion model. */
