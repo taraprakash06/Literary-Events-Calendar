@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { fetchWritersCenterWorkshopsForMonth } from "@/lib/writers-center-client";
+import { fetchWritersCenterListingsForMonth } from "@/lib/writers-center-client";
 import { mapTwcEventToWorkshops } from "@/lib/writers-center-map";
 
 export const revalidate = 600;
@@ -14,7 +14,7 @@ export async function GET(req: Request) {
     Number.isFinite(m) && m >= 1 && m <= 12 ? m - 1 : now.getMonth();
 
   try {
-    const raw = await fetchWritersCenterWorkshopsForMonth(year, monthIndex);
+    const raw = await fetchWritersCenterListingsForMonth(year, monthIndex);
     const events = raw.flatMap((row) => mapTwcEventToWorkshops(row));
 
     return NextResponse.json({
@@ -22,8 +22,9 @@ export async function GET(req: Request) {
       meta: {
         year,
         month: monthIndex + 1,
-        source: "https://writer.org/workshops/",
-        workshopCategory: "workshop",
+        source: "https://writer.org/free-events-calendar/",
+        workshopsSource: "https://writer.org/workshops/",
+        categories: ["workshop", "event"],
         fetched: raw.length,
       },
     });

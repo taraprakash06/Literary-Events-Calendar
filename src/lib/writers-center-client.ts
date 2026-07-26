@@ -3,6 +3,8 @@ import type { TwcTribeEvent } from "@/lib/writers-center-map";
 export const WRITERS_CENTER_SITE = "https://writer.org";
 export const WRITERS_CENTER_WORKSHOPS_PAGE =
   "https://writer.org/workshops/";
+export const WRITERS_CENTER_FREE_EVENTS_PAGE =
+  "https://writer.org/free-events-calendar/";
 const TRIBE_EVENTS = `${WRITERS_CENTER_SITE}/wp-json/tribe/events/v1/events`;
 
 function pad2(n: number) {
@@ -24,11 +26,8 @@ type TribeListResponse = {
   total_pages?: number;
 };
 
-/**
- * Fetches published **Workshop** category events for the month from The Events
- * Calendar REST API (same catalog as the public workshops page).
- */
-export async function fetchWritersCenterWorkshopsForMonth(
+async function fetchWritersCenterByCategory(
+  category: string,
   year: number,
   monthIndex: number,
   signal?: AbortSignal,
@@ -40,7 +39,7 @@ export async function fetchWritersCenterWorkshopsForMonth(
 
   while (page <= totalPagesCap) {
     const u = new URL(TRIBE_EVENTS);
-    u.searchParams.set("categories", "workshop");
+    u.searchParams.set("categories", category);
     u.searchParams.set("start_date", startDate);
     u.searchParams.set("end_date", endDate);
     u.searchParams.set("per_page", "100");
@@ -53,7 +52,7 @@ export async function fetchWritersCenterWorkshopsForMonth(
       next: { revalidate: 600 },
     });
     if (!res.ok) {
-      throw new Error(`Writer's Center TEC HTTP ${res.status}`);
+      throw new Error(`Writer's Center TEC HTTP ${res.status} (${category})`);
     }
     const data = (await res.json()) as TribeListResponse;
     const batch = data.events ?? [];
@@ -64,4 +63,48 @@ export async function fetchWritersCenterWorkshopsForMonth(
   }
 
   return out;
+}
+
+/**
+ * Fetches published **Workshop** category events for the month from The Events
+ * Calendar REST API (same catalog as the public workshops page).
+ */
+export async function fetchWritersCenterWorkshopsForMonth(
+  year: number,
+  monthIndex: number,
+  signal?: AbortSignal,
+): Promise<TwcTribeEvent[]> {
+  return fetchWritersCenterByCategory("workshop", year, monthIndex, signal);
+}
+
+/**
+ * Fetches published **Event** category listings (free events calendar:
+ * open mics, craft chats, readings, book clubs, etc.).
+ */
+export async function fetchWritersCenterFreeEventsForMonth(
+  year: number,
+  monthIndex: number,
+  signal?: AbortSignal,
+): Promise<TwcTribeEvent[]> {
+  return fetchWritersCenterByCategory("event", year, monthIndex, signal);
+}
+
+/**
+ * Workshops + free-events calendar rows for the month, deduped by TEC id.
+ */
+export async function fetchWritersCenterListingsForMonth(
+  year: number,
+  monthIndex: number,
+  signal?: AbortSignal,
+): Promise<TwcTribeEvent[]> {
+  const [workshops, freeEvents] = await Promise.all([
+    fetchWritersCenterWorkshopsForMonth(year, monthIndex, signal),
+    fetchWritersCenterFreeEventsForMonth(year, monthIndex, signal),
+  ]);
+
+  const byId = new Map<number, TwcTribeEvent>();
+  for (const ev of [...workshops, ...freeEvents]) {
+    byId.set(ev.id, ev);
+  }
+  return [...byId.values()];
 }

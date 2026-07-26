@@ -24,6 +24,7 @@ export type TwcTribeEvent = {
   cost?: string;
   is_virtual?: boolean;
   virtual_url?: string | null;
+  categories?: Array<{ slug?: string; name?: string }>;
   venue?: {
     venue?: string;
     address?: string;
@@ -47,12 +48,44 @@ function toIsoUtc(raw?: string | null): string | null {
   return `${s}Z`;
 }
 
-function mapPrice(cost?: string): WorkshopEvent["price"] {
-  if (!cost?.trim()) return "unknown";
+function mapPrice(cost?: string, ev?: TwcTribeEvent): WorkshopEvent["price"] {
+  if (!cost?.trim()) {
+    // Free-events calendar often omits cost; treat blank Event listings as free.
+    if (ev && categorySlugs(ev).includes("event") && !isWorkshopListing(ev)) {
+      return "free";
+    }
+    return "unknown";
+  }
   const c = cost.toLowerCase();
   if (c.includes("free") || c === "0") return "free";
   if (/\$|€|£|\d/.test(cost)) return "paid";
   return "unknown";
+}
+
+function categorySlugs(ev: TwcTribeEvent): string[] {
+  return (ev.categories ?? [])
+    .map((c) => c.slug?.trim().toLowerCase())
+    .filter((s): s is string => Boolean(s));
+}
+
+function isWorkshopListing(ev: TwcTribeEvent): boolean {
+  return categorySlugs(ev).includes("workshop");
+}
+
+function mapCategory(ev: TwcTribeEvent, title: string): WorkshopEventCategory {
+  if (isWorkshopListing(ev)) return "workshop";
+
+  const t = title.toLowerCase();
+  if (/\bopen\s*mic\b/.test(t)) return "open-mic";
+  if (
+    /\b(reading|book\s*release|book\s*launch|author.?s\s*corner|literary\s*salon|craft\s*chat)\b/.test(
+      t,
+    )
+  ) {
+    return "reading";
+  }
+  // Free-events calendar: book clubs, mixers, info sessions, etc.
+  return "other";
 }
 
 function mapFormat(ev: TwcTribeEvent): EventFormat {
@@ -65,6 +98,9 @@ function mapFormat(ev: TwcTribeEvent): EventFormat {
       String(ev.venue.geo_lng).trim() !== "");
   if (ev.is_virtual && hasVenue) return "hybrid";
   if (ev.is_virtual) return "virtual";
+  // Title-based fallback when TEC omits is_virtual on Zoom-only free events.
+  const title = safeTitle(ev.title).toLowerCase();
+  if (/\b(virtual|zoom|online)\b/.test(title) && !hasVenue) return "virtual";
   return "in-person";
 }
 
@@ -80,7 +116,7 @@ function venueLine(ev: TwcTribeEvent): string | undefined {
 }
 
 function safeTitle(title: unknown): string {
-  if (typeof title === "string") return title.trim();
+  if (typeof title === "string") return stripHtml(title).trim();
   if (title && typeof title === "object" && "rendered" in title) {
     const r = (title as { rendered?: string }).rendered;
     if (typeof r === "string") return stripHtml(r).trim();
@@ -132,10 +168,13 @@ function buildWorkshopFromTwc(
 ): WorkshopEvent | null {
   const excerpt = (ev.excerpt ?? "").trim();
   const descHtml = (ev.description ?? "").trim();
+  const workshop = isWorkshopListing(ev);
   const description =
     (excerpt ? stripHtml(excerpt) : "") ||
     (descHtml ? stripHtml(descHtml).slice(0, 3000) : "") ||
-    "Workshop at The Writer's Center.";
+    (workshop
+      ? "Workshop at The Writer's Center."
+      : "Event at The Writer's Center.");
 
   const tagline = excerpt.length > 0 ? toShortOverview(excerpt, 220) : "";
 
@@ -160,15 +199,17 @@ function buildWorkshopFromTwc(
     end: opts.end,
     timeZone: opts.timeZone,
     format,
-    price: mapPrice(ev.cost),
-    category: "workshop",
+    price: mapPrice(ev.cost, ev),
+    category: mapCategory(ev, title),
     organizer: "The Writer's Center",
     venue: venueLine(ev),
     address: ev.venue?.address?.trim() || undefined,
     neighborhood: ev.venue?.city?.trim() || undefined,
     virtualLabel,
     rsvpUrl: ev.url?.trim() || undefined,
-    source: "The Writer's Center — Workshops (writer.org)",
+    source: workshop
+      ? "The Writer's Center — Workshops (writer.org)"
+      : "The Writer's Center — Free Events Calendar (writer.org)",
     sourceChannel: "literary_org",
     listingProvenance: "live",
   };
