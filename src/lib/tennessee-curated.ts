@@ -8,8 +8,81 @@ import type {
 const TZ_EAST = "America/New_York";
 const TZ_CENTRAL = "America/Chicago";
 
-const NPL_EVENTS_URL =
-  "https://events.library.nashville.org/cal/main/showEventList.rdo";
+/** Direct NPL eventView URLs keyed by `${slug}|${yyyy-mm-dd}`. */
+const NPL_RSVP_BY_SLUG_DATE: Record<string, string> = {
+  "madison-carnegie-writers|2026-07-26":
+    "https://events.library.nashville.org/cal/event/eventView.do?b=de&href=/public/cals/MainCal/CAL-8a3e8e4c-9d1c2614-019d-20b8785b-000070c9.ics%2320260726T193000Z",
+  "madison-carnegie-writers|2026-08-23":
+    "https://events.library.nashville.org/cal/event/eventView.do?b=de&href=/public/cals/MainCal/CAL-8a3e8e4c-9d1c2614-019d-20b8785b-000070c9.ics%2320260823T193000Z",
+  "madison-carnegie-writers|2026-09-27":
+    "https://events.library.nashville.org/cal/event/eventView.do?b=de&href=/public/cals/MainCal/CAL-8a3e8e4c-9d1c2614-019d-20b8785b-000070c9.ics%2320260927T193000Z",
+  "madison-carnegie-writers|2026-10-25":
+    "https://events.library.nashville.org/cal/event/eventView.do?b=de&href=/public/cals/MainCal/CAL-8a3e8e4c-9d1c2614-019d-20b8785b-000070c9.ics%2320261025T193000Z",
+  "pen-pal-club|2026-07-27":
+    "https://events.library.nashville.org/cal/event/eventView.do?b=de&href=/public/cals/MainCal/CAL-8a3e8e4c-9ca7e1df-019c-b5f70eb0-000052f8.ics%2320260727T210000Z",
+  "pen-pal-club|2026-08-03":
+    "https://events.library.nashville.org/cal/event/eventView.do?b=de&href=/public/cals/MainCal/CAL-8a3e8e4c-9ca7e1df-019c-b5f70eb0-000052f8.ics%2320260803T210000Z",
+  "pen-pal-club|2026-08-10":
+    "https://events.library.nashville.org/cal/event/eventView.do?b=de&href=/public/cals/MainCal/CAL-8a3e8e4c-9ca7e1df-019c-b5f70eb0-000052f8.ics%2320260810T210000Z",
+  "pen-pal-club|2026-08-17":
+    "https://events.library.nashville.org/cal/event/eventView.do?b=de&href=/public/cals/MainCal/CAL-8a3e8e4c-9ca7e1df-019c-b5f70eb0-000052f8.ics%2320260817T210000Z",
+  "pen-pal-club|2026-08-24":
+    "https://events.library.nashville.org/cal/event/eventView.do?b=de&href=/public/cals/MainCal/CAL-8a3e8e4c-9ca7e1df-019c-b5f70eb0-000052f8.ics%2320260824T210000Z",
+  "hermitage-write-in|2026-07-29":
+    "https://events.library.nashville.org/cal/event/eventView.do?b=de&href=/public/cals/MainCal/CAL-8a3e8e4b-9e2e7865-019e-3c778ff0-000022fb.ics%2320260729T223000Z",
+  "hermitage-write-in|2026-08-12":
+    "https://events.library.nashville.org/cal/event/eventView.do?b=de&href=/public/cals/MainCal/CAL-8a3e8e4b-9e2e7865-019e-3c778ff0-000022fb.ics%2320260812T223000Z",
+  "hermitage-write-in|2026-08-26":
+    "https://events.library.nashville.org/cal/event/eventView.do?b=de&href=/public/cals/MainCal/CAL-8a3e8e4b-9e2e7865-019e-3c778ff0-000022fb.ics%2320260826T223000Z",
+  "writer-support-group|2026-08-05":
+    "https://events.library.nashville.org/cal/event/eventView.do?b=de&href=/public/cals/MainCal/CAL-8a3e8e4b-9e2e7865-019e-3c707dc5-0000225b.ics%2320260805T223000Z",
+  "writer-support-group|2026-08-19":
+    "https://events.library.nashville.org/cal/event/eventView.do?b=de&href=/public/cals/MainCal/CAL-8a3e8e4b-9e2e7865-019e-3c707dc5-0000225b.ics%2320260819T223000Z",
+  "bellevue-writers-group|2026-08-04":
+    "https://events.library.nashville.org/cal/event/eventView.do?b=de&href=/public/cals/MainCal/CAL-8a3e8e4b-9d4736fa-019d-742cfd1f-00001146.ics%2320260804T230000Z",
+  "bellevue-writers-group|2026-08-18":
+    "https://events.library.nashville.org/cal/event/eventView.do?b=de&href=/public/cals/MainCal/CAL-8a3e8e4b-9d4736fa-019d-742cfd1f-00001146.ics%2320260818T230000Z",
+  "bellevue-writers-group|2026-09-01":
+    "https://events.library.nashville.org/cal/event/eventView.do?b=de&href=/public/cals/MainCal/CAL-8a3e8e4b-9ed1fc91-019e-f5bb3209-00001902.ics%2320260901T230000Z",
+  "bellevue-writers-group|2026-09-15":
+    "https://events.library.nashville.org/cal/event/eventView.do?b=de&href=/public/cals/MainCal/CAL-8a3e8e4b-9ed1fc91-019e-f5bb3209-00001902.ics%2320260915T230000Z",
+  "bellevue-writers-group|2026-09-29":
+    "https://events.library.nashville.org/cal/event/eventView.do?b=de&href=/public/cals/MainCal/CAL-8a3e8e4b-9ed1fc91-019e-f5bb3209-00001902.ics%2320260929T230000Z",
+  "bellevue-writers-group|2026-10-06":
+    "https://events.library.nashville.org/cal/event/eventView.do?b=de&href=/public/cals/MainCal/CAL-8a3e8e4b-9ed1fc91-019e-f5bb3209-00001902.ics%2320261006T230000Z",
+  "bellevue-writers-group|2026-10-20":
+    "https://events.library.nashville.org/cal/event/eventView.do?b=de&href=/public/cals/MainCal/CAL-8a3e8e4b-9ed1fc91-019e-f5bb3209-00001902.ics%2320261020T230000Z",
+  "bellevue-writers-group|2026-11-03":
+    "https://events.library.nashville.org/cal/event/eventView.do?b=de&href=/public/cals/MainCal/CAL-8a3e8e4b-9ed1fc91-019e-f5bb3209-00001902.ics%2320261104T000000Z",
+  "bellevue-writers-group|2026-11-17":
+    "https://events.library.nashville.org/cal/event/eventView.do?b=de&href=/public/cals/MainCal/CAL-8a3e8e4b-9ed1fc91-019e-f5bb3209-00001902.ics%2320261118T000000Z",
+  "bellevue-writers-group|2026-12-01":
+    "https://events.library.nashville.org/cal/event/eventView.do?b=de&href=/public/cals/MainCal/CAL-8a3e8e4b-9ed1fc91-019e-f5bb3209-00001902.ics%2320261202T000000Z",
+  "bellevue-writers-group|2026-12-15":
+    "https://events.library.nashville.org/cal/event/eventView.do?b=de&href=/public/cals/MainCal/CAL-8a3e8e4b-9ed1fc91-019e-f5bb3209-00001902.ics%2320261216T000000Z",
+  "bellevue-writers-group|2026-12-29":
+    "https://events.library.nashville.org/cal/event/eventView.do?b=de&href=/public/cals/MainCal/CAL-8a3e8e4b-9ed1fc91-019e-f5bb3209-00001902.ics%2320261230T000000Z",
+  "carnegie-writers|2026-08-08":
+    "https://events.library.nashville.org/cal/event/eventView.do?b=de&href=/public/cals/MainCal/CAL-8a3e8e4c-9b10efcc-019b-b37a7824-00007c34.ics%2320260808T193000Z",
+  "carnegie-writers|2026-09-12":
+    "https://events.library.nashville.org/cal/event/eventView.do?b=de&href=/public/cals/MainCal/CAL-8a3e8e4c-9b10efcc-019b-b37a7824-00007c34.ics%2320260912T193000Z",
+  "playwriting-workshop|2026-08-07":
+    "https://events.library.nashville.org/cal/event/eventView.do?b=de&href=/public/cals/MainCal/CAL-8a3e8e4c-9dfdfcb5-019e-23332838-00007a6f.ics",
+  "playwriting-workshop|2026-09-04":
+    "https://events.library.nashville.org/cal/event/eventView.do?b=de&href=/public/cals/MainCal/CAL-8a3e8e4c-9dfdfcb5-019e-235c97ac-00007f4e.ics",
+  "playwriting-workshop|2026-10-02":
+    "https://events.library.nashville.org/cal/event/eventView.do?b=de&href=/public/cals/MainCal/CAL-8a3e8e4c-9dfdfcb5-019e-23641a99-0000003b.ics",
+  "playwriting-workshop|2026-11-13":
+    "https://events.library.nashville.org/cal/event/eventView.do?b=de&href=/public/cals/MainCal/CAL-8a3e8e4c-9dfdfcb5-019e-28134df6-000047d8.ics",
+  "creative-writing-club|2026-08-06":
+    "https://events.library.nashville.org/cal/event/eventView.do?b=de&href=/public/cals/MainCal/CAL-8a3e8e4c-9d84f562-019d-9d6719f7-000038ff.ics",
+  "creative-writing-club|2026-08-27":
+    "https://events.library.nashville.org/cal/event/eventView.do?b=de&href=/public/cals/MainCal/CAL-8a3e8e4c-9d84f562-019d-9d67fda5-00003928.ics",
+};
+
+function nplRsvpUrl(slug: string, date: string, override?: string): string | undefined {
+  return override ?? NPL_RSVP_BY_SLUG_DATE[`${slug}|${date}`];
+}
 
 type CuratedSpec = {
   id: string;
@@ -31,7 +104,7 @@ type CuratedSpec = {
   venue: string;
   address: string;
   neighborhood: string;
-  rsvpUrl: string;
+  rsvpUrl?: string;
   sourceChannel: WorkshopEvent["sourceChannel"];
   price?: WorkshopEvent["price"];
 };
@@ -41,6 +114,8 @@ type NplRow = {
   date: string;
   hour: number;
   minute: number;
+  endHour?: number;
+  endMinute?: number;
   title: string;
   branch: string;
   address?: string;
@@ -119,6 +194,8 @@ function nplEvent(row: NplRow): CuratedSpec {
     day: d,
     hour: row.hour,
     minute: row.minute,
+    endHour: row.endHour,
+    endMinute: row.endMinute,
     timeZone: TZ_CENTRAL,
     canceled: row.canceled,
     title: row.title,
@@ -132,7 +209,7 @@ function nplEvent(row: NplRow): CuratedSpec {
     venue: loc.venue,
     address: row.address ?? loc.address,
     neighborhood: loc.neighborhood,
-    rsvpUrl: row.rsvpUrl ?? NPL_EVENTS_URL,
+    rsvpUrl: nplRsvpUrl(row.slug, row.date, row.rsvpUrl),
     sourceChannel: "library",
   };
 }
@@ -194,6 +271,8 @@ const NPL_WRITING_EVENTS: CuratedSpec[] = [
     branch: "Sevier Park",
     canceled: true,
     slug: "pen-pal-club",
+    rsvpUrl:
+      "https://events.library.nashville.org/cal/event/eventView.do?b=de&href=/public/cals/MainCal/CAL-8a3e8e4c-9ca7e1df-019c-b5f70eb0-000052f8.ics%2320260803T210000Z",
   }),
   nplEvent({
     date: "2026-08-04",
@@ -208,10 +287,14 @@ const NPL_WRITING_EVENTS: CuratedSpec[] = [
     date: "2026-08-05",
     hour: 17,
     minute: 30,
+    endHour: 19,
+    endMinute: 30,
     title: "Writer Support Group",
     branch: "Hermitage",
     category: "other",
     slug: "writer-support-group",
+    rsvpUrl:
+      "https://events.library.nashville.org/cal/event/eventView.do?b=de&href=/public/cals/MainCal/CAL-8a3e8e4b-9e2e7865-019e-3c707dc5-0000225b.ics%2320260805T223000Z",
   }),
   nplEvent({
     date: "2026-08-06",
@@ -221,6 +304,8 @@ const NPL_WRITING_EVENTS: CuratedSpec[] = [
     branch: "Bordeaux",
     canceled: true,
     slug: "creative-writing-club",
+    rsvpUrl:
+      "https://events.library.nashville.org/cal/event/eventView.do?b=de&href=/public/cals/MainCal/CAL-8a3e8e4c-9d84f562-019d-9d6719f7-000038ff.ics",
   }),
   nplEvent({
     date: "2026-08-07",
@@ -920,9 +1005,6 @@ const UNION_AVE_EVENTS: CuratedSpec[] = [
   },
 ];
 
-const PLENTY_WRITE_IN_URL =
-  "https://www.plentybookshop.com/event-details-registration/monthly-write-in-2026-04-07-18-00-1";
-const PLENTY_EVENTS_URL = "https://www.plentybookshop.org/events";
 
 /** First-Tuesday monthly write-ins at PLENTY Downtown Bookshop (Cookeville). */
 const PLENTY_WRITE_INS: CuratedSpec[] = [
@@ -956,7 +1038,7 @@ const PLENTY_WRITE_INS: CuratedSpec[] = [
     venue: "PLENTY Downtown Bookshop",
     address: "41 W Broad St, Cookeville, TN 38501",
     neighborhood: "Cookeville",
-    rsvpUrl: PLENTY_WRITE_IN_URL,
+    rsvpUrl: `https://www.plentybookshop.org/event-details-registration/monthly-write-in-${date}-18-00-1`,
     sourceChannel: "bookstore",
     price: "free",
   };
@@ -993,7 +1075,7 @@ const PLENTY_SECOND_SATURDAYS: CuratedSpec[] = [
     venue: "PLENTY Downtown Bookshop",
     address: "41 W Broad St, Cookeville, TN 38501",
     neighborhood: "Cookeville",
-    rsvpUrl: PLENTY_EVENTS_URL,
+    // No per-date registration page on Plenty yet — omit RSVP vs linking the general calendar.
     sourceChannel: "bookstore",
     price: "free",
   };
@@ -1009,6 +1091,11 @@ const PLENTY_WRITERS_WORKSHOPS: CuratedSpec[] = [
   "2026-12-04",
 ].map((date) => {
   const [y, m, d] = date.split("-").map(Number);
+  // Aug 7 uses Plenty's published slug with a trailing -1; other months use the date pattern.
+  const rsvpSlug =
+    date === "2026-08-07"
+      ? "writers-workshop-2026-08-07-11-00-1"
+      : `writers-workshop-${date}-11-00`;
   return {
     id: `tn-plenty-writers-workshop-${date.replaceAll("-", "")}`,
     year: y,
@@ -1017,20 +1104,20 @@ const PLENTY_WRITERS_WORKSHOPS: CuratedSpec[] = [
     hour: 11,
     minute: 0,
     endHour: 12,
-    endMinute: 15,
+    endMinute: 0,
     timeZone: TZ_CENTRAL,
     title: "Writers Workshop",
     tagline: "PLENTY Downtown Bookshop · Cookeville · $20 · Preregistration required",
     description:
       "A structured workshop for writers of any age and stage, with rotating themes, hands-on activities, and prompts. " +
       "Often led by Tennessee Tech faculty or local authors. $20 per participant (includes a drink from Plenty's Neighborhood Cafe). " +
-      "Preregistration required at plentybookshop.com/events.",
+      "Preregistration required.",
     category: "workshop",
     organizer: "PLENTY Downtown Bookshop",
     venue: "PLENTY Downtown Bookshop",
     address: "41 W Broad St, Cookeville, TN 38501",
     neighborhood: "Cookeville",
-    rsvpUrl: "https://www.plentybookshop.com/events",
+    rsvpUrl: `https://www.plentybookshop.org/event-details-registration/${rsvpSlug}`,
     sourceChannel: "bookstore",
     price: "paid",
   };
@@ -1064,19 +1151,24 @@ const PLENTY_TALES_ON_THE_TRAIL: CuratedSpec[] = [
     venue: "PLENTY Downtown Bookshop (meet-up)",
     address: "41 W Broad St, Cookeville, TN 38501",
     neighborhood: "Cookeville",
-    rsvpUrl: PLENTY_EVENTS_URL,
+    rsvpUrl: `https://www.plentybookshop.org/event-details-registration/tales-on-the-trail-a-monthly-audiobook-walk-${date}-09-00`,
     sourceChannel: "bookstore",
   };
 });
 
 /** Booked and Unplugged — every third Friday. */
 const PLENTY_BOOKED_AND_UNPLUGGED: CuratedSpec[] = [
-  "2026-08-17",
-  "2026-09-18",
-  "2026-10-16",
-  "2026-11-20",
-  "2026-12-18",
-].map((date) => {
+  {
+    date: "2026-08-17",
+    rsvpUrl:
+      "https://www.plentybookshop.org/event-details-registration/booked-and-unplugged-2026-08-17-18-30",
+  },
+  // Later months are on Plenty's calendar but do not yet have individual registration pages.
+  { date: "2026-09-18" },
+  { date: "2026-10-16" },
+  { date: "2026-11-20" },
+  { date: "2026-12-18" },
+].map(({ date, rsvpUrl }: { date: string; rsvpUrl?: string }) => {
   const [y, m, d] = date.split("-").map(Number);
   return {
     id: `tn-plenty-booked-and-unplugged-${date.replaceAll("-", "")}`,
@@ -1097,7 +1189,7 @@ const PLENTY_BOOKED_AND_UNPLUGGED: CuratedSpec[] = [
     venue: "PLENTY Downtown Bookshop",
     address: "41 W Broad St, Cookeville, TN 38501",
     neighborhood: "Cookeville",
-    rsvpUrl: PLENTY_EVENTS_URL,
+    rsvpUrl,
     sourceChannel: "bookstore",
   };
 });
@@ -1122,7 +1214,8 @@ const PLENTY_ONE_OFFS: CuratedSpec[] = [
     venue: "PLENTY Downtown Bookshop",
     address: "41 W Broad St, Cookeville, TN 38501",
     neighborhood: "Cookeville",
-    rsvpUrl: PLENTY_EVENTS_URL,
+    rsvpUrl:
+      "https://www.plentybookshop.org/event-details-registration/author-event-dr-sherry-hamby-in-conversation-with-dr-katie-herman-turner",
     sourceChannel: "bookstore",
   },
   {
@@ -1144,7 +1237,8 @@ const PLENTY_ONE_OFFS: CuratedSpec[] = [
     venue: "PLENTY Downtown Bookshop",
     address: "41 W Broad St, Cookeville, TN 38501",
     neighborhood: "Cookeville",
-    rsvpUrl: PLENTY_EVENTS_URL,
+    rsvpUrl:
+      "https://www.plentybookshop.org/event-details-registration/author-event-grace-helena-walz",
     sourceChannel: "bookstore",
   },
   {
@@ -1166,7 +1260,8 @@ const PLENTY_ONE_OFFS: CuratedSpec[] = [
     venue: "PLENTY Downtown Bookshop",
     address: "41 W Broad St, Cookeville, TN 38501",
     neighborhood: "Cookeville",
-    rsvpUrl: PLENTY_EVENTS_URL,
+    rsvpUrl:
+      "https://www.plentybookshop.org/event-details-registration/author-event-lauren-nossett-in-conversation-with-rea-frey",
     sourceChannel: "bookstore",
   },
   {
@@ -1188,7 +1283,8 @@ const PLENTY_ONE_OFFS: CuratedSpec[] = [
     venue: "PLENTY Downtown Bookshop",
     address: "41 W Broad St, Cookeville, TN 38501",
     neighborhood: "Cookeville",
-    rsvpUrl: PLENTY_EVENTS_URL,
+    rsvpUrl:
+      "https://www.plentybookshop.org/event-details-registration/midnight-release-party-meet-the-author-reliquary-by-hannah-whitten",
     sourceChannel: "bookstore",
     price: "paid",
   },
@@ -1213,7 +1309,8 @@ const PLENTY_ONE_OFFS: CuratedSpec[] = [
     venue: "PLENTY Downtown Bookshop",
     address: "41 W Broad St, Cookeville, TN 38501",
     neighborhood: "Cookeville",
-    rsvpUrl: PLENTY_EVENTS_URL,
+    rsvpUrl:
+      "https://www.plentybookshop.org/event-details-registration/book-club-101",
     sourceChannel: "bookstore",
     price: "free",
   },
@@ -1235,7 +1332,8 @@ const PLENTY_ONE_OFFS: CuratedSpec[] = [
     venue: "PLENTY Downtown Bookshop",
     address: "41 W Broad St, Cookeville, TN 38501",
     neighborhood: "Cookeville",
-    rsvpUrl: PLENTY_EVENTS_URL,
+    rsvpUrl:
+      "https://www.plentybookshop.org/event-details-registration/storytime-with-jennifer-moorman",
     sourceChannel: "bookstore",
   },
   {
@@ -1257,7 +1355,8 @@ const PLENTY_ONE_OFFS: CuratedSpec[] = [
     venue: "DelMonaco Winery & Vineyards",
     address: "600 Lance Dr, Baxter, TN 38544",
     neighborhood: "Baxter",
-    rsvpUrl: PLENTY_EVENTS_URL,
+    rsvpUrl:
+      "https://www.plentybookshop.org/event-details-registration/an-evening-with-ruta-sepetys",
     sourceChannel: "bookstore",
   },
   {
@@ -1278,7 +1377,8 @@ const PLENTY_ONE_OFFS: CuratedSpec[] = [
     venue: "PLENTY Downtown Bookshop",
     address: "41 W Broad St, Cookeville, TN 38501",
     neighborhood: "Cookeville",
-    rsvpUrl: PLENTY_EVENTS_URL,
+    rsvpUrl:
+      "https://www.plentybookshop.org/event-details-registration/author-event-jeff-zentner-1",
     sourceChannel: "bookstore",
   },
   {
@@ -1299,19 +1399,24 @@ const PLENTY_ONE_OFFS: CuratedSpec[] = [
     venue: "PLENTY Downtown Bookshop",
     address: "41 W Broad St, Cookeville, TN 38501",
     neighborhood: "Cookeville",
-    rsvpUrl: PLENTY_EVENTS_URL,
+    rsvpUrl:
+      "https://www.plentybookshop.org/event-details-registration/tailgate-author-event-timothy-johnston",
     sourceChannel: "bookstore",
   },
 ];
 
 /** Sawmill Poetry Series — first Monday monthly: featured Southern poet + open mic. */
 const PLENTY_SAWMILL_POETRY: CuratedSpec[] = [
-  "2026-08-03",
-  "2026-09-07",
-  "2026-10-05",
-  "2026-11-02",
-  "2026-12-07",
-].map((date) => {
+  {
+    date: "2026-08-03",
+    rsvpUrl:
+      "https://allevents.in/cookeville/august-featured-poet-khalil-elayan/200030125487833",
+  },
+  { date: "2026-09-07" },
+  { date: "2026-10-05" },
+  { date: "2026-11-02" },
+  { date: "2026-12-07" },
+].map(({ date, rsvpUrl }) => {
   const [y, m, d] = date.split("-").map(Number);
   return {
     id: `tn-plenty-sawmill-poetry-${date.replaceAll("-", "")}`,
@@ -1336,7 +1441,7 @@ const PLENTY_SAWMILL_POETRY: CuratedSpec[] = [
     venue: "PLENTY Downtown Bookshop",
     address: "41 W Broad St, Cookeville, TN 38501",
     neighborhood: "Cookeville",
-    rsvpUrl: PLENTY_EVENTS_URL,
+    rsvpUrl,
     sourceChannel: "bookstore",
     price: "free",
   };
@@ -1713,7 +1818,8 @@ const EVENTS: CuratedSpec[] = [
     venue: "Main Library — Special Collections Center, 2nd Floor",
     address: "Nashville, TN",
     neighborhood: "Downtown Nashville",
-    rsvpUrl: NPL_EVENTS_URL,
+    rsvpUrl:
+      "https://events.library.nashville.org/cal/event/eventView.do?b=de&href=/public/cals/MainCal/CAL-8a3e8e4c-9f4a3061-019f-5c9cc3b9-00004867.ics",
     sourceChannel: "library",
   },
   {
@@ -2162,7 +2268,6 @@ const EVENTS: CuratedSpec[] = [
     venue: "PLENTY Downtown Bookshop",
     address: "41 W Broad St, Cookeville, TN 38501",
     neighborhood: "Cookeville",
-    rsvpUrl: PLENTY_EVENTS_URL,
     sourceChannel: "bookstore",
   },
   ...PLENTY_WRITE_INS,
