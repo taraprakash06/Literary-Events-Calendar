@@ -7,6 +7,14 @@ export const WRITERS_CENTER_FREE_EVENTS_PAGE =
   "https://writer.org/free-events-calendar/";
 const TRIBE_EVENTS = `${WRITERS_CENTER_SITE}/wp-json/tribe/events/v1/events`;
 
+/** Look back so multi-week series that started earlier still appear. */
+const PAD_MONTHS_BEFORE = 4;
+/**
+ * Look ahead so TEC does not drop series that start in-month but end later
+ * (their API excludes events whose end falls after `end_date`).
+ */
+const PAD_MONTHS_AFTER = 3;
+
 function pad2(n: number) {
   return String(n).padStart(2, "0");
 }
@@ -21,6 +29,19 @@ function monthDateRange(year: number, monthIndex: number): {
   return { startDate, endDate };
 }
 
+/** Inclusive TEC query window padded around the viewed month. */
+export function paddedFetchRange(
+  year: number,
+  monthIndex: number,
+): { startDate: string; endDate: string } {
+  const start = new Date(year, monthIndex - PAD_MONTHS_BEFORE, 1);
+  const end = new Date(year, monthIndex + PAD_MONTHS_AFTER + 1, 0);
+  return {
+    startDate: `${start.getFullYear()}-${pad2(start.getMonth() + 1)}-${pad2(start.getDate())}`,
+    endDate: `${end.getFullYear()}-${pad2(end.getMonth() + 1)}-${pad2(end.getDate())}`,
+  };
+}
+
 type TribeListResponse = {
   events?: TwcTribeEvent[];
   total_pages?: number;
@@ -28,13 +49,12 @@ type TribeListResponse = {
 
 async function fetchWritersCenterByCategory(
   category: string,
-  year: number,
-  monthIndex: number,
+  startDate: string,
+  endDate: string,
   signal?: AbortSignal,
 ): Promise<TwcTribeEvent[]> {
-  const { startDate, endDate } = monthDateRange(year, monthIndex);
   const out: TwcTribeEvent[] = [];
-  const totalPagesCap = 10;
+  const totalPagesCap = 15;
   let page = 1;
 
   while (page <= totalPagesCap) {
@@ -74,7 +94,8 @@ export async function fetchWritersCenterWorkshopsForMonth(
   monthIndex: number,
   signal?: AbortSignal,
 ): Promise<TwcTribeEvent[]> {
-  return fetchWritersCenterByCategory("workshop", year, monthIndex, signal);
+  const { startDate, endDate } = paddedFetchRange(year, monthIndex);
+  return fetchWritersCenterByCategory("workshop", startDate, endDate, signal);
 }
 
 /**
@@ -86,11 +107,23 @@ export async function fetchWritersCenterFreeEventsForMonth(
   monthIndex: number,
   signal?: AbortSignal,
 ): Promise<TwcTribeEvent[]> {
-  return fetchWritersCenterByCategory("event", year, monthIndex, signal);
+  // Free events are almost always single-day; still pad end so spillover
+  // listings are not dropped by TEC's end_date behavior.
+  const { startDate, endDate } = monthDateRange(year, monthIndex);
+  const endPad = new Date(year, monthIndex + 2, 0);
+  const endDatePadded = `${endPad.getFullYear()}-${pad2(endPad.getMonth() + 1)}-${pad2(endPad.getDate())}`;
+  return fetchWritersCenterByCategory(
+    "event",
+    startDate,
+    endDatePadded,
+    signal,
+  );
 }
 
 /**
  * Workshops + free-events calendar rows for the month, deduped by TEC id.
+ * Uses a padded date window so multi-week workshops through October (and
+ * beyond) are not dropped by The Events Calendar's end_date filter.
  */
 export async function fetchWritersCenterListingsForMonth(
   year: number,
