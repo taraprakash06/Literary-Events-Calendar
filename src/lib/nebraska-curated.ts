@@ -35,10 +35,16 @@ type CuratedSpec = {
   rsvpUrl?: string;
   rsvpIsGeneralCalendar?: boolean;
   sourceChannel: WorkshopEvent["sourceChannel"];
+  source?: string;
   price?: WorkshopEvent["price"];
+  priceDetail?: string;
+  format?: WorkshopEvent["format"];
+  virtualLabel?: string;
 };
 
 const CURATED: CuratedSpec[] = [
+  ...poetryMenuEvents(),
+
   // ── The Bookworm (Omaha) ──────────────────────────────────────────
   {
     id: "ne-bookworm-nora-barth-time-warden-20260725",
@@ -664,6 +670,580 @@ const CURATED: CuratedSpec[] = [
   },
 ];
 
+type PoetryMenuInput = {
+  slug: string;
+  date: string;
+  hour: number;
+  minute?: number;
+  endHour?: number;
+  endMinute?: number;
+  title: string;
+  tagline: string;
+  description: string;
+  category: WorkshopEventCategory;
+  organizer: string;
+  venue: string;
+  address: string;
+  neighborhood: string;
+  rsvpUrl?: string;
+  price?: WorkshopEvent["price"];
+  priceDetail?: string;
+  format?: WorkshopEvent["format"];
+  virtualLabel?: string;
+};
+
+function poetryMenuEvent(input: PoetryMenuInput): CuratedSpec {
+  const date = DateTime.fromISO(input.date, { zone: TZ });
+  return {
+    id: `ne-poetry-menu-${input.slug}-${input.date.replaceAll("-", "")}`,
+    year: date.year,
+    monthIndex: date.month - 1,
+    day: date.day,
+    hour: input.hour,
+    minute: input.minute ?? 0,
+    endHour: input.endHour,
+    endMinute: input.endMinute,
+    timeZone: TZ,
+    title: input.title,
+    tagline: input.tagline,
+    description: input.description,
+    category: input.category,
+    organizer: input.organizer,
+    venue: input.venue,
+    address: input.address,
+    neighborhood: input.neighborhood,
+    rsvpUrl: input.rsvpUrl ?? "https://poetrymenu.com/",
+    rsvpIsGeneralCalendar: !input.rsvpUrl,
+    sourceChannel: "literary_org",
+    source: "Poetry Menu (poetrymenu.com)",
+    price: input.price,
+    priceDetail: input.priceDetail,
+    format: input.format,
+    virtualLabel: input.virtualLabel,
+  };
+}
+
+function poetryMenuEvents(): CuratedSpec[] {
+  const events: CuratedSpec[] = [];
+
+  const lauritzenDates = ["2026-07-25", "2026-08-08", "2026-08-15", "2026-09-12"];
+  for (const date of lauritzenDates) {
+    events.push(
+      poetryMenuEvent({
+        slug: "lauritzen-poetry-workshop",
+        date,
+        hour: 10,
+        endHour: 11,
+        endMinute: 30,
+        title: "Poetry Writing Workshop with Julie S. Paschold",
+        tagline: "Lauritzen Gardens · Omaha · Registration required",
+        description:
+          "Poetry writing workshop with Lauritzen Gardens resident poetry instructor Julie S. Paschold.",
+        category: "workshop",
+        organizer: "Lauritzen Gardens",
+        venue: "Lauritzen Gardens",
+        address: "100 Bancroft St, Omaha, NE 68108",
+        neighborhood: "Omaha",
+        rsvpUrl:
+          "https://lauritzen.ticketapp.org/portal/product/51/event/d25ffeb9-e830-40f1-9c0d-aa29cb9f1999",
+      }),
+    );
+  }
+
+  const crescentMoonDates = [
+    "2026-07-29",
+    "2026-08-05",
+    "2026-08-12",
+    "2026-08-19",
+    "2026-08-26",
+    "2026-09-02",
+    "2026-09-09",
+    "2026-09-16",
+    "2026-09-23",
+    "2026-09-30",
+  ];
+  for (const date of crescentMoonDates) {
+    events.push(
+      poetryMenuEvent({
+        slug: "crescent-moon-writers-night",
+        date,
+        hour: 19,
+        endHour: 21,
+        title: "The Crescent Moon Writers' Night: Open Mic",
+        tagline: "Crescent Moon Coffee · Lincoln · Signup at 6:30 PM",
+        description:
+          "Weekly writers' open mic hosted by Jeff Martinson. Signup begins at 6:30 PM. On the first Wednesday of each month, attendees are invited to stay afterward for the Write After writing group.",
+        category: "open-mic",
+        organizer: "Crescent Moon Coffee",
+        venue: "Crescent Moon Coffee at The Apothecary",
+        address: "140 N 8th St, Lincoln, NE 68508",
+        neighborhood: "Lincoln",
+        rsvpUrl: "https://crescentmooncoffee.com/",
+        price: "free",
+      }),
+    );
+  }
+
+  events.push(
+    poetryMenuEvent({
+      slug: "nps-workshop-preeti-vangani",
+      date: "2026-08-01",
+      hour: 10,
+      endHour: 11,
+      title: "Writing the Poem of Grief through Food with Preeti Vangani",
+      tagline: "Nebraska Poetry Society · Online · $35 or free for members",
+      description:
+        "An online poetry writing workshop led by Preeti Vangani on writing poems of grief through food.",
+      category: "workshop",
+      organizer: "Nebraska Poetry Society",
+      venue: "Online",
+      address: "Online",
+      neighborhood: "Online",
+      rsvpUrl: "https://nepoetrysociety.org/workshops",
+      price: "paid",
+      priceDetail: "$35 · free for members",
+      format: "virtual",
+      virtualLabel: "Online",
+    }),
+    poetryMenuEvent({
+      slug: "neihardt-day-poetry-picnic",
+      date: "2026-08-02",
+      hour: 13,
+      endHour: 15,
+      title: "61st Annual Neihardt Day: A Poetry Picnic",
+      tagline: "Neihardt State Historic Site · Bancroft · Free",
+      description:
+        "A poetry picnic featuring State Poet Emeritus Matt Mason, JV Brummels, and 2025–26 Youth Poet Laureate Victoria Bogats. Bring picnic food, a blanket, and two or three poems for the open mic.",
+      category: "reading",
+      organizer: "John G. Neihardt State Historic Site",
+      venue: "John G. Neihardt State Historic Site",
+      address: "306 Elm St, Bancroft, NE 68004",
+      neighborhood: "Bancroft",
+      price: "free",
+    }),
+    poetryMenuEvent({
+      slug: "nps-reading-brad-aaron-modlin",
+      date: "2026-08-04",
+      hour: 18,
+      minute: 30,
+      endHour: 19,
+      endMinute: 30,
+      title: "Nebraska Poets Reading Series: Brad Aaron Modlin",
+      tagline: "Nebraska Poetry Society · Online · Free",
+      description:
+        "The Nebraska Poetry Society's free online reading series features poet Brad Aaron Modlin.",
+      category: "reading",
+      organizer: "Nebraska Poetry Society",
+      venue: "Online",
+      address: "Online",
+      neighborhood: "Online",
+      rsvpUrl: "https://nepoetrysociety.org/readings",
+      price: "free",
+      format: "virtual",
+      virtualLabel: "Online",
+    }),
+    poetryMenuEvent({
+      slug: "smolder-book-launch-gallery-1516",
+      date: "2026-08-06",
+      hour: 18,
+      endHour: 20,
+      title: "Smolder Book Launch with Colleen Morton Busch",
+      tagline: "Gallery 1516 · Omaha · Reading, Q&A & signing",
+      description:
+        "Celebrate the launch of Smolder by Colleen Morton Busch, winner of the 2025 Richard-Gabriel Rummonds Poetry Prize. Doors open at 5:30 PM; the reading and Q&A begin at 6:30, followed by a signing. RSVP to info@gallery1516.org.",
+      category: "reading",
+      organizer: "Gallery 1516",
+      venue: "Gallery 1516",
+      address: "1516 Leavenworth St, Omaha, NE 68102",
+      neighborhood: "Omaha",
+      rsvpUrl: "mailto:info@gallery1516.org",
+    }),
+    poetryMenuEvent({
+      slug: "larksong-first-friday-lisa-knopp",
+      date: "2026-08-07",
+      hour: 12,
+      endHour: 13,
+      title: "First Friday Book Talk: Lisa Knopp",
+      tagline: "Larksong Writers Place · Zoom · Free",
+      description:
+        "Lisa Knopp discusses and reads from Ravelings: Essays on Love, Loss, and Wonder. Free registration is required.",
+      category: "reading",
+      organizer: "Larksong Writers Place",
+      venue: "Zoom",
+      address: "Online",
+      neighborhood: "Online",
+      rsvpUrl: "https://larksongwritersplace.org/",
+      price: "free",
+      format: "virtual",
+      virtualLabel: "Zoom",
+    }),
+    poetryMenuEvent({
+      slug: "victoria-bogats-chapbook-release",
+      date: "2026-08-07",
+      hour: 18,
+      endHour: 20,
+      title: "Victoria Bogats — This Is Not The End Chapbook Release",
+      tagline: "Joslyn Castle Carriage House · Omaha",
+      description:
+        "Victoria Bogats celebrates her debut chapbook This Is Not The End with guest poets Jewel Rodgers, Matt Mason, Angélica Perez, and Stephany Orellana Gomez.",
+      category: "reading",
+      organizer: "Victoria Bogats",
+      venue: "Joslyn Castle Carriage House",
+      address: "3902 Davenport St, Omaha, NE 68131",
+      neighborhood: "Omaha",
+    }),
+  );
+
+  for (const date of ["2026-08-07", "2026-09-04"]) {
+    events.push(
+      poetryMenuEvent({
+        slug: "reading-room-poetry-night",
+        date,
+        hour: 18,
+        minute: 30,
+        endHour: 22,
+        title: "Poetry Night at the Reading Room",
+        tagline: "The Reading Room · Omaha · Registration required",
+        description:
+          "Share your own work or read a favorite poem aloud at this monthly poetry night. Register by emailing readingroomomaha@gmail.com or calling/texting 563-940-1308.",
+        category: "open-mic",
+        organizer: "The Reading Room",
+        venue: "The Reading Room",
+        address: "1505 Farnam St, Omaha, NE 68102",
+        neighborhood: "Omaha",
+        rsvpUrl: "mailto:readingroomomaha@gmail.com",
+      }),
+    );
+  }
+
+  for (const date of ["2026-08-10", "2026-09-14"]) {
+    events.push(
+      poetryMenuEvent({
+        slug: "family-dinner-reading-open-mic",
+        date,
+        hour: 18,
+        endHour: 20,
+        title: "Family Dinner Reading Series and Open Mic",
+        tagline: "Joslyn Castle Carriage House · Omaha",
+        description:
+          "Monthly featured reading at 6 PM followed by an open mic at 7 PM.",
+        category: "open-mic",
+        organizer: "Family Dinner Reading Series",
+        venue: "Joslyn Castle Carriage House",
+        address: "3902 Davenport St, Omaha, NE 68131",
+        neighborhood: "Omaha",
+      }),
+    );
+  }
+
+  for (const date of ["2026-08-11", "2026-09-08"]) {
+    events.push(
+      poetryMenuEvent({
+        slug: "nps-writing-club",
+        date,
+        hour: 18,
+        endHour: 20,
+        title: "Nebraska Poetry Society Writing Club",
+        tagline: "Vis Major Brewing · Omaha · Free",
+        description:
+          "A welcoming, low-pressure gathering to read, reflect, and write in community. This is not a formal workshop or critique group.",
+        category: "other",
+        organizer: "Nebraska Poetry Society",
+        venue: "Vis Major Brewing",
+        address: "3501 Center St, Omaha, NE 68105",
+        neighborhood: "Omaha",
+        rsvpUrl: "https://nepoetrysociety.org/workshops",
+        price: "free",
+      }),
+    );
+  }
+
+  for (const date of ["2026-08-19", "2026-09-09"]) {
+    events.push(
+      poetryMenuEvent({
+        slug: "no-gatekeepers-poetry-night",
+        date,
+        hour: 19,
+        endHour: 21,
+        title: "No Gatekeepers Poetry Night",
+        tagline: "Joslyn Castle Carriage House · Omaha",
+        description:
+          "Matt Mason hosts a welcoming poetry night. Bring two poems—one of your own and one by another poet—to share in five minutes. The August event was moved from August 12 to August 19.",
+        category: "open-mic",
+        organizer: "Castle & Cathedral Creative District",
+        venue: "Joslyn Castle Carriage House",
+        address: "3902 Davenport St, Omaha, NE 68131",
+        neighborhood: "Omaha",
+      }),
+    );
+  }
+
+  events.push(
+    poetryMenuEvent({
+      slug: "poetry-at-the-lion-robert-fernandez",
+      date: "2026-08-14",
+      hour: 18,
+      endHour: 20,
+      title: "Poetry Readings at The Lion: Robert Fernandez",
+      tagline: "St. Mark's on the Campus · Lincoln · Feature & open mic",
+      description:
+        "Robert Fernandez is the featured reader, followed by an open mic as time allows. Doors open at 5:30 PM.",
+      category: "open-mic",
+      organizer: "Poetry Readings at The Lion",
+      venue: "St. Mark's on the Campus",
+      address: "1309 R St, Lincoln, NE 68508",
+      neighborhood: "Lincoln",
+      rsvpUrl: "https://sites.google.com/view/smoc-lion",
+    }),
+    poetryMenuEvent({
+      slug: "authors-against-ice",
+      date: "2026-08-15",
+      hour: 19,
+      endHour: 21,
+      title: "Authors Against ICE",
+      tagline: "Sower Books · Lincoln · $10 benefit reading",
+      description:
+        "Junk Drawer and SydsBooked host an author reading supporting community action. All proceeds benefit the Center for Legal Immigration and Nebraska Appleseed.",
+      category: "reading",
+      organizer: "Sower Books",
+      venue: "Sower Books",
+      address: "914 N 70th St, Lincoln, NE 68505",
+      neighborhood: "Lincoln",
+      rsvpUrl: "https://sowerbooksne.com/events/5671520260815",
+      price: "paid",
+      priceDetail: "$10",
+    }),
+    poetryMenuEvent({
+      slug: "dog-days-of-summer-open-mic",
+      date: "2026-08-16",
+      hour: 14,
+      endHour: 16,
+      title: "The Dog Days of Summer Open Mic",
+      tagline: "O'Donnell Lecture Hall · Omaha",
+      description:
+        "Bring pet poetry, starry-night poems, or work on another theme. Refreshments and live music are offered at intermission.",
+      category: "open-mic",
+      organizer: "Poetry Menu",
+      venue: "O'Donnell Lecture Hall",
+      address:
+        "Cultural Arts Center, 40th & Webster Sts, Omaha, NE 68131",
+      neighborhood: "Omaha",
+    }),
+    poetryMenuEvent({
+      slug: "nps-poetry-pause-jacobs-stander",
+      date: "2026-08-20",
+      hour: 17,
+      endHour: 18,
+      endMinute: 30,
+      title: "Poetry Pause: Tyler Michael Jacobs & Nicole Stander",
+      tagline: "Joslyn Castle Carriage House · Omaha",
+      description:
+        "Two local poets at different stages of their writing lives share work, discuss poetry and the creative process, and answer questions during the Castle & Cathedral Art Walk.",
+      category: "reading",
+      organizer: "Nebraska Poetry Society",
+      venue: "Joslyn Castle Carriage House",
+      address: "3902 Davenport St, Omaha, NE 68131",
+      neighborhood: "Omaha",
+      rsvpUrl: "https://nepoetrysociety.org/readings",
+      price: "free",
+    }),
+    poetryMenuEvent({
+      slug: "larksong-writers-conversation-mason-mckinstry-brown",
+      date: "2026-08-20",
+      hour: 18,
+      minute: 30,
+      endHour: 19,
+      endMinute: 30,
+      title: "Writers in Conversation: Matt Mason & Sarah McKinstry-Brown",
+      tagline: "Larksong Writers Place · Lincoln · Free",
+      description:
+        "Two writers share their work and discuss the craft of creative writing before opening the conversation to the audience. Social time begins at 6 PM.",
+      category: "reading",
+      organizer: "Larksong Writers Place",
+      venue: "Larksong Writers Place",
+      address: LARKSONG_ADDRESS,
+      neighborhood: "Lincoln",
+      rsvpUrl: "https://larksongwritersplace.org/",
+      price: "free",
+    }),
+  );
+
+  for (const date of ["2026-08-20", "2026-09-17"]) {
+    events.push(
+      poetryMenuEvent({
+        slug: "writes-of-passage",
+        date,
+        hour: 19,
+        endHour: 21,
+        title: "Writes of Passage: Spoken Word Open Mic",
+        tagline: "UNO Criss Library · Omaha · No registration required",
+        description:
+          "Monthly spoken-word open mic on the first floor near Starbucks. Doors open at 6:30 PM; performances begin at 7 PM.",
+        category: "open-mic",
+        organizer: "Writes of Passage",
+        venue: "UNO Criss Library",
+        address: "6401 S University Dr Rd N, Omaha, NE 68182",
+        neighborhood: "Omaha",
+        price: "free",
+      }),
+    );
+  }
+
+  for (const date of ["2026-08-21", "2026-09-18"]) {
+    events.push(
+      poetryMenuEvent({
+        slug: "ellery-spoken-word-open-mic",
+        date,
+        hour: 19,
+        endHour: 20,
+        endMinute: 30,
+        title: "Spoken Word Featured Reading and Open Mic",
+        tagline: "The Ellery · Lincoln",
+        description:
+          "Esman Rodas Calderon hosts a featured spoken-word reading and open mic. Attendees are invited to stay afterward for the Write After writing group.",
+        category: "open-mic",
+        organizer: "Esman Rodas Calderon",
+        venue: "The Ellery",
+        address: "1247 S 11th St, Lincoln, NE 68502",
+        neighborhood: "Lincoln",
+      }),
+    );
+  }
+
+  events.push(
+    poetryMenuEvent({
+      slug: "nps-reading-mark-sanders",
+      date: "2026-09-01",
+      hour: 18,
+      minute: 30,
+      endHour: 19,
+      endMinute: 30,
+      title: "Nebraska Poets Reading Series: Mark Sanders",
+      tagline: "Nebraska Poetry Society · Online · Free",
+      description:
+        "The Nebraska Poetry Society's free online reading series features poet Mark Sanders.",
+      category: "reading",
+      organizer: "Nebraska Poetry Society",
+      venue: "Online",
+      address: "Online",
+      neighborhood: "Online",
+      rsvpUrl: "https://nepoetrysociety.org/readings",
+      price: "free",
+      format: "virtual",
+      virtualLabel: "Online",
+    }),
+    poetryMenuEvent({
+      slug: "larksong-first-friday-september",
+      date: "2026-09-04",
+      hour: 12,
+      endHour: 13,
+      title: "First Friday Book Talk and Reading",
+      tagline: "Larksong Writers Place · Zoom · Free",
+      description:
+        "Larksong Writers Place's monthly online book talk and reading. September's featured writer is to be announced; free registration is required.",
+      category: "reading",
+      organizer: "Larksong Writers Place",
+      venue: "Zoom",
+      address: "Online",
+      neighborhood: "Online",
+      rsvpUrl: "https://larksongwritersplace.org/",
+      price: "free",
+      format: "virtual",
+      virtualLabel: "Zoom",
+    }),
+    poetryMenuEvent({
+      slug: "poetry-at-the-lion-stacey-waite",
+      date: "2026-09-11",
+      hour: 18,
+      endHour: 20,
+      title: "Poetry Readings at The Lion: Stacey Waite",
+      tagline: "St. Mark's on the Campus · Lincoln · Feature & open mic",
+      description:
+        "Stacey Waite is the featured reader, followed by an open mic as time allows. Doors open at 5:30 PM.",
+      category: "open-mic",
+      organizer: "Poetry Readings at The Lion",
+      venue: "St. Mark's on the Campus",
+      address: "1309 R St, Lincoln, NE 68508",
+      neighborhood: "Lincoln",
+      rsvpUrl: "https://sites.google.com/view/smoc-lion",
+    }),
+    poetryMenuEvent({
+      slug: "nps-poetry-pause-letcher-schmeer",
+      date: "2026-09-17",
+      hour: 17,
+      endHour: 18,
+      endMinute: 30,
+      title: "Poetry Pause: Kiara Nicole Letcher & Anna Schmeer",
+      tagline: "Joslyn Castle Carriage House · Omaha",
+      description:
+        "Two local poets at different stages of their writing lives share work, discuss poetry and the creative process, and answer questions during the Castle & Cathedral Art Walk.",
+      category: "reading",
+      organizer: "Nebraska Poetry Society",
+      venue: "Joslyn Castle Carriage House",
+      address: "3902 Davenport St, Omaha, NE 68131",
+      neighborhood: "Omaha",
+      rsvpUrl: "https://nepoetrysociety.org/readings",
+      price: "free",
+    }),
+    poetryMenuEvent({
+      slug: "larksong-writers-conversation-september",
+      date: "2026-09-17",
+      hour: 18,
+      minute: 30,
+      endHour: 19,
+      endMinute: 30,
+      title: "Writers in Conversation: Third Thursdays at Larksong",
+      tagline: "Larksong Writers Place · Lincoln · Free",
+      description:
+        "Two writers at different stages of their careers share work and discuss the craft of creative writing before opening the conversation to the audience. Social time begins at 6 PM.",
+      category: "reading",
+      organizer: "Larksong Writers Place",
+      venue: "Larksong Writers Place",
+      address: LARKSONG_ADDRESS,
+      neighborhood: "Lincoln",
+      rsvpUrl: "https://larksongwritersplace.org/",
+      price: "free",
+    }),
+    poetryMenuEvent({
+      slug: "postscript-stinson-hermanson-kosmicki",
+      date: "2026-09-17",
+      hour: 19,
+      endHour: 20,
+      title: "Poetry Reading: Mike Stinson, Heidi Hermanson & Greg Kosmicki",
+      tagline: "Postscript · Ashland",
+      description:
+        "Poetry reading by Mike Stinson, Heidi Hermanson, and Greg Kosmicki.",
+      category: "reading",
+      organizer: "Postscript",
+      venue: "Postscript",
+      address: "1439 Silver St, Ashland, NE 68003",
+      neighborhood: "Ashland",
+    }),
+    poetryMenuEvent({
+      slug: "nps-workshop-kemi-alabi",
+      date: "2026-09-19",
+      hour: 10,
+      endHour: 11,
+      title: "Ready for the Marvelous with Kemi Alabi",
+      tagline: "Nebraska Poetry Society · Online · $35 or free for members",
+      description:
+        "An online poetry writing workshop led by Kemi Alabi on getting ready for the marvelous.",
+      category: "workshop",
+      organizer: "Nebraska Poetry Society",
+      venue: "Online",
+      address: "Online",
+      neighborhood: "Online",
+      rsvpUrl: "https://nepoetrysociety.org/workshops",
+      price: "paid",
+      priceDetail: "$35 · free for members",
+      format: "virtual",
+      virtualLabel: "Online",
+    }),
+  );
+
+  return events;
+}
+
 function mapSpec(spec: CuratedSpec): WorkshopEvent {
   const start = DateTime.fromObject(
     {
@@ -702,16 +1282,18 @@ function mapSpec(spec: CuratedSpec): WorkshopEvent {
     start: start.toISO()!,
     end: end.toISO()!,
     timeZone: spec.timeZone,
-    format: "in-person",
+    format: spec.format ?? "in-person",
     price: spec.price ?? "unknown",
+    priceDetail: spec.priceDetail,
     category: spec.category,
     organizer: spec.organizer,
     venue: spec.venue,
     address: spec.address,
     neighborhood: spec.neighborhood,
+    virtualLabel: spec.virtualLabel,
     rsvpUrl: spec.rsvpUrl,
     rsvpIsGeneralCalendar: spec.rsvpIsGeneralCalendar,
-    source: "Omaha / Lincoln curated listings",
+    source: spec.source ?? "Omaha / Lincoln curated listings",
     sourceChannel: spec.sourceChannel,
     listingProvenance: "live",
   };
