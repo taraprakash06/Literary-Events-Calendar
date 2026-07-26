@@ -30,6 +30,8 @@ type EbPublicContext = {
   structuredContent?: {
     modules?: { type?: string; text?: string }[];
   };
+  /** Ticket cost parsed from the page's JSON-LD offers, when published. */
+  priceDetail?: string;
 };
 
 function parseNextData(html: string): EbPublicContext | null {
@@ -45,6 +47,66 @@ function parseNextData(html: string): EbPublicContext | null {
   } catch {
     return null;
   }
+}
+
+type LdOffer = {
+  price?: string | number;
+  lowPrice?: string | number;
+  highPrice?: string | number;
+  priceCurrency?: string;
+};
+
+function formatMoney(value: string | number, currency: string): string {
+  const amount = typeof value === "number" ? value : Number(value);
+  if (!Number.isFinite(amount)) return "";
+  try {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency,
+      minimumFractionDigits: amount % 1 === 0 ? 0 : 2,
+    }).format(amount);
+  } catch {
+    return `$${amount.toFixed(2)}`;
+  }
+}
+
+/** Eventbrite publishes ticket cost only in the page's JSON-LD offers. */
+function parsePriceDetailFromLdJson(html: string): string | undefined {
+  const blocks = html.matchAll(
+    /<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi,
+  );
+
+  for (const block of blocks) {
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(block[1]);
+    } catch {
+      continue;
+    }
+
+    const nodes = Array.isArray(parsed) ? parsed : [parsed];
+    for (const node of nodes) {
+      const offers = (node as { offers?: LdOffer | LdOffer[] })?.offers;
+      if (!offers) continue;
+      const list = Array.isArray(offers) ? offers : [offers];
+
+      for (const offer of list) {
+        const currency = offer.priceCurrency?.trim() || "USD";
+        const low = offer.lowPrice ?? offer.price;
+        const high = offer.highPrice;
+
+        const lowText = low != null ? formatMoney(low, currency) : "";
+        const highText = high != null ? formatMoney(high, currency) : "";
+        if (!lowText && !highText) continue;
+        if (lowText && highText && lowText !== highText) {
+          return `${lowText} – ${highText}`;
+        }
+        return lowText || highText;
+      }
+    }
+  }
+
+  return undefined;
 }
 
 function descriptionFromContext(ctx: EbPublicContext): string {
@@ -75,7 +137,9 @@ export async function fetchEventbritePublicEvent(
     throw new Error(`Eventbrite public page HTTP ${res.status}`);
   }
   const html = await res.text();
-  return parseNextData(html);
+  const ctx = parseNextData(html);
+  if (!ctx) return null;
+  return { ...ctx, priceDetail: parsePriceDetailFromLdJson(html) };
 }
 
 export function mapEventbritePublicToWorkshop(
@@ -112,6 +176,7 @@ export function mapEventbritePublicToWorkshop(
     timeZone: tz,
     format: "in-person",
     price: info.isFree ? "free" : "paid",
+    priceDetail: info.isFree ? undefined : ctx.priceDetail,
     category: inferEventCategory(title, description),
     organizer,
     venue: venueName,

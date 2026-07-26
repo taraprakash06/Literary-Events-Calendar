@@ -126,6 +126,176 @@ function stableId(viewUrl: string, start: DateTime): string {
   return `jb-${slug}-${start.toFormat("yyyyLLddHHmm")}`;
 }
 
+const MONTH_NAMES =
+  "January|February|March|April|May|June|July|August|September|October|November|December";
+
+function htmlToPlainText(html: string): string {
+  return stripHtmlAndDecode(
+    html
+      .replace(/<script[\s\S]*?<\/script>/gi, " ")
+      .replace(/<style[\s\S]*?<\/style>/gi, " ")
+      .replace(/<br\s*\/?>/gi, "\n")
+      .replace(/<\/(p|div|li|h[1-6]|tr|td)>/gi, "\n"),
+  )
+    .replace(/\u00a0/g, " ")
+    .replace(/[–—]/g, "-")
+    .replace(/[ \t]+/g, " ")
+    .replace(/\n+/g, "\n")
+    .trim();
+}
+
+function parseClock(token: string): { hour: number; minute: number } | null {
+  const t = normalizeTimeToken(token);
+  const dt = DateTime.fromFormat(t, "h:mm a", { zone: TZ, locale: "en" });
+  if (!dt.isValid) return null;
+  return { hour: dt.hour, minute: dt.minute };
+}
+
+/** e.g. "5:00 p.m.-6:30 p.m." or "5:00 pm - 6:30 pm" */
+function parseSessionClockRange(
+  text: string,
+): { start: { hour: number; minute: number }; end: { hour: number; minute: number } } | null {
+  const m = text.match(
+    /\b(\d{1,2}(?::\d{2})?\s*(?:a\.?m\.?|p\.?m\.?))\s*-\s*(\d{1,2}(?::\d{2})?\s*(?:a\.?m\.?|p\.?m\.?))\b/i,
+  );
+  if (!m) return null;
+  const start = parseClock(m[1]);
+  const end = parseClock(m[2]);
+  if (!start || !end) return null;
+  return { start, end };
+}
+
+/**
+ * Parse multi-session day lists from Just Buffalo detail copy, e.g.
+ * "July 21 / July 28 / August 4 / August 11" and "+ Monday, August 17".
+ */
+function parseSessionDaysFromDetailText(text: string, year: number): DateTime[] {
+  const days: DateTime[] = [];
+  const seen = new Set<string>();
+
+  const pushDay = (monthName: string, dayNum: number, y: number) => {
+    const dt = DateTime.fromFormat(`${monthName} ${dayNum} ${y}`, "LLLL d yyyy", {
+      zone: TZ,
+      locale: "en",
+    });
+    if (!dt.isValid) return;
+    const key = dt.toFormat("yyyyLLdd");
+    if (seen.has(key)) return;
+    seen.add(key);
+    days.push(dt.startOf("day"));
+  };
+
+  const slashRe = new RegExp(
+    `\\b((?:${MONTH_NAMES})\\s+\\d{1,2}(?:\\s*/\\s*(?:(?:${MONTH_NAMES})\\s+)?\\d{1,2})+)\\b`,
+    "gi",
+  );
+  for (const m of text.matchAll(slashRe)) {
+    let carryMonth: string | null = null;
+    const parts = m[1].split(/\s*\/\s*/);
+    for (const part of parts) {
+      const pm = part.match(new RegExp(`^(?:(${MONTH_NAMES})\\s+)?(\\d{1,2})$`, "i"));
+      if (!pm) continue;
+      if (pm[1]) carryMonth = pm[1];
+      if (!carryMonth) continue;
+      pushDay(carryMonth, Number(pm[2]), year);
+    }
+  }
+
+  const namedRe = new RegExp(
+    `\\b(?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday),?\\s+(${MONTH_NAMES})\\s+(\\d{1,2})(?:,\\s*(\\d{4}))?\\b`,
+    "gi",
+  );
+  for (const m of text.matchAll(namedRe)) {
+    pushDay(m[1], Number(m[2]), m[3] ? Number(m[3]) : year);
+  }
+
+  days.sort((a, b) => a.toMillis() - b.toMillis());
+  return days;
+}
+
+async function fetchDetailSessionStarts(
+  viewUrl: string,
+  year: number,
+  fallbackStart: DateTime,
+  fallbackEnd: DateTime,
+  signal?: AbortSignal,
+): Promise<{
+  sessions: { start: DateTime; end: DateTime }[];
+  priceFree: boolean;
+} | null> {
+  const ua =
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36";
+  const res = await fetch(viewUrl, {
+    signal,
+    headers: {
+      Accept: "text/html,application/xhtml+xml",
+      "Accept-Language": "en-US,en;q=0.9",
+      "User-Agent": ua,
+      Referer: SOURCE_URL,
+    },
+    cache: "no-store",
+  });
+  if (!res.ok) return null;
+  const text = htmlToPlainText(await res.text());
+
+  // Only expand when the page advertises a multi-week / multi-date series.
+  const looksMulti =
+    /\b(?:\d+|two|three|four|five|six|seven|eight)\s+weeks?\b/i.test(text) ||
+    new RegExp(
+      `\\b(?:${MONTH_NAMES})\\s+\\d{1,2}\\s*/\\s*(?:(?:${MONTH_NAMES})\\s+)?\\d{1,2}\\b`,
+      "i",
+    ).test(text);
+  if (!looksMulti) return null;
+
+  const days = parseSessionDaysFromDetailText(text, year);
+  if (days.length < 2) return null;
+
+  const clocks = parseSessionClockRange(text);
+  const startClock = clocks?.start ?? {
+    hour: fallbackStart.hour,
+    minute: fallbackStart.minute,
+  };
+  const endClock = clocks?.end ?? {
+    hour: fallbackEnd.hour,
+    minute: fallbackEnd.minute,
+  };
+
+  const sessions = days.map((day) => {
+    const start = day.set({
+      hour: startClock.hour,
+      minute: startClock.minute,
+      second: 0,
+      millisecond: 0,
+    });
+    let end = day.set({
+      hour: endClock.hour,
+      minute: endClock.minute,
+      second: 0,
+      millisecond: 0,
+    });
+    if (end <= start) end = end.plus({ days: 1 });
+    return { start, end };
+  });
+
+  return {
+    sessions,
+    priceFree: /\bthis workshop is free\b|\bfree and aimed at\b/i.test(text),
+  };
+}
+
+function withSessionTimes(
+  base: Omit<WorkshopEvent, "cityId">,
+  start: DateTime,
+  end: DateTime,
+): Omit<WorkshopEvent, "cityId"> {
+  return {
+    ...base,
+    id: stableId(base.rsvpUrl ?? base.id, start),
+    start: start.toISO() ?? start.toString(),
+    end: end.toISO() ?? undefined,
+  };
+}
+
 function extractUpcomingSection(html: string): string {
   const start = html.search(/Upcoming Literary Events in Buffalo/i);
   if (start === -1) return html;
@@ -328,12 +498,53 @@ export async function fetchJustBuffaloLiteraryEventsForMonth(
   const chunks = extractChunks(html);
   const parsed = chunks.map(parseChunk).filter((e): e is NonNullable<typeof e> => e != null);
 
-  const inMonth = parsed.filter((e) => {
+  const expanded: Omit<WorkshopEvent, "cityId">[] = [];
+  for (const ev of parsed) {
+    const start = DateTime.fromISO(ev.start, { zone: TZ });
+    const end = ev.end
+      ? DateTime.fromISO(ev.end, { zone: TZ })
+      : start.plus({ hours: 1 });
+    if (!start.isValid || !ev.rsvpUrl) {
+      expanded.push(ev);
+      continue;
+    }
+
+    try {
+      const detail = await fetchDetailSessionStarts(
+        ev.rsvpUrl,
+        start.year,
+        start,
+        end.isValid ? end : start.plus({ hours: 1 }),
+        signal,
+      );
+      if (detail && detail.sessions.length >= 2) {
+        for (const sess of detail.sessions) {
+          const row = withSessionTimes(ev, sess.start, sess.end);
+          expanded.push(
+            detail.priceFree ? { ...row, price: "free" } : row,
+          );
+        }
+        continue;
+      }
+    } catch {
+      // Detail-page expansion is best-effort; keep the listing date.
+    }
+    expanded.push(ev);
+  }
+
+  const inMonth = expanded.filter((e) => {
     const dt = DateTime.fromISO(e.start, { zone: TZ });
     return dt.isValid && dt.year === year && dt.month === monthIndex + 1;
   });
 
-  const events: WorkshopEvent[] = inMonth.map((e) => ({ ...e, cityId: "nyc" }));
+  // De-dupe identical ids (listing + expanded overlap).
+  const seen = new Set<string>();
+  const events: WorkshopEvent[] = [];
+  for (const e of inMonth) {
+    if (seen.has(e.id)) continue;
+    seen.add(e.id);
+    events.push({ ...e, cityId: "nyc" });
+  }
   return {
     events,
     meta: {

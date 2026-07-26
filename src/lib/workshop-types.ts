@@ -57,6 +57,8 @@ export type WorkshopEvent = {
   timeZone?: string;
   format: EventFormat;
   price: PriceKind;
+  /** Human-readable ticket cost, e.g. "$12.51 – $30.12". */
+  priceDetail?: string;
   category: WorkshopEventCategory;
   organizer: string;
   venue?: string;

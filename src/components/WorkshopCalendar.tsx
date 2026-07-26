@@ -2125,7 +2125,7 @@ export function WorkshopCalendar({ city }: { city: City }) {
                         <p className="mt-2 text-xs text-stone-500 dark:text-stone-500">
                           {formatEventWhen(ev, city)}
                           {" · "}
-                          {PRICE_LABELS[ev.price]}
+                          {priceSummary(ev)}
                           {ev.neighborhood ? ` · ${ev.neighborhood}` : ""}
                         </p>
                       </div>
@@ -2258,7 +2258,7 @@ function DayPanelBody({
                 {ev.title}
               </span>
               <span className="text-xs text-stone-500">
-                {formatEventWhen(ev, city)} · {PRICE_LABELS[ev.price]}
+                {formatEventWhen(ev, city)} · {priceSummary(ev)}
               </span>
             </button>
           </li>
@@ -2364,6 +2364,11 @@ function locationSummary(event: WorkshopEvent): string {
     }`;
   }
   return "Venue to be announced";
+}
+
+function priceSummary(event: WorkshopEvent): string {
+  if (event.price === "paid" && event.priceDetail) return event.priceDetail;
+  return PRICE_LABELS[event.price];
 }
 
 function EventDetailModal({
@@ -2473,6 +2478,15 @@ function EventDetailModal({
             </p>
             <p className="mt-2 text-sm leading-relaxed text-stone-800 dark:text-stone-200">
               {formatEventDateTimeDetail(event, city)}
+            </p>
+          </div>
+
+          <div>
+            <p className="text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-stone-500 dark:text-stone-400">
+              Price
+            </p>
+            <p className="mt-2 text-sm leading-relaxed text-stone-800 dark:text-stone-200">
+              {priceSummary(event)}
             </p>
           </div>
 
