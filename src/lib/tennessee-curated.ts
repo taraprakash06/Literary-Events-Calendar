@@ -1104,7 +1104,7 @@ const PLENTY_WRITERS_WORKSHOPS: CuratedSpec[] = [
     hour: 11,
     minute: 0,
     endHour: 12,
-    endMinute: 0,
+    endMinute: 15,
     timeZone: TZ_CENTRAL,
     title: "Writers Workshop",
     tagline: "PLENTY Downtown Bookshop · Cookeville · $20 · Preregistration required",
