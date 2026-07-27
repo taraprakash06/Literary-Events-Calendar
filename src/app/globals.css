@@ -2,11 +2,11 @@
 
 :root {
   /* Magazine paper, ink, and a restrained print red — Paris Review / New Yorker. */
-  --paper: #f8f5ef;
-  --surface: #fffcf7;
+  --paper: #f5f4f1;
+  --surface: #fcfcfa;
   --ink: #111111;
   --muted: #5a5650;
-  --line: #d8d2c8;
+  --line: #d6d3cc;
   --accent: #b31b1b;
   --accent-soft: #f3e6e4;
   --accent-ink: #7a1212;
@@ -34,11 +34,11 @@
   /* Keep the print-paper look even when the OS is in dark mode —
      this product is meant to feel like a literary magazine, not a dashboard. */
   :root {
-    --paper: #f8f5ef;
-    --surface: #fffcf7;
+    --paper: #f5f4f1;
+    --surface: #fcfcfa;
     --ink: #111111;
     --muted: #5a5650;
-    --line: #d8d2c8;
+    --line: #d6d3cc;
     --accent: #b31b1b;
     --accent-soft: #f3e6e4;
     --accent-ink: #7a1212;
