@@ -1667,7 +1667,7 @@ export function WorkshopCalendar({ city }: { city: City }) {
             />
           </div>
         </div>
-        <p className="text-xs leading-relaxed text-[var(--muted)]">
+        <p className="text-sm leading-relaxed text-[var(--muted)]">
           {cityTimeNote(city)}
         </p>
 
@@ -2326,10 +2326,10 @@ function FilterPill({
       aria-checked={selected}
       onClick={onToggle}
       className={[
-        "px-2.5 py-1 text-xs font-medium transition-colors",
+        "border px-2.5 py-1 text-xs font-medium transition-colors",
         selected
-          ? "bg-[var(--ink)] text-[var(--surface)]"
-          : "text-[var(--muted)] hover:text-[var(--ink)]",
+          ? "border-[var(--ink)] bg-[var(--ink)] text-[var(--surface)]"
+          : "border-[var(--line)] bg-transparent text-[var(--muted)] line-through decoration-[var(--muted)] decoration-1 hover:border-[var(--ink)]/35 hover:text-[var(--ink)]",
       ].join(" ")}
     >
       {label}
