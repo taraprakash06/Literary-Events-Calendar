@@ -51,6 +51,12 @@ export type WorkshopEvent = {
   start: string;
   end?: string;
   /**
+   * When true, the organizer has not published a start time. `start` still
+   * carries a date (often noon local) for calendar placement, but UI should
+   * show the date with "Time TBD" instead of a clock time.
+   */
+  timeTbd?: boolean;
+  /**
    * Optional IANA timezone to display dates/times consistently with the source.
    * Example: "America/New_York".
    */

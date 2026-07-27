@@ -113,7 +113,7 @@ function eventWhenItemClasses(when: EventWhen): string {
 function eventWhenChipClasses(when: EventWhen): string {
   const base = eventWhenItemClasses(when);
   if (when === "today") {
-    return [base, "ring-1 ring-rose-900/25 dark:ring-rose-400/35"].filter(Boolean).join(" ");
+    return [base, "ring-1 ring-[var(--accent)]/25"].filter(Boolean).join(" ");
   }
   return base;
 }
@@ -255,7 +255,7 @@ function EventStatusLabel({
       <span
         className={
           className ??
-          "shrink-0 text-xs font-semibold text-rose-900/90 dark:text-rose-300/90"
+          "shrink-0 text-xs font-semibold text-[var(--accent)]"
         }
       >
         Open
@@ -267,7 +267,7 @@ function EventStatusLabel({
       <span
         className={
           className ??
-          "shrink-0 rounded-full bg-rose-900/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-rose-900 dark:bg-rose-400/15 dark:text-rose-200"
+          "shrink-0 bg-[var(--accent-soft)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--accent-ink)]"
         }
       >
         Today
@@ -278,7 +278,7 @@ function EventStatusLabel({
     <span
       className={
         className ??
-        "shrink-0 rounded-full bg-stone-200/90 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-stone-600 dark:bg-stone-700/90 dark:text-stone-300"
+        "shrink-0 bg-[var(--paper)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--muted)]"
       }
     >
       Past
@@ -287,7 +287,7 @@ function EventStatusLabel({
 }
 
 function FormatGlyph({ format }: { format: EventFormat }) {
-  const common = "h-3 w-3 shrink-0 text-stone-500 dark:text-stone-400";
+  const common = "h-3 w-3 shrink-0 text-[var(--muted)]";
   if (format === "virtual") {
     return (
       <svg className={common} viewBox="0 0 24 24" fill="none" aria-hidden>
@@ -1625,15 +1625,15 @@ export function WorkshopCalendar({ city }: { city: City }) {
   })();
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-8">
-      <div className="flex flex-col gap-5 rounded-sm border border-stone-200/90 bg-[var(--surface)] p-5 shadow-sm dark:border-stone-700/80 dark:bg-stone-900/40 sm:p-6">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-          <div className="min-w-0 flex-1">
+    <div className="mx-auto flex w-full max-w-6xl flex-col">
+      <div className="flex flex-col gap-5 border-b border-[var(--line)] pb-6">
+        <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between md:gap-10">
+          <div className="min-w-0 md:max-w-sm">
             <label
               htmlFor="city-select"
-              className="text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-stone-500 dark:text-stone-400"
+              className="text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-[var(--muted)]"
             >
-              Region
+              City
             </label>
             <select
               id="city-select"
@@ -1641,7 +1641,7 @@ export function WorkshopCalendar({ city }: { city: City }) {
               onChange={(e) => {
                 router.push(`/${e.target.value}`);
               }}
-              className="mt-2 block w-full max-w-md rounded-sm border border-stone-200 bg-white px-3 py-2.5 text-sm text-stone-900 shadow-sm focus:border-rose-900/30 focus:outline-none focus:ring-2 focus:ring-rose-900/15 dark:border-stone-600 dark:bg-stone-950 dark:text-stone-100 sm:max-w-xs"
+              className="mt-1.5 block w-full border-0 border-b border-[var(--line)] bg-transparent px-0 py-2 text-sm text-[var(--ink)] focus:border-[var(--accent)] focus:outline-none focus:ring-0"
             >
               {CITIES.map((c) => (
                 <option key={c.id} value={c.slug}>
@@ -1650,10 +1650,10 @@ export function WorkshopCalendar({ city }: { city: City }) {
               ))}
             </select>
           </div>
-          <div className="min-w-0 flex-1 sm:max-w-md">
+          <div className="min-w-0 flex-1 md:max-w-md">
             <label
               htmlFor="event-search"
-              className="text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-stone-500 dark:text-stone-400"
+              className="text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-[var(--muted)]"
             >
               Search
             </label>
@@ -1662,54 +1662,50 @@ export function WorkshopCalendar({ city }: { city: City }) {
               type="search"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Title, organizer, venue, description…"
-              className="mt-2 w-full rounded-sm border border-stone-200 bg-white px-3 py-2.5 text-sm text-stone-900 placeholder:text-stone-400 focus:border-rose-900/30 focus:outline-none focus:ring-2 focus:ring-rose-900/15 dark:border-stone-600 dark:bg-stone-950 dark:text-stone-100"
+              placeholder="Title, organizer, venue…"
+              className="mt-1.5 w-full border-0 border-b border-[var(--line)] bg-transparent px-0 py-2 text-sm text-[var(--ink)] placeholder:text-[var(--muted)]/65 focus:border-[var(--accent)] focus:outline-none focus:ring-0"
             />
           </div>
         </div>
-        <p className="text-xs leading-relaxed text-stone-500 dark:text-stone-400">
+        <p className="text-xs leading-relaxed text-[var(--muted)]">
           {cityTimeNote(city)}
         </p>
 
-        <div
-          className="border-t border-stone-200/80 pt-5 dark:border-stone-700/80"
-          role="search"
-          aria-label="Filter events"
-        >
-          <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
-            <p className="text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-stone-500 dark:text-stone-400">
+        <div role="search" aria-label="Filter events" className="pt-1">
+          <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2">
+            <p className="text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-[var(--muted)]">
               Filters
             </p>
-            <div className="flex items-center gap-1.5 text-xs text-stone-500 dark:text-stone-400">
+            <div className="flex items-center gap-2 text-xs text-[var(--muted)]">
               <button
                 type="button"
                 onClick={() =>
                   setFilters((prev) => ({ ...prev, ...allFilterSelections() }))
                 }
-                className="font-medium text-stone-600 underline-offset-2 hover:text-stone-900 hover:underline dark:text-stone-400 dark:hover:text-stone-200"
+                className="font-medium underline-offset-2 hover:text-[var(--ink)] hover:underline"
               >
                 Select All
               </button>
-              <span aria-hidden className="text-stone-300 dark:text-stone-600">
-                |
+              <span aria-hidden className="text-[var(--line)]">
+                ·
               </span>
               <button
                 type="button"
                 onClick={() =>
                   setFilters((prev) => ({ ...prev, ...noFilterSelections() }))
                 }
-                className="font-medium text-stone-600 underline-offset-2 hover:text-stone-900 hover:underline dark:text-stone-400 dark:hover:text-stone-200"
+                className="font-medium underline-offset-2 hover:text-[var(--ink)] hover:underline"
               >
                 Clear All
               </button>
             </div>
           </div>
-          <div className="mt-3 flex flex-col gap-4 lg:flex-row lg:flex-wrap lg:items-start lg:gap-6">
+          <div className="mt-3 flex flex-col gap-3.5 lg:flex-row lg:flex-wrap lg:items-start lg:gap-x-8 lg:gap-y-3">
             <fieldset className="min-w-0">
-              <legend className="text-xs text-stone-600 dark:text-stone-400">
+              <legend className="text-xs text-[var(--muted)]">
                 Format
               </legend>
-              <div className="mt-2 flex flex-wrap gap-1.5">
+              <div className="mt-1.5 flex flex-wrap gap-1.5">
                 {ALL_EVENT_FORMATS.map((f) => (
                   <FilterPill
                     key={f}
@@ -1726,7 +1722,7 @@ export function WorkshopCalendar({ city }: { city: City }) {
               </div>
             </fieldset>
             <fieldset className="min-w-0">
-              <legend className="text-xs text-stone-600 dark:text-stone-400">
+              <legend className="text-xs text-[var(--muted)]">
                 Price
               </legend>
               <div className="mt-2 flex flex-wrap gap-1.5">
@@ -1746,10 +1742,10 @@ export function WorkshopCalendar({ city }: { city: City }) {
               </div>
             </fieldset>
             <fieldset className="min-w-0 flex-1">
-              <legend className="text-xs text-stone-600 dark:text-stone-400">
+              <legend className="text-xs text-[var(--muted)]">
                 Event type
               </legend>
-              <div className="mt-2 flex flex-wrap gap-1.5">
+              <div className="mt-1.5 flex flex-wrap gap-1.5">
                 {categoryOptions.map((c) => (
                   <FilterPill
                     key={c}
@@ -1770,48 +1766,46 @@ export function WorkshopCalendar({ city }: { city: City }) {
             </fieldset>
           </div>
 
-          <details className="mt-4 rounded-sm border border-stone-200/70 dark:border-stone-700/70">
-            <summary className="cursor-pointer px-3 py-2.5 text-sm font-medium text-stone-700 dark:text-stone-300">
-              More filters — dates
+          <details className="mt-3">
+            <summary className="cursor-pointer py-1.5 text-sm text-[var(--muted)] underline-offset-2 hover:text-[var(--ink)] hover:underline">
+              Date range
             </summary>
-            <div className="space-y-4 border-t border-stone-200/70 px-3 py-4 dark:border-stone-700/70">
-              <div className="grid gap-3 sm:grid-cols-2">
-                <label className="flex flex-col gap-1 text-sm">
-                  <span className="text-xs text-stone-500">From</span>
-                  <input
-                    type="date"
-                    value={filters.rangeStart}
-                    onChange={(e) =>
-                      setFilters((prev) => ({
-                        ...prev,
-                        rangeStart: e.target.value,
-                      }))
-                    }
-                    className="rounded-sm border border-stone-200 bg-white px-3 py-2 text-sm dark:border-stone-600 dark:bg-stone-950"
-                  />
-                </label>
-                <label className="flex flex-col gap-1 text-sm">
-                  <span className="text-xs text-stone-500">Through</span>
-                  <input
-                    type="date"
-                    value={filters.rangeEnd}
-                    onChange={(e) =>
-                      setFilters((prev) => ({
-                        ...prev,
-                        rangeEnd: e.target.value,
-                      }))
-                    }
-                    className="rounded-sm border border-stone-200 bg-white px-3 py-2 text-sm dark:border-stone-600 dark:bg-stone-950"
-                  />
-                </label>
-              </div>
+            <div className="mt-2 grid max-w-lg gap-3 sm:grid-cols-2">
+              <label className="flex flex-col gap-1 text-sm">
+                <span className="text-xs text-[var(--muted)]">From</span>
+                <input
+                  type="date"
+                  value={filters.rangeStart}
+                  onChange={(e) =>
+                    setFilters((prev) => ({
+                      ...prev,
+                      rangeStart: e.target.value,
+                    }))
+                  }
+                  className="border-0 border-b border-[var(--line)] bg-transparent px-0 py-1.5 text-sm focus:border-[var(--accent)] focus:outline-none"
+                />
+              </label>
+              <label className="flex flex-col gap-1 text-sm">
+                <span className="text-xs text-[var(--muted)]">Through</span>
+                <input
+                  type="date"
+                  value={filters.rangeEnd}
+                  onChange={(e) =>
+                    setFilters((prev) => ({
+                      ...prev,
+                      rangeEnd: e.target.value,
+                    }))
+                  }
+                  className="border-0 border-b border-[var(--line)] bg-transparent px-0 py-1.5 text-sm focus:border-[var(--accent)] focus:outline-none"
+                />
+              </label>
             </div>
           </details>
         </div>
 
         {!isMobile ? (
           <div
-            className="flex flex-wrap gap-2 border-t border-stone-200/80 pt-4 dark:border-stone-700/80"
+            className="flex flex-wrap gap-x-5 gap-y-1 pt-1"
             role="group"
             aria-label="View mode"
           >
@@ -1826,10 +1820,10 @@ export function WorkshopCalendar({ city }: { city: City }) {
                 type="button"
                 onClick={() => setView(id)}
                 className={[
-                  "min-h-11 min-w-[5.5rem] rounded-sm px-4 py-2 text-sm font-medium transition",
+                  "min-h-9 border-b-2 px-0.5 pb-1 text-sm transition",
                   view === id
-                    ? "bg-stone-900 text-[var(--surface)] dark:bg-stone-100 dark:text-stone-900"
-                    : "border border-stone-200 bg-white text-stone-700 hover:bg-stone-50 dark:border-stone-600 dark:bg-stone-950 dark:text-stone-200 dark:hover:bg-stone-900",
+                    ? "border-[var(--ink)] font-medium text-[var(--ink)]"
+                    : "border-transparent text-[var(--muted)] hover:text-[var(--ink)]",
                 ].join(" ")}
               >
                 {label}
@@ -1837,8 +1831,8 @@ export function WorkshopCalendar({ city }: { city: City }) {
             ))}
           </div>
         ) : (
-          <p className="border-t border-stone-200/80 pt-4 text-sm text-stone-600 dark:border-stone-700/80 dark:text-stone-400">
-            Agenda view on small screens — comfortable to scan and tap.
+          <p className="pt-1 text-sm text-[var(--muted)]">
+            Agenda view on small screens.
           </p>
         )}
       </div>
@@ -1846,22 +1840,23 @@ export function WorkshopCalendar({ city }: { city: City }) {
       {!showLoadingEvents && weeklyHighlights.length > 0 ? (
         <section
           aria-label="This week’s picks"
-          className="rounded-sm border border-stone-200/90 bg-[var(--surface)] p-5 shadow-sm dark:border-stone-700/80 dark:bg-stone-900/30"
+          className="mt-9 border-b border-[var(--line)] pb-8"
         >
           <div className="flex flex-wrap items-baseline justify-between gap-3">
             <div>
-              <h2 className="font-serif text-xl font-semibold tracking-tight text-stone-900 dark:text-stone-50">
-                This Week&apos;s Picks
+              <h2 className="font-serif text-2xl font-normal tracking-tight text-[var(--ink)]">
+                This week in {city.label}
               </h2>
-              <p className="mt-1 text-sm text-stone-600 dark:text-stone-400">
-                {weekRangeLabel} · {weeklyHighlights.length} standout{" "}
-                {weeklyHighlights.length === 1 ? "event" : "events"}
+              <p className="mt-1.5 text-sm text-[var(--muted)]">
+                {weekRangeLabel} · {weeklyHighlights.length}{" "}
+                {weeklyHighlights.length === 1 ? "event" : "events"} worth
+                opening first
               </p>
             </div>
           </div>
 
-          <div className="mt-4 -mx-5 overflow-x-auto px-5">
-            <div className="flex min-w-full gap-3 pb-1">
+          <div className="mt-4 overflow-x-auto">
+            <div className="flex min-w-full gap-5 pb-1">
               {weeklyHighlights.map((ev) => {
                 const whenLabel = formatEventWhenCompact(ev, city);
                 const whenStatus = eventWhenStatus(ev);
@@ -1871,7 +1866,7 @@ export function WorkshopCalendar({ city }: { city: City }) {
                     type="button"
                     onClick={() => openEventDetail(ev)}
                     className={[
-                      "group min-h-14 w-[min(22rem,85vw)] shrink-0 rounded-sm border border-stone-200/90 bg-white/90 p-4 text-left shadow-sm transition hover:border-stone-300 hover:bg-stone-50 dark:border-stone-700/80 dark:bg-stone-950/60 dark:hover:bg-stone-900/40",
+                      "group min-h-14 w-[min(20rem,82vw)] shrink-0 border-b border-[var(--line)] pb-4 text-left transition hover:border-[var(--accent)]",
                       eventWhenChipClasses(whenStatus),
                     ].join(" ")}
                   >
@@ -1881,20 +1876,20 @@ export function WorkshopCalendar({ city }: { city: City }) {
                           <FormatGlyph format={ev.format} />
                           <span
                             className={[
-                              "inline-flex items-center rounded border px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
+                              "inline-flex items-center border px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
                               CATEGORY_TAG_STYLES[ev.category].tag,
                             ].join(" ")}
                           >
                             {CATEGORY_LABELS[ev.category]}
                           </span>
                         </div>
-                        <p className="mt-2 line-clamp-2 font-serif text-base font-semibold text-stone-900 dark:text-stone-50">
+                        <p className="mt-2 line-clamp-2 font-serif text-[1.05rem] font-normal text-[var(--ink)]">
                           {ev.title}
                         </p>
-                        <p className="mt-1 line-clamp-2 text-sm text-stone-600 dark:text-stone-400">
+                        <p className="mt-1 line-clamp-2 text-sm text-[var(--muted)]">
                           {ev.tagline || ev.organizer}
                         </p>
-                        <p className="mt-2 text-xs text-stone-500 dark:text-stone-500">
+                        <p className="mt-2 text-xs text-[var(--muted)]">
                           {whenLabel}
                           {ev.venue ? ` · ${ev.venue}` : ""}
                         </p>
@@ -1909,66 +1904,66 @@ export function WorkshopCalendar({ city }: { city: City }) {
         </section>
       ) : null}
 
-      <div className="flex flex-col gap-0 lg:flex-row lg:items-start">
-        <div className="min-w-0 flex-1 rounded-sm border border-stone-200/90 bg-[var(--surface)] shadow-sm dark:border-stone-700/80 dark:bg-stone-900/30">
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-stone-200/80 px-4 py-4 sm:px-5 dark:border-stone-700/80">
-            <h2 className="font-serif text-xl font-semibold tracking-tight text-stone-900 dark:text-stone-50 sm:text-2xl">
+      <div className="mt-8 flex flex-col gap-0 lg:mt-10 lg:flex-row lg:items-start">
+        <div className="min-w-0 flex-1">
+          <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+            <h2 className="font-serif text-[1.85rem] font-normal tracking-tight text-[var(--ink)] sm:text-3xl">
               {monthLabel}
             </h2>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap items-center gap-3">
               <button
                 type="button"
                 onClick={goToToday}
-                className="min-h-11 rounded-sm border border-rose-900/15 bg-rose-50/90 px-3 py-2 text-sm font-medium text-rose-950 hover:bg-rose-100/90 dark:border-rose-400/20 dark:bg-rose-950/40 dark:text-rose-100 dark:hover:bg-rose-950/60"
+                className="min-h-9 text-sm font-medium text-[var(--accent)] underline-offset-4 hover:underline"
               >
                 Today
               </button>
               <button
                 type="button"
                 onClick={() => changeMonth(-1)}
-                className="min-h-11 rounded-sm border border-stone-200 px-3 py-2 text-sm font-medium text-stone-800 hover:bg-stone-50 dark:border-stone-600 dark:text-stone-200 dark:hover:bg-stone-900"
+                className="min-h-9 text-sm text-[var(--muted)] hover:text-[var(--ink)]"
               >
                 Prev
               </button>
               <button
                 type="button"
                 onClick={() => changeMonth(1)}
-                className="min-h-11 rounded-sm border border-stone-200 px-3 py-2 text-sm font-medium text-stone-800 hover:bg-stone-50 dark:border-stone-600 dark:text-stone-200 dark:hover:bg-stone-900"
+                className="min-h-9 text-sm text-[var(--muted)] hover:text-[var(--ink)]"
               >
                 Next
               </button>
             </div>
           </div>
 
-          <div className="p-3 sm:p-5">
+          <div>
             {showLoadingEvents ? (
               <div
-                className="flex flex-col items-center justify-center gap-3 py-16"
+                className="flex flex-col items-center justify-center gap-3 py-20"
                 role="status"
                 aria-live="polite"
               >
-                <div className="h-6 w-6 animate-spin rounded-full border-2 border-stone-300 border-t-rose-900/80 dark:border-stone-600 dark:border-t-rose-300/80" />
-                <p className="text-sm text-stone-600 dark:text-stone-400">
+                <div className="h-5 w-5 animate-spin rounded-full border border-[var(--line)] border-t-[var(--accent)]" />
+                <p className="text-sm text-[var(--muted)]">
                   Loading calendar…
                 </p>
               </div>
             ) : emptyFiltered ? (
-              <p className="py-16 text-center text-sm leading-relaxed text-stone-600 dark:text-stone-400">
+              <p className="max-w-xl py-16 text-sm leading-relaxed text-[var(--muted)]">
                 {emptyMessage}
               </p>
             ) : showCalendar ? (
               <>
-                <div className="mb-2 grid grid-cols-7 gap-px text-center">
+                <div className="mb-1 grid grid-cols-7 text-center">
                   {WEEKDAYS.map((d) => (
                     <div
                       key={d}
-                      className="py-2 text-[0.65rem] font-semibold uppercase tracking-[0.15em] text-stone-500 dark:text-stone-400"
+                      className="py-2 text-[0.65rem] font-semibold uppercase tracking-[0.14em] text-[var(--muted)]"
                     >
                       {d}
                     </div>
                   ))}
                 </div>
-                <div className="grid grid-cols-7 gap-px rounded-sm bg-stone-200/50 p-px dark:bg-stone-700/50">
+                <div className="grid grid-cols-7 gap-px border-t border-[var(--line)] bg-[var(--line)]">
                   {grid.map((day, i) => {
                     const key =
                       day !== null
@@ -1984,10 +1979,12 @@ export function WorkshopCalendar({ city }: { city: City }) {
                       <div
                         key={`${year}-${monthIndex}-${i}`}
                         className={[
-                          "min-h-[8.25rem] sm:min-h-[10.5rem]",
+                          "min-h-[8.5rem] sm:min-h-[11rem]",
                           day === null
-                            ? "bg-[var(--paper)] dark:bg-stone-950/50"
-                            : "relative bg-[var(--surface)]",
+                            ? "bg-[var(--paper)]"
+                            : cellIsToday
+                              ? "relative bg-[var(--accent-soft)]/55"
+                              : "relative bg-[var(--paper)]",
                         ].join(" ")}
                       >
                         {day !== null ? (
@@ -1996,21 +1993,15 @@ export function WorkshopCalendar({ city }: { city: City }) {
                               dayEvents.length && key && setDayPanelKey(key)
                             }
                             className={[
-                              "flex h-full min-h-[8.25rem] w-full flex-col rounded-[1px] p-2 text-left transition sm:min-h-[10.5rem] sm:p-2.5",
+                              "flex h-full min-h-[8.5rem] w-full flex-col p-1.5 text-left transition sm:min-h-[11rem] sm:p-2",
                               dayEvents.length
-                                ? "cursor-pointer hover:bg-rose-50/40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-900/25 dark:hover:bg-stone-800/60"
+                                ? "cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]/30"
                                 : "cursor-default",
-                              dayWhen === "past"
-                                ? "bg-stone-50/70 dark:bg-stone-900/20"
-                                : "",
-                              cellIsToday
-                                ? "ring-1 ring-rose-900/30 ring-inset dark:ring-rose-400/30"
-                                : "",
                             ].join(" ")}
                           >
-                            <div className="flex shrink-0 items-center justify-end gap-1">
+                            <div className="mb-1.5 flex shrink-0 items-center justify-end gap-1">
                               {cellIsToday ? (
-                                <span className="rounded-full bg-rose-900/10 px-1.5 py-px text-[8px] font-semibold uppercase tracking-wide text-rose-900 dark:bg-rose-400/15 dark:text-rose-200 sm:text-[9px]">
+                                <span className="bg-[var(--surface)] px-1.5 py-px text-[8px] font-semibold uppercase tracking-wide text-[var(--accent-ink)] sm:text-[9px]">
                                   Today
                                 </span>
                               ) : null}
@@ -2018,14 +2009,14 @@ export function WorkshopCalendar({ city }: { city: City }) {
                                 className={[
                                   "text-xs font-semibold tabular-nums",
                                   dayWhen === "past"
-                                    ? "text-stone-400 dark:text-stone-500"
-                                    : "text-stone-600 dark:text-stone-300",
+                                    ? "text-[var(--muted)]/70"
+                                    : "text-[var(--ink)]",
                                 ].join(" ")}
                               >
                                 {day}
                               </span>
                             </div>
-                            <div className="mt-1 flex min-h-0 flex-1 flex-col gap-1 overflow-hidden">
+                            <div className="flex min-h-0 flex-1 flex-col gap-1.5 overflow-hidden">
                               {visible.map((ev) => {
                                 const evWhen = eventWhenStatus(ev);
                                 return (
@@ -2038,19 +2029,20 @@ export function WorkshopCalendar({ city }: { city: City }) {
                                       openEventDetail(ev);
                                     }}
                                     className={[
-                                      "group relative w-full rounded-[2px] border border-stone-200/90 bg-white/90 px-1.5 py-1 text-left shadow-sm transition hover:border-stone-300 hover:shadow dark:border-stone-600 dark:bg-stone-950/80 dark:hover:border-stone-500",
+                                      "group relative w-full rounded-md border border-[var(--line)] bg-[var(--surface)] px-1.5 py-1.5 text-left shadow-[0_1px_2px_rgba(17,17,17,0.06)] transition hover:border-[var(--ink)]/25 hover:shadow-[0_2px_6px_rgba(17,17,17,0.08)]",
+                                      evWhen === "past" ? "opacity-75" : "",
                                       eventWhenChipClasses(evWhen),
                                     ].join(" ")}
                                   >
                                     <div className="flex items-start gap-1">
                                       <FormatGlyph format={ev.format} />
                                       <div className="min-w-0 flex-1">
-                                        <p className="line-clamp-2 text-[11px] font-semibold leading-snug text-stone-900 dark:text-stone-100 sm:text-xs">
+                                        <p className="line-clamp-2 text-[11px] font-semibold leading-snug text-[var(--ink)] sm:text-xs">
                                           {ev.title}
                                         </p>
                                         <span
                                           className={[
-                                            "mt-0.5 inline-block max-w-full truncate rounded border px-1 py-px text-[9px] font-medium sm:text-[10px]",
+                                            "mt-1 inline-block max-w-full truncate rounded-full border px-1.5 py-px text-[9px] font-medium sm:text-[10px]",
                                             CATEGORY_TAG_STYLES[ev.category].tag,
                                           ].join(" ")}
                                         >
@@ -2059,7 +2051,7 @@ export function WorkshopCalendar({ city }: { city: City }) {
                                       </div>
                                     </div>
                                     {evWhen === "past" ? (
-                                      <span className="pointer-events-none absolute right-1 top-1 hidden rounded bg-stone-600/85 px-1 py-px text-[8px] font-semibold uppercase tracking-wide text-white group-hover:inline">
+                                      <span className="pointer-events-none absolute right-1 top-1 hidden rounded bg-[var(--ink)]/80 px-1 py-px text-[8px] font-semibold uppercase tracking-wide text-[var(--surface)] group-hover:inline">
                                         Past
                                       </span>
                                     ) : null}
@@ -2074,7 +2066,7 @@ export function WorkshopCalendar({ city }: { city: City }) {
                                     e.stopPropagation();
                                     if (key) setDayPanelKey(key);
                                   }}
-                                  className="mt-0.5 text-left text-[10px] font-medium text-rose-900/80 underline-offset-2 hover:underline dark:text-rose-300/90 sm:text-xs"
+                                  className="mt-0.5 text-left text-[10px] font-medium text-[var(--accent)] underline-offset-2 hover:underline sm:text-xs"
                                 >
                                   +{more} more
                                 </button>
@@ -2097,10 +2089,10 @@ export function WorkshopCalendar({ city }: { city: City }) {
                       type="button"
                       onClick={() => openEventDetail(ev)}
                       className={[
-                        "flex w-full min-h-12 flex-col gap-2 rounded-sm px-1 text-left transition hover:bg-rose-50/50 dark:hover:bg-stone-800/40 sm:flex-row sm:items-start sm:justify-between sm:gap-4",
+                        "flex w-full min-h-12 flex-col gap-2 px-1 text-left transition hover:bg-[var(--accent-soft)]/40 sm:flex-row sm:items-start sm:justify-between sm:gap-4",
                         eventWhenItemClasses(evWhen),
                         evWhen === "today"
-                          ? "ring-1 ring-rose-900/15 ring-inset dark:ring-rose-400/20"
+                          ? "ring-1 ring-[var(--accent)]/20 ring-inset"
                           : "",
                       ].join(" ")}
                     >
@@ -2248,7 +2240,7 @@ function DayPanelBody({
                     when={evWhen}
                     className={
                       evWhen === "today"
-                        ? "rounded-full bg-rose-900/10 px-1.5 py-px text-[9px] font-semibold uppercase tracking-wide text-rose-900 dark:bg-rose-400/15 dark:text-rose-200"
+                        ? "bg-[var(--accent-soft)] px-1.5 py-px text-[9px] font-semibold uppercase tracking-wide text-[var(--accent-ink)]"
                         : "rounded-full bg-stone-200/90 px-1.5 py-px text-[9px] font-semibold uppercase tracking-wide text-stone-600 dark:bg-stone-700/90 dark:text-stone-300"
                     }
                   />
@@ -2334,10 +2326,10 @@ function FilterPill({
       aria-checked={selected}
       onClick={onToggle}
       className={[
-        "rounded-full px-3 py-1.5 text-xs font-medium transition-colors",
+        "px-2.5 py-1 text-xs font-medium transition-colors",
         selected
-          ? "border border-stone-800 bg-stone-800 text-stone-50 dark:border-stone-200 dark:bg-stone-200 dark:text-stone-900"
-          : "border border-stone-300 bg-transparent text-stone-600 hover:border-stone-400 dark:border-stone-600 dark:text-stone-400 dark:hover:border-stone-500",
+          ? "bg-[var(--ink)] text-[var(--surface)]"
+          : "text-[var(--muted)] hover:text-[var(--ink)]",
       ].join(" ")}
     >
       {label}
@@ -2423,16 +2415,16 @@ function EventDetailModal({
     >
       <button
         type="button"
-        className="absolute inset-0 bg-stone-900/45 backdrop-blur-[2px]"
+        className="absolute inset-0 bg-[var(--ink)]/45 backdrop-blur-[2px]"
         aria-label="Close"
         onClick={onClose}
       />
-      <div className="relative z-10 max-h-[min(92vh,900px)] w-full max-w-lg overflow-y-auto rounded-t-2xl border border-stone-200 bg-[var(--surface)] shadow-2xl dark:border-stone-700 dark:bg-stone-950 sm:rounded-sm">
-        <div className="border-b border-stone-200/90 px-6 pb-5 pt-6 dark:border-stone-700/80">
+      <div className="relative z-10 max-h-[min(92vh,900px)] w-full max-w-lg overflow-y-auto border border-[var(--line)] bg-[var(--surface)] sm:rounded-none">
+        <div className="border-b border-[var(--line)] px-6 pb-5 pt-6">
           <div className="flex items-start justify-between gap-4">
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
-                <p className="text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-stone-500 dark:text-stone-400">
+                <p className="text-[0.7rem] font-semibold uppercase tracking-[0.18em] text-[var(--muted)]">
                   {CATEGORY_LABELS[event.category]}
                   {" · "}
                   {FORMAT_LABELS[event.format]}
@@ -2443,18 +2435,18 @@ function EventDetailModal({
               </div>
               <h2
                 id="event-detail-title"
-                className="mt-3 font-serif text-2xl font-semibold leading-snug tracking-tight text-stone-900 dark:text-stone-50 sm:text-3xl"
+                className="mt-3 font-serif text-2xl font-medium leading-snug tracking-tight text-[var(--ink)] sm:text-3xl"
               >
                 {event.title}
               </h2>
-              <p className="mt-3 text-base leading-relaxed text-stone-700 dark:text-stone-300">
+              <p className="mt-3 text-base leading-relaxed text-[var(--muted)]">
                 {event.tagline}
               </p>
             </div>
             <button
               type="button"
               onClick={onClose}
-              className="shrink-0 rounded-sm border border-stone-200 px-2.5 py-1.5 text-sm text-stone-600 hover:bg-stone-50 dark:border-stone-600 dark:text-stone-300 dark:hover:bg-stone-900"
+              className="shrink-0 border border-[var(--line)] px-2.5 py-1.5 text-sm text-[var(--muted)] hover:bg-[var(--paper)] hover:text-[var(--ink)]"
             >
               Close
             </button>
@@ -2465,7 +2457,7 @@ function EventDetailModal({
           {isSample ? (
             <div
               role="status"
-              className="rounded-sm border border-amber-200/90 bg-amber-50/90 px-3 py-2.5 text-sm text-amber-950 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-50"
+              className="border border-[var(--accent)]/25 bg-[var(--accent-soft)] px-3 py-2.5 text-sm text-[var(--accent-ink)]"
             >
               <strong>Demo listing</strong> — not synced from a live source. Do
               not treat dates or venues as real.
@@ -2473,46 +2465,46 @@ function EventDetailModal({
           ) : null}
 
           <div>
-            <p className="text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-stone-500 dark:text-stone-400">
+            <p className="text-[0.7rem] font-semibold uppercase tracking-[0.18em] text-[var(--muted)]">
               Date &amp; time
             </p>
-            <p className="mt-2 text-sm leading-relaxed text-stone-800 dark:text-stone-200">
+            <p className="mt-2 text-sm leading-relaxed text-[var(--ink)]">
               {formatEventDateTimeDetail(event, city)}
             </p>
           </div>
 
           <div>
-            <p className="text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-stone-500 dark:text-stone-400">
+            <p className="text-[0.7rem] font-semibold uppercase tracking-[0.18em] text-[var(--muted)]">
               Price
             </p>
-            <p className="mt-2 text-sm leading-relaxed text-stone-800 dark:text-stone-200">
+            <p className="mt-2 text-sm leading-relaxed text-[var(--ink)]">
               {priceSummary(event)}
             </p>
           </div>
 
           <div>
-            <p className="text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-stone-500 dark:text-stone-400">
+            <p className="text-[0.7rem] font-semibold uppercase tracking-[0.18em] text-[var(--muted)]">
               Location
             </p>
-            <p className="mt-2 text-sm leading-relaxed text-stone-800 dark:text-stone-200">
+            <p className="mt-2 text-sm leading-relaxed text-[var(--ink)]">
               {locationSummary(event)}
             </p>
           </div>
 
           <div>
-            <p className="text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-stone-500 dark:text-stone-400">
+            <p className="text-[0.7rem] font-semibold uppercase tracking-[0.18em] text-[var(--muted)]">
               About
             </p>
-            <p className="mt-2 text-sm leading-relaxed text-stone-700 dark:text-stone-300">
+            <p className="mt-2 text-sm leading-relaxed text-[var(--muted)]">
               {synopsis ?? stripHtmlAndDecode(event.description)}
             </p>
           </div>
 
           <div>
-            <p className="text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-stone-500 dark:text-stone-400">
+            <p className="text-[0.7rem] font-semibold uppercase tracking-[0.18em] text-[var(--muted)]">
               Organizer
             </p>
-            <p className="mt-2 text-sm font-medium text-stone-900 dark:text-stone-100">
+            <p className="mt-2 text-sm font-medium text-[var(--ink)]">
               {event.organizer}
             </p>
           </div>
@@ -2520,7 +2512,7 @@ function EventDetailModal({
           {event.rsvpUrl ? (
             <div className="space-y-2">
               {event.rsvpIsGeneralCalendar ? (
-                <p className="text-sm text-stone-500 dark:text-stone-400">
+                <p className="text-sm text-[var(--muted)]">
                   No direct link to this event — the full events list is here:
                 </p>
               ) : null}
@@ -2528,7 +2520,7 @@ function EventDetailModal({
                 href={event.rsvpUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex min-h-12 w-full items-center justify-center rounded-sm bg-stone-900 px-5 py-3 text-sm font-semibold text-[var(--surface)] transition hover:bg-stone-800 dark:bg-stone-100 dark:text-stone-900 dark:hover:bg-white"
+                className="inline-flex min-h-12 w-full items-center justify-center bg-[var(--accent)] px-5 py-3 text-sm font-semibold text-[var(--surface)] transition hover:bg-[var(--accent-ink)]"
               >
                 {event.rsvpIsGeneralCalendar
                   ? "View full events calendar"
@@ -2536,7 +2528,7 @@ function EventDetailModal({
               </a>
             </div>
           ) : (
-            <p className="text-sm text-stone-500 dark:text-stone-400">
+            <p className="text-sm text-[var(--muted)]">
               No direct link on file — visit the organizer&apos;s site.
             </p>
           )}

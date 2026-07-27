@@ -93,6 +93,10 @@ function appendAbbr(label: string, zone: string, showAbbr: boolean, at: DateTime
 export function formatEventWhen(ev: WorkshopEvent, city: City): string {
   const { start, zone, showAbbr } = eventDisplayDateTime(ev, city);
   if (!start.isValid) return new Date(ev.start).toLocaleString("en-US");
+  if (ev.timeTbd) {
+    const base = `${start.toFormat("ccc, LLL d")} · Time TBD`;
+    return appendAbbr(base, zone, showAbbr, start);
+  }
   const base = start.toFormat("ccc, LLL d, h:mm a");
   return appendAbbr(base, zone, showAbbr, start);
 }
@@ -101,6 +105,10 @@ export function formatEventWhen(ev: WorkshopEvent, city: City): string {
 export function formatEventWhenCompact(ev: WorkshopEvent, city: City): string {
   const { start, zone, showAbbr } = eventDisplayDateTime(ev, city);
   if (!start.isValid) return "";
+  if (ev.timeTbd) {
+    const base = `${start.toFormat("ccc, LLL d")} · Time TBD`;
+    return appendAbbr(base, zone, showAbbr, start);
+  }
   const base = start.toFormat("ccc, LLL d · h:mm a");
   return appendAbbr(base, zone, showAbbr, start);
 }
@@ -117,6 +125,11 @@ export function formatEventDateTimeDetail(ev: WorkshopEvent, city: City): string
       hour: "numeric",
       minute: "2-digit",
     });
+  }
+
+  if (ev.timeTbd) {
+    const base = `${start.toFormat("cccc, LLLL d, yyyy")} · Time TBD`;
+    return appendAbbr(base, zone, showAbbr, start);
   }
 
   let label = start.toFormat("cccc, LLLL d, yyyy 'at' h:mm a");

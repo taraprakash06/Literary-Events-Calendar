@@ -55,6 +55,7 @@ export function fetchDcArtAllNightEventsForMonth(
       `check ${DC_ART_ALL_NIGHT_URL} for updates.`,
     start: start.toISO() ?? start.toString(),
     timeZone: TZ,
+    timeTbd: true,
     format: "in-person",
     price: "free",
     category: "other",

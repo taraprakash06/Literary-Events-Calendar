@@ -58,6 +58,8 @@ function mapFormat(row: BusboysEventsMoreRow): EventFormat {
 function shouldExclude(row: BusboysEventsMoreRow): boolean {
   const n = cleanTitle(row.name).toLowerCase();
   const c = (row.category ?? "").toLowerCase();
+  const blob = `${n} ${c}`;
+
   if (n.includes("cancelled")) return true;
   if (n.includes("private event")) return true;
   if (n.includes("admin staff")) return true;
@@ -69,6 +71,29 @@ function shouldExclude(row: BusboysEventsMoreRow): boolean {
   ) {
     return true;
   }
+
+  const literaryCue =
+    /\b(book|author|poet|poetry|reading|writer|writing|literary|open\s*mic|memoir|novel|essay|storytime|story\s*time|publish|manuscript|workshop)\b/.test(
+      blob,
+    );
+
+  // Career / school recruiting and networking nights are common at Busboys
+  // but are not literary programming.
+  if (
+    /\b(law\s+school|graduate\s+school|grad\s+school|law\s+&\s+graduate|admissions|career\s+fair|job\s+fair|recruiting|info\s+session)\b/.test(
+      blob,
+    ) &&
+    !literaryCue
+  ) {
+    return true;
+  }
+  if (
+    (/\bmeet\s*and\s*greet\b/.test(blob) || /\bnetworking\b/.test(blob)) &&
+    !literaryCue
+  ) {
+    return true;
+  }
+
   return false;
 }
 

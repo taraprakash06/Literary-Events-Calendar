@@ -2708,6 +2708,7 @@ function mapSpec(spec: CuratedSpec): WorkshopEvent {
     start: start.toISO() ?? start.toString(),
     end: end ? (end.toISO() ?? undefined) : undefined,
     timeZone: spec.timeZone,
+    timeTbd: spec.timeTbd,
     format: "in-person",
     price: spec.price ?? "unknown",
     category: spec.category,

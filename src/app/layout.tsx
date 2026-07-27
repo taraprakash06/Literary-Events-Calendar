@@ -1,31 +1,29 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Newsreader } from "next/font/google";
+import { Libre_Baskerville, Source_Sans_3 } from "next/font/google";
 import { SITE_URL } from "@/lib/site-url";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const sourceSans = Source_Sans_3({
+  variable: "--font-source-sans",
   subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const libreBaskerville = Libre_Baskerville({
+  variable: "--font-libre-baskerville",
   subsets: ["latin"],
-});
-
-const newsreader = Newsreader({
-  variable: "--font-newsreader",
-  subsets: ["latin"],
-  weight: ["400", "600", "700"],
+  weight: ["400", "700"],
 });
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: "The Lit List",
   description:
-    "The Lit List — browse literary events by city with calendar and agenda views, filters, and search.",
+    "Literary events near you — readings, workshops, and open mics gathered from libraries, bookstores, Eventbrite, and Instagram into one calendar.",
   openGraph: {
     title: "The Lit List",
+    description:
+      "Find the next reading, workshop, or open mic in your city — pulled from scattered listings into one place.",
     url: SITE_URL,
     siteName: "The Lit List",
   },
@@ -43,7 +41,8 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} ${newsreader.variable} h-full antialiased`}
+      className={`${sourceSans.variable} ${libreBaskerville.variable} h-full antialiased`}
+      style={{ colorScheme: "light" }}
     >
       <body className="flex min-h-full flex-col font-sans">{children}</body>
     </html>

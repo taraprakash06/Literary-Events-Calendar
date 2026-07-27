@@ -1,6 +1,5 @@
 import { notFound } from "next/navigation";
 import { CITIES, getCityBySlug } from "@/data/cities";
-import { LiteraryCalendarLogo } from "@/components/LiteraryCalendarLogo";
 import { WorkshopCalendar } from "@/components/WorkshopCalendar";
 
 export function generateStaticParams() {
@@ -18,28 +17,35 @@ export default async function CityCalendarPage({
 
   return (
     <div className="flex flex-1 flex-col">
-      <header className="border-b border-stone-200/90 bg-[var(--surface)]/95 px-4 py-8 backdrop-blur-sm dark:border-stone-700/80 dark:bg-stone-950/90">
-        <div className="mx-auto flex max-w-6xl flex-col gap-4">
-          <div className="flex flex-wrap items-center gap-3 sm:gap-4">
-            <LiteraryCalendarLogo className="h-10 w-10 shrink-0 text-stone-800 dark:text-stone-100 sm:h-12 sm:w-12" />
-            <h1 className="font-serif text-3xl font-semibold tracking-tight text-stone-900 dark:text-stone-50 sm:text-4xl">
+      <header className="border-b border-[var(--line)]">
+        <div className="masthead-copy mx-auto flex max-w-6xl flex-col gap-6 px-5 pb-7 pt-8 sm:px-8 sm:pb-8 sm:pt-10 lg:flex-row lg:items-end lg:justify-between lg:gap-16">
+          <div className="max-w-2xl">
+            <p className="font-serif text-[2.35rem] font-normal leading-none tracking-tight text-[var(--ink)] sm:text-5xl">
               The Lit List
-            </h1>
+            </p>
+            <p className="mt-4 max-w-xl text-[1.05rem] leading-relaxed text-[var(--muted)] sm:mt-5 sm:text-lg">
+              We gather literary events from library calendars, bookstore
+              listings, Eventbrite, Instagram, and other scattered sources, then
+              bring them together in one place. Use the filters below to
+              discover events near you that fit your interests.
+            </p>
           </div>
-          <p className="max-w-3xl text-lg leading-relaxed text-stone-700 dark:text-stone-300">
-            This calendar platform compiles (and filters) all the literary events
-            happening near you, taking them from Instagram posts, Eventbrite listings,
-            public library pages, and other scattered spaces and putting them in one
-            place. Browse through the events happening in your area to see what you
-            want to attend!
-          </p>
-          <p className="text-sm font-medium uppercase tracking-[0.12em] text-stone-500 dark:text-stone-400">
-            {city.name}
-          </p>
+
+          <div className="lg:max-w-xs lg:pb-1 lg:text-right">
+            <p className="text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-[var(--accent)]">
+              Now viewing
+            </p>
+            <p className="mt-2 font-serif text-xl leading-snug text-[var(--ink)] sm:text-2xl">
+              {city.name}
+            </p>
+          </div>
         </div>
       </header>
 
-      <main className="flex flex-1 flex-col px-4 py-8 sm:py-10">
+      <main
+        id="calendar"
+        className="flex flex-1 flex-col px-4 pb-14 pt-6 sm:px-6 sm:pb-16 sm:pt-8"
+      >
         <WorkshopCalendar city={city} />
       </main>
     </div>

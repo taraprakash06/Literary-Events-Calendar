@@ -1,24 +1,27 @@
 import type { WorkshopEventCategory } from "@/lib/workshop-types";
 
-/** Soft, editorial tag treatments — backgrounds stay light for scanability. */
+/**
+ * Soft category chips for calendar cards — light fills so titles stay readable
+ * and event type is obvious at a glance.
+ */
 export const CATEGORY_TAG_STYLES: Record<
   WorkshopEventCategory,
   { tag: string; dot: string }
 > = {
   workshop: {
-    tag: "border-emerald-200/90 bg-emerald-50/90 text-emerald-900/85",
-    dot: "bg-emerald-400/75",
+    tag: "border-emerald-200/80 bg-emerald-50 text-emerald-900",
+    dot: "bg-emerald-500/80",
   },
   "open-mic": {
-    tag: "border-violet-200/90 bg-violet-50/90 text-violet-900/85",
-    dot: "bg-violet-400/75",
+    tag: "border-violet-200/80 bg-violet-50 text-violet-900",
+    dot: "bg-violet-500/80",
   },
   reading: {
-    tag: "border-rose-200/90 bg-rose-50/90 text-rose-900/90",
-    dot: "bg-rose-400/80",
+    tag: "border-rose-200/80 bg-rose-50 text-rose-900",
+    dot: "bg-rose-500/80",
   },
   other: {
-    tag: "border-stone-200/90 bg-stone-100/90 text-stone-800",
-    dot: "bg-stone-400/70",
+    tag: "border-stone-200 bg-stone-100 text-stone-700",
+    dot: "bg-stone-400",
   },
 };
