@@ -1,5 +1,5 @@
 import type { PriceKind } from "@/lib/workshop-types";
-import { decodeHtmlEntities } from "@/lib/text";
+import { decodeHtmlEntities, limitAboutToSentences } from "@/lib/text";
 
 /** Placeholder / stub About copy that should be replaced from the RSVP page. */
 export function isSparseEventDescription(description: string | undefined): boolean {
@@ -118,12 +118,17 @@ function descriptionFromOg(html: string): string | undefined {
 }
 
 /**
- * Condense a long bookstore/event blurb into an About upshot:
- * opening premise + book framing + conversation host — not full bios/retail chrome.
+ * Condense a bookstore event blurb into an About upshot focused on the event
+ * (conversation / reading), with at most one short sentence about the book.
+ * Optional `pageTitle` (e.g. h1) helps when the body copy buries the format.
  */
-export function toEventAboutUpshot(full: string, maxChars = 720): string {
+export function toEventAboutUpshot(
+  full: string,
+  maxChars = 520,
+  pageTitle?: string,
+): string {
   let t = full.replace(/\s+/g, " ").trim();
-  if (!t) return "";
+  if (!t && !pageTitle?.trim()) return "";
 
   t = t
     .replace(/\s*Current price:[\s\S]*$/i, "")
@@ -134,64 +139,208 @@ export function toEventAboutUpshot(full: string, maxChars = 720): string {
     .replace(/\s*ISBN:\s*\d[\s\S]*$/i, "")
     .trim();
 
-  const based = t
-    .match(/\bBased on a true story\b[^.!?]*[.!?]/i)?.[0]
-    ?.trim();
-  const convo =
+  const fromTitle = eventLineFromBookstoreTitle(pageTitle ?? "");
+  const convoRaw =
     t.match(
-      /\b[A-Z][a-zA-Z.'’-]+(?:\s+[A-Z][a-zA-Z.'’-]+){0,3}\s+will be in conversation with [^.!?]+[.!?]/,
-    )?.[0]?.trim() ??
-    t.match(/\bIn conversation with [^.!?]+[.!?]/i)?.[0]?.trim();
+      /\b[A-Z][a-zA-Z.'’-]+(?:\s+[A-Z][a-zA-Z.'’-]+){0,4}\s+will be(?:\s+joined)?\s+in conversation with\s+(?:Dr\.|Prof\.|Mr\.|Ms\.|Mrs\.)?\s*[A-Z][a-zA-Z.'’\s-]*?(?=\s+,\s+[a-z]|\.\s+[A-Z][a-z]+ (?:is|received|lives|has|a )|\.\s*This event)/,
+    )?.[0]?.trim();
 
-  let plot = t;
-  if (based) {
-    const idx = t.indexOf(based);
-    if (idx >= 0) plot = t.slice(0, idx).trim();
-  } else {
-    const bioCut = plot.search(
-      /\b(?:received an MFA|holds a Ph\.?D|her writing has appeared|his writing has appeared|is the author of)\b/i,
-    );
-    if (bioCut > 180) plot = plot.slice(0, bioCut).trim();
-    const bornIntro = plot.search(
-      /\b[A-Z][a-zA-Z.'’-]+(?:\s+[A-Z][a-zA-Z.'’-]+){1,3},\s+born in\b/,
-    );
-    if (bornIntro > 180) plot = plot.slice(0, bornIntro).trim();
+  // Title-built lines are reliable for P&P ("Author — Book - with Guest — at Venue").
+  // Body sentences often break on middle initials ("Lindsay M.") or start mid-plot.
+  let eventLine = fromTitle;
+  if (!eventLine && convoRaw) {
+    eventLine = sharpenConversationLine(`${convoRaw}.`);
+  }
+  if (eventLine && fromTitle) {
+    // Prefer "Dr." from the body when the title omitted the honorific.
+    const drGuest = t.match(
+      /\bin conversation with\s+(Dr\.\s+[A-Z][a-zA-Z.'’-]+(?:\s+[A-Z]\.)?(?:\s+[A-Z][a-zA-Z.'’-]+){0,3})/,
+    )?.[1];
+    if (drGuest) {
+      const bare = drGuest.replace(/^Dr\.\s+/i, "");
+      if (eventLine.includes(bare) && !eventLine.includes("Dr.")) {
+        eventLine = eventLine.replace(bare, drGuest);
+      }
+    }
   }
 
-  const plotSentences =
-    plot.match(/[^.!?]+[.!?]+(?:\s+|$)/g)?.map((s) => s.trim()) ??
-    (plot ? [plot] : []);
+  const bookLine = oneBookSentence(t, eventLine, pageTitle);
 
-  const parts: string[] = [];
-  for (const s of plotSentences.slice(0, 2)) parts.push(s);
-  if (parts.join(" ").length < 300 && plotSentences[2]) {
-    parts.push(plotSentences[2]);
-  }
-  if (based) parts.push(based);
-  if (convo) parts.push(convo);
-
-  const framingTail = [based, convo].filter(Boolean) as string[];
-  while (parts.join(" ").length > maxChars && parts.length > framingTail.length + 1) {
-    // Drop the last plot sentence before framing lines.
-    parts.splice(parts.length - framingTail.length - 1, 1);
+  const parts = [eventLine, bookLine].filter(Boolean) as string[];
+  if (parts.length === 0) {
+    const first = t.match(/[^.!?]+[.!?]/)?.[0]?.trim();
+    if (first && !/^[a-z]/.test(first) && first.length > 40) {
+      return first.slice(0, maxChars);
+    }
+    return fromTitle?.slice(0, maxChars) ?? "";
   }
 
   let out = parts.join(" ").replace(/\s+/g, " ").replace(/\s+([.!?])/g, "$1").trim();
+  // Never ship mid-sentence fragments.
+  if (/^[a-z]/.test(out) || /\bwith\s*(?:Dr\.?)?\.?\s*$/i.test(out)) {
+    out = (fromTitle ?? eventLine ?? "").trim();
+  }
   if (out.length <= maxChars) return out;
 
-  // Last resort: keep opening sentence + framing.
-  const opening = plotSentences[0];
-  const fallback = [opening, ...framingTail].filter(Boolean).join(" ").trim();
-  if (fallback.length <= maxChars) return fallback;
-  const clipped = fallback.slice(0, maxChars);
+  if (eventLine && eventLine.length <= maxChars) {
+    if (bookLine) {
+      const room = maxChars - eventLine.length - 1;
+      if (room > 60) {
+        return `${eventLine} ${clipAtSentence(bookLine, room)}`.trim();
+      }
+    }
+    return eventLine;
+  }
+  return clipAtSentence(out, maxChars);
+}
+
+/**
+ * P&P titles look like:
+ * "Author — Book Title - with Guest — at Venue"
+ */
+export function eventLineFromBookstoreTitle(title: string): string | undefined {
+  const t = decodeHtmlEntities(title)
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\s+/g, " ")
+    .replace(/\s*\|\s*Politics and Prose.*$/i, "")
+    .trim();
+  if (!t) return undefined;
+
+  const withGuest = t.match(
+    /^(.+?)\s*[—–-]\s*(.+?)\s*[-–—]\s*with\s+(.+?)\s*[—–-]\s*at\s+.+$/i,
+  );
+  if (withGuest) {
+    const author = withGuest[1].trim().replace(/^—\s*/, "");
+    const book = withGuest[2].trim().replace(/^—\s*/, "");
+    const guest = withGuest[3].trim();
+    if (author && book && guest) {
+      return `${author} will be in conversation with ${guest} about ${book}.`;
+    }
+  }
+
+  const authorBook = t.match(/^(.+?)\s*[—–-]\s*(.+?)\s*[—–-]\s*at\s+.+$/i);
+  if (authorBook) {
+    const author = authorBook[1].trim();
+    const book = authorBook[2].trim().replace(/\s*-\s*with\s+.+$/i, "").trim();
+    if (author && book && book.length > 3) {
+      return `${author} discusses ${book} at Politics and Prose.`;
+    }
+  }
+  return undefined;
+}
+
+/** Keep the host + guest; drop long résumé clauses after the guest name. */
+function sharpenConversationLine(raw: string): string {
+  let s = raw.replace(/\s+/g, " ").trim();
+  s = s.replace(
+    /(\bin conversation with\s+(?:Dr\.|Prof\.|Mr\.|Ms\.|Mrs\.)?\s*[A-Z][a-zA-Z.'’-]+(?:\s+[A-Z][a-zA-Z.'’-]+){0,4})\s*,\s+[^.!?]{20,}([.!?])$/i,
+    "$1$2",
+  );
+  if (/^in conversation with\b/i.test(s)) {
+    s = s.replace(/^in conversation with\b/i, "In conversation with");
+  }
+  return s;
+}
+
+/** One short book premise sentence — never a multi-paragraph plot dump. */
+function oneBookSentence(
+  full: string,
+  eventLine: string | undefined,
+  pageTitle?: string,
+): string | undefined {
+  const based = full.match(/\bBased on a true story\b[^.!?]*[.!?]/i)?.[0]?.trim();
+  if (based && isCleanBookSentence(based)) {
+    // Prefer a concrete setting/theme clause over marketing comparisons.
+    if (/\bSchindler|powerful narrative of\b/i.test(based)) {
+      const theme = full.match(
+        /[^.!?]{0,40}\b(?:Red Terror|Asmara|Eritrea)\b[^.!?]{0,80}[.!?]/i,
+      )?.[0]?.trim();
+      if (theme && isCleanBookSentence(theme) && theme.length <= 160) {
+        return theme.startsWith("Based on")
+          ? theme
+          : `Based on a true story. ${theme}`;
+      }
+      if (/\bRed Terror\b/i.test(full)) {
+        return "Based on a true story of love and resistance amid Ethiopia's Red Terror.";
+      }
+    }
+    return based.length <= 210 ? based : clipAtSentence(based, 200);
+  }
+
+  // Jacket-card style: "From an acclaimed historian, a revelatory account of…"
+  const jacket = full.match(
+    /\bFrom an? (?:acclaimed |award-winning )?(?:historian|journalist|author|novelist)[^.!?]*[.!?]/i,
+  )?.[0]?.trim();
+  if (jacket && isCleanBookSentence(jacket)) {
+    return jacket.length <= 210 ? jacket : clipAtSentence(jacket, 200);
+  }
+
+  const titled = full.match(
+    /\b([A-Z][^.,]{2,60}?)\s+(?:follows|explores|traces|examines|recounts|chronicles|tells the story of)\b[^.!?]*[.!?]/,
+  )?.[0]?.trim();
+  if (titled && titled.length <= 220 && isCleanBookSentence(titled)) return titled;
+
+  // Prefer a sentence that reframes the book clearly.
+  const reframes = full.match(
+    /\b(?:But as historian|But as|This book|The book)\b[^.!?]{40,200}[.!?]/i,
+  )?.[0]?.trim();
+  if (reframes && isCleanBookSentence(reframes)) return reframes;
+
+  let plot = full;
+  if (eventLine) plot = plot.replace(eventLine, " ").replace(/\s+/g, " ").trim();
+
+  const bioCut = plot.search(
+    /\b(?:received an MFA|holds a Ph\.?D|her writing has appeared|his writing has appeared|is the author of|a former journalist|is professor of)\b/i,
+  );
+  if (bioCut > 80) plot = plot.slice(0, bioCut).trim();
+
+  const sentences =
+    plot.match(/[^.!?]+[.!?]+(?:\s+|$)/g)?.map((x) => x.trim()) ?? [];
+  for (const s of sentences) {
+    if (s.length < 50 || s.length > 200) continue;
+    if (!isCleanBookSentence(s)) continue;
+    if (/\bin conversation with\b/i.test(s)) continue;
+    if (/\bwill be(?:\s+joined)?\s+in conversation\b/i.test(s)) continue;
+    if (/\breceived an MFA|Pulitzer|Washington Post|lives in|professor of\b/i.test(s))
+      continue;
+    if (/^We think of\b/i.test(s)) continue;
+    return s;
+  }
+
+  // Title-only fallback book clause if body yields nothing usable.
+  const fromTitle = eventLineFromBookstoreTitle(pageTitle ?? "");
+  if (fromTitle) {
+    const book = fromTitle.match(/\babout\s+(.+)\.$/i)?.[1];
+    if (book) return undefined; // already named in event line
+  }
+  return undefined;
+}
+
+function isCleanBookSentence(s: string): boolean {
+  const t = s.trim();
+  if (!t || /^[a-z]/.test(t)) return false;
+  // Mid-clause fragments like "Declaration's grievances, Parkinson offers…"
+  if (/^[A-Z][^.]{0,40}’s \w+, [A-Z]/.test(t)) return false;
+  if (/^[A-Z][^.]{0,40}'s \w+, [A-Z]/.test(t)) return false;
+  if (
+    /, [A-Z][a-zA-Z.'’-]+ (?:offers|shows|argues|writes)\b/.test(t) &&
+    !/^(?:But|In|This|The|From|Based)\b/.test(t)
+  ) {
+    return false;
+  }
+  return true;
+}
+
+function clipAtSentence(text: string, maxChars: number): string {
+  if (text.length <= maxChars) return text;
+  const clipped = text.slice(0, maxChars);
   const stop = Math.max(
     clipped.lastIndexOf(". "),
     clipped.lastIndexOf("! "),
     clipped.lastIndexOf("? "),
   );
-  return stop > maxChars * 0.4
-    ? clipped.slice(0, stop + 1).trim()
-    : `${clipped.replace(/\s+\S*$/, "").trim()}…`;
+  if (stop > maxChars * 0.4) return clipped.slice(0, stop + 1).trim();
+  return `${clipped.replace(/\s+\S*$/, "").trim()}…`;
 }
 
 /**
@@ -297,9 +446,25 @@ export function parseEnrichmentFromEventPageHtml(html: string): RsvpPageEnrichme
       .replace(/\s*To request accommodations[\s\S]*$/i, "")
       .replace(/\s*Event Related Books[\s\S]*$/i, "")
       .trim();
-    // Bookstore pages often include the full jacket + bios; show an upshot in About.
-    // Keep Writer's Center / Busboys workshop copy intact.
-    if (
+    // Bookstore pages: conversation-first About from the full page text
+    // (body excerpts alone often omit the "in conversation with" line).
+    const isBookstorePage =
+      /politics-?prose|IndieCommerce|Event Related Books|This event is free/i.test(
+        html,
+      ) || /politics and prose/i.test(text.slice(0, 500));
+    if (!fromVenueDescriptionBlock && !isWritersCenter && isBookstorePage) {
+      const pageTitle =
+        decodeHtmlEntities(
+          (
+            html.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i)?.[1] ??
+            html.match(/property=["']og:title["'][^>]*content=["']([^"']+)["']/i)?.[1] ??
+            ""
+          ).replace(/<[^>]+>/g, " "),
+        )
+          .replace(/\s+/g, " ")
+          .trim() || undefined;
+      description = toEventAboutUpshot(text, 520, pageTitle);
+    } else if (
       !fromVenueDescriptionBlock &&
       !isWritersCenter &&
       description.length > 520
@@ -309,7 +474,12 @@ export function parseEnrichmentFromEventPageHtml(html: string): RsvpPageEnrichme
   }
 
   const out: RsvpPageEnrichment = {};
-  if (description && description.length > 40) out.description = description;
+  if (description && description.length > 40) {
+    out.description =
+      fromVenueDescriptionBlock || isWritersCenter
+        ? limitAboutToSentences(description, 4)
+        : description;
+  }
   if (price) out.price = price;
   if (priceDetail) out.priceDetail = priceDetail;
   return out;

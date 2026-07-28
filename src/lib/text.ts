@@ -73,3 +73,60 @@ export function toShortOverview(input: string, maxChars = 320): string {
   return clipped.replace(/\s+$/g, "").trim();
 }
 
+/**
+ * Cap About copy at a few sentences and drop appended host/artist bios.
+ * Used so listings stay event-focused instead of full CVs.
+ */
+export function limitAboutToSentences(
+  input: string,
+  maxSentences = 4,
+): string {
+  let t = stripHtmlAndDecode(input).replace(/\s+/g, " ").trim();
+  if (!t) return "";
+
+  // Busboys open mics often put the series pitch after a "* * *" bio break.
+  const starParts = t
+    .split(/\*\s*\*\s*\*/)
+    .map((p) => p.trim())
+    .filter(Boolean);
+  if (starParts.length >= 2) {
+    const tail = starParts[starParts.length - 1];
+    if (
+      tail.length > 80 &&
+      /\b(open mic|audiences can expect|\$\s*\d+\s*cover|workshop|come out|for two hours|expect to be moved)\b/i.test(
+        tail,
+      )
+    ) {
+      t = tail;
+    }
+  }
+
+  t = t
+    .replace(/\s*\bHOST:\s*[\s\S]*$/i, "")
+    .replace(
+      /\s*\bAbout (?:the )?(?:Host|Artist|Instructor|Author|Performer)\b[:\s][\s\S]*$/i,
+      "",
+    )
+    .replace(/\s*If you need an accommodation for this workshop[\s\S]*$/i, "")
+    .trim();
+
+  // If a long personal bio precedes the event pitch, start at the pitch.
+  const pitchAt = t.search(
+    /\b(?:ASL\b|OPEN MIC PRESENTS|On this night|Come out and enjoy|For two hours|This workshop|Join us|Deep reading|Write poems|Live video conference)\b/i,
+  );
+  if (pitchAt > 60) t = t.slice(pitchAt).trim();
+
+  const sentences = splitAboutSentences(t);
+  if (sentences.length === 0) return t;
+  return sentences.slice(0, Math.max(1, maxSentences)).join(" ").trim();
+}
+
+function splitAboutSentences(text: string): string[] {
+  const matches = text.match(/[^.!?]+[.!?]+(?:\s+|$)|[^.!?]+$/g);
+  if (!matches) return text ? [text] : [];
+  return matches
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0)
+    .filter((s) => !/^(?:HOST|About)\b/i.test(s));
+}
+

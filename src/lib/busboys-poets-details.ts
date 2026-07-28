@@ -2,7 +2,7 @@ import type { BusboysEventsMoreRow } from "@/lib/busboys-poets-client";
 import { BUSBOYS_POETS_TIMEZONE, parseBusboysRowStart } from "@/lib/busboys-poets-client";
 import type { PriceKind } from "@/lib/workshop-types";
 import { DateTime } from "luxon";
-import { decodeHtmlEntities } from "@/lib/text";
+import { decodeHtmlEntities, limitAboutToSentences } from "@/lib/text";
 
 const UA = "calendar_literary/1.0 (+https://github.com/taraprakash06/literary-events-calendar)";
 
@@ -47,17 +47,19 @@ function parseEventPageTitle(html: string): string | null {
 }
 
 function cleanBusboysAbout(plain: string): string {
-  return plain
-    .replace(
-      /(A Busboys and Poetry Event hosted this week by .+?)\s+\1/i,
-      "$1 ",
-    )
-    .replace(/([a-z])([A-Z])/g, "$1 $2")
-    .replace(/\s+/g, " ")
-    .replace(/\s*&\s*hellip;?\s*$/i, "")
-    .replace(/\u2026\s*$/g, "")
-    .trim()
-    .slice(0, 2500);
+  return limitAboutToSentences(
+    plain
+      .replace(
+        /(A Busboys and Poetry Event hosted this week by .+?)\s+\1/i,
+        "$1 ",
+      )
+      .replace(/([a-z])([A-Z])/g, "$1 $2")
+      .replace(/\s+/g, " ")
+      .replace(/\s*&\s*hellip;?\s*$/i, "")
+      .replace(/\u2026\s*$/g, "")
+      .trim(),
+    4,
+  );
 }
 
 /** Pull About copy from Busboys event page HTML (Description block preferred over truncated JSON-LD). */

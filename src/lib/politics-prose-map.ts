@@ -1,6 +1,7 @@
 import type { WorkshopEvent, WorkshopEventCategory } from "@/lib/workshop-types";
 import type { PnpFullCalendarEvent } from "@/lib/politics-prose-client";
 import { POLITICS_PROSE_ORIGIN } from "@/lib/politics-prose-client";
+import { eventLineFromBookstoreTitle } from "@/lib/rsvp-page-enrichment";
 import { DateTime } from "luxon";
 import { stripHtmlAndDecode, toShortOverview } from "@/lib/text";
 
@@ -31,7 +32,9 @@ function parseVenueFromTitleHtml(raw?: string): string | undefined {
  */
 const PNP_ABOUT_BY_PATH: Record<string, string> = {
   "/donica-merhazion":
-    "In 1970s Ethiopia, 13-year-old Elen, determined to escape her arranged marriage, secretly abandons her tiny village hoping to find her aunt living in Asmara, the capital of Eritrea. Meanwhile, Girmai escapes his abusive stepmother after the death of his beloved father, only to end up homeless and starving on the streets of the city. Based on a true story, Born at the End of the World is a powerful narrative of patriotism, love, camaraderie, and courage, no less uplifting or appalling than Schindler's List. Merhazion will be in conversation with Bsrat Mezghebe.",
+    "Donica Merhazion discusses her debut novel Born at the End of the World in conversation with writer Bsrat Mezghebe. Based on a true story set in 1970s Ethiopia and Eritrea, the book follows two young people whose lives collide amid the Red Terror.",
+  "/robert-g-parkinson73126":
+    "Robert G. Parkinson will be in conversation with Dr. Lindsay M. Chervinsky about Tyrants and Rogues: Understanding the Declaration of Independence. From an acclaimed historian, a revelatory account of the Declaration centered on the grievances that shaped 1776—not only the lofty preamble.",
 };
 
 function aboutOverrideForUrl(rsvpUrl: string | undefined): string | undefined {
@@ -42,6 +45,35 @@ function aboutOverrideForUrl(rsvpUrl: string | undefined): string | undefined {
   } catch {
     return undefined;
   }
+}
+
+/** Prefer conversation-first About; never keep a long plot-only stub. */
+function resolvePnpDescription(
+  title: string,
+  rsvpUrl: string | undefined,
+  fromPage?: string,
+): string {
+  const page = fromPage?.trim();
+  if (page && looksLikeEventAbout(page)) return page;
+
+  const override = aboutOverrideForUrl(rsvpUrl);
+  if (override) return override;
+
+  const fromTitle = eventLineFromBookstoreTitle(title);
+  if (fromTitle) return fromTitle;
+
+  if (page) return page;
+  return "Details from Politics and Prose.";
+}
+
+function looksLikeEventAbout(text: string): boolean {
+  const t = text.replace(/\s+/g, " ").trim();
+  if (!t || /^[a-z]/.test(t)) return false;
+  // Plot-first blurbs are never good About copy for Lit List cards.
+  if (/^(?:In (?:the )?\d{4}s?|When the|Meanwhile,)\b/i.test(t)) return false;
+  return /\b(?:in conversation with|will be joined in conversation|discusses .+ in conversation|discusses her debut|discusses his debut)\b/i.test(
+    t.slice(0, 180),
+  );
 }
 
 export function mapPnpEventToWorkshop(
@@ -93,10 +125,7 @@ export function mapPnpEventToWorkshop(
     cityId: "dmv",
     title,
     tagline,
-    description:
-      opts?.description?.trim() ||
-      aboutOverrideForUrl(rsvpUrl) ||
-      "Details from Politics and Prose.",
+    description: resolvePnpDescription(title, rsvpUrl, opts?.description),
     start: startDt.toISO() ?? startDt.toUTC().toISO() ?? start,
     end: endIso,
     timeZone: tz,

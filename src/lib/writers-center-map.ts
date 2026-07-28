@@ -4,7 +4,7 @@ import type {
   WorkshopEvent,
   WorkshopEventCategory,
 } from "@/lib/workshop-types";
-import { decodeHtmlEntities, stripHtmlAndDecode, toShortOverview } from "@/lib/text";
+import { decodeHtmlEntities, stripHtmlAndDecode, toShortOverview, limitAboutToSentences } from "@/lib/text";
 
 const DEFAULT_TZ = "America/New_York";
 
@@ -106,13 +106,14 @@ function buildWorkshopFromTwc(
     ? htmlToPlainDescription(descHtml).slice(0, 4000)
     : "";
   const excerptPlain = excerpt ? stripHtml(excerpt) : "";
-  const description =
+  const rawDescription =
     opts.descriptionOverride?.trim() ||
     fullDescription ||
     excerptPlain ||
     (workshop
       ? "Workshop at The Writer's Center."
       : "Event at The Writer's Center.");
+  const description = limitAboutToSentences(rawDescription, 4);
 
   // Avoid truncated “… ” excerpts for the subtitle when we have full copy.
   const taglineSource =
