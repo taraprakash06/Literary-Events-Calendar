@@ -1,6 +1,12 @@
+import { isFilmOnlyEventText, isVisualArtOnlyEventText } from "@/lib/event-category";
 import type { BusboysEventsMoreRow } from "@/lib/busboys-poets-client";
 import { BUSBOYS_POETS_TIMEZONE } from "@/lib/busboys-poets-client";
-import type { EventFormat, WorkshopEvent, WorkshopEventCategory } from "@/lib/workshop-types";
+import type {
+  EventFormat,
+  PriceKind,
+  WorkshopEvent,
+  WorkshopEventCategory,
+} from "@/lib/workshop-types";
 import { DateTime } from "luxon";
 import { decodeHtmlEntities, toShortOverview } from "@/lib/text";
 
@@ -64,37 +70,66 @@ function shouldExclude(row: BusboysEventsMoreRow): boolean {
   if (n.includes("private event")) return true;
   if (n.includes("admin staff")) return true;
   if (n.includes("staff retreat")) return true;
+  if (isVisualArtOnlyEventText(n, c)) return true;
+  if (isFilmOnlyEventText(n, c)) return true;
+
+  // Clearly non-literary programming common on the Busboys calendar.
   if (
-    c.includes("performance") ||
-    c.includes("theater") ||
-    c.includes("theatre")
+    /\b(karaoke|comedy|music|concert|watch\s*party|world\s*cup|reunion|happy\s*hour|science\s*cafe|film\s*screening|filmmaker|exhibition|artomatic)\b/.test(
+      blob,
+    )
+  ) {
+    // Keep book/film hybrids that are still author or book events.
+    if (
+      !/\b(book|author|poet|poetry|writer|writing|literary|open\s*mic|memoir|novel|essay)\b/.test(
+        blob,
+      )
+    ) {
+      return true;
+    }
+  }
+
+  if (
+    (/\b(performance|theater|theatre|music)\b/.test(c) ||
+      /\bart\b/.test(c) ||
+      /\bfilm\b/.test(c)) &&
+    !/\b(poetry|poet|book|author|writer|writing|literary|open\s*mic|spoken\s*word|slam)\b/.test(
+      blob,
+    )
   ) {
     return true;
   }
 
-  const literaryCue =
-    /\b(book|author|poet|poetry|reading|writer|writing|literary|open\s*mic|memoir|novel|essay|storytime|story\s*time|publish|manuscript|workshop)\b/.test(
-      blob,
+  const literaryCategory =
+    /\b(poetry|open\s*mic|author|book\s*(event|reading|launch|signing|club)|writers?|writing|literary|spoken\s*word)\b/.test(
+      c,
     );
 
-  // Career / school recruiting and networking nights are common at Busboys
-  // but are not literary programming.
+  const literaryTitle =
+    /\b(book|author|poet|poetry|reading|writer|writing|literary|open\s*mic|memoir|novel|essay|storytime|story\s*time|publish|manuscript|workshop|slam|spoken\s*word|zine)\b/.test(
+      n,
+    );
+
+  // Career / school recruiting and networking nights.
   if (
     /\b(law\s+school|graduate\s+school|grad\s+school|law\s+&\s+graduate|admissions|career\s+fair|job\s+fair|recruiting|info\s+session)\b/.test(
       blob,
     ) &&
-    !literaryCue
+    !literaryCategory &&
+    !literaryTitle
   ) {
     return true;
   }
   if (
     (/\bmeet\s*and\s*greet\b/.test(blob) || /\bnetworking\b/.test(blob)) &&
-    !literaryCue
+    !literaryCategory &&
+    !literaryTitle
   ) {
     return true;
   }
 
-  return false;
+  // Allow-list: only keep literary / writing-world events.
+  return !(literaryCategory || literaryTitle);
 }
 
 export function mapBusboysRowToWorkshop(
@@ -109,6 +144,10 @@ export function mapBusboysRowToWorkshop(
      * former invented +2h default — Busboys CMS ends are often inaccurate.
      */
     endISO?: string;
+    /** Full About copy from the event page when the list feed has none. */
+    descriptionOverride?: string;
+    price?: PriceKind;
+    priceDetail?: string;
   },
 ): WorkshopEvent | null {
   if (shouldExclude(row)) return null;
@@ -131,21 +170,26 @@ export function mapBusboysRowToWorkshop(
   const category = mapCategory(catLabel);
   const format = mapFormat(row);
 
+  const description =
+    opts.descriptionOverride?.trim() ||
+    toShortOverview(
+      tagline ? `${title}. ${tagline}.` : title,
+      360,
+    ) ||
+    "Details on the Busboys and Poets website.";
+
   return {
     id: `busboys-poets-${row.ID}`,
     cityId: "dmv",
     title,
     tagline: tagline ? toShortOverview(tagline, 200) : "",
-    description:
-      toShortOverview(
-        tagline ? `${title}. ${tagline}.` : title,
-        360,
-      ) || "Details on the Busboys and Poets website.",
+    description,
     start: start.toISO() ?? start.toUTC().toISO() ?? start.toString(),
     end: opts.endISO,
     timeZone: BUSBOYS_POETS_TIMEZONE,
     format,
-    price: "unknown",
+    price: opts.price ?? "unknown",
+    priceDetail: opts.priceDetail,
     category,
     organizer: "Busboys and Poets",
     venue,

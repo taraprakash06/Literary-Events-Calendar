@@ -1,4 +1,4 @@
-import { isTheaterEventText } from "@/lib/event-category";
+import { isTheaterEventText, isVisualArtOnlyEventText } from "@/lib/event-category";
 import type {
   EventFormat,
   WorkshopEvent,
@@ -133,6 +133,7 @@ export function mapEbEventToWorkshop(
   const summaryPlain = textField(ev.summary);
   const descriptionPlain = textField(ev.description);
   if (isTheaterEventText(title, summaryPlain, descriptionPlain)) return null;
+  if (isVisualArtOnlyEventText(title, summaryPlain, descriptionPlain)) return null;
 
   const description =
     (ev.description?.html ? toShortOverview(ev.description.html, 360) : "") ||

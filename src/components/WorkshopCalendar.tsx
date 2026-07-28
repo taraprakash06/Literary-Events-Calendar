@@ -6,7 +6,8 @@ import { DateTime } from "luxon";
 import { CITIES } from "@/data/cities";
 import { eventsForCity } from "@/data/workshop-events";
 import { CATEGORY_TAG_STYLES } from "@/lib/category-styles";
-import { decodeHtmlEntities, stripHtmlAndDecode } from "@/lib/text";
+import { stripHtmlAndDecode } from "@/lib/text";
+import { isSparseEventDescription } from "@/lib/rsvp-page-enrichment";
 import {
   applyEventFilters,
   distinctCategories,
@@ -352,6 +353,10 @@ export function WorkshopCalendar({ city }: { city: City }) {
   const [search, setSearch] = useState("");
   const [detail, setDetail] = useState<WorkshopEvent | null>(null);
   const [dayPanelKey, setDayPanelKey] = useState<string | null>(null);
+  /** About/price filled from RSVP pages when the feed only had a stub. */
+  const [rsvpEnrichments, setRsvpEnrichments] = useState<
+    Record<string, { description?: string; price?: PriceKind; priceDetail?: string }>
+  >({});
 
   const [filters, setFilters] = useState<EventFilters>(() => {
     const r = monthRangeISO(today.getFullYear(), today.getMonth());
@@ -1462,9 +1467,17 @@ export function WorkshopCalendar({ city }: { city: City }) {
     [cityEvents],
   );
 
+  const cityEventsEnriched = useMemo(() => {
+    if (Object.keys(rsvpEnrichments).length === 0) return cityEvents;
+    return cityEvents.map((ev) => {
+      const patch = rsvpEnrichments[ev.id];
+      return patch ? { ...ev, ...patch } : ev;
+    });
+  }, [cityEvents, rsvpEnrichments]);
+
   const filtered = useMemo(
-    () => applyEventFilters(cityEvents, filters, search),
-    [cityEvents, filters, search],
+    () => applyEventFilters(cityEventsEnriched, filters, search),
+    [cityEventsEnriched, filters, search],
   );
 
   const inVisibleMonth = useMemo(
@@ -1535,7 +1548,8 @@ export function WorkshopCalendar({ city }: { city: City }) {
 
   const openEventDetail = (ev: WorkshopEvent) => {
     setDayPanelKey(null);
-    setDetail(ev);
+    const patch = rsvpEnrichments[ev.id];
+    setDetail(patch ? { ...ev, ...patch } : ev);
   };
 
   const weekAnchor = useMemo(() => {
@@ -1891,7 +1905,9 @@ export function WorkshopCalendar({ city }: { city: City }) {
                         </p>
                         <p className="mt-2 text-xs text-[var(--muted)]">
                           {whenLabel}
-                          {ev.venue ? ` · ${ev.venue}` : ""}
+                          {ev.venue
+                            ? ` · ${stripHtmlAndDecode(ev.venue)}`
+                            : ""}
                         </p>
                       </div>
                       <EventStatusLabel when={whenStatus} />
@@ -2162,6 +2178,13 @@ export function WorkshopCalendar({ city }: { city: City }) {
           event={detail}
           city={city}
           onClose={() => setDetail(null)}
+          onEnrich={(patch) => {
+            setRsvpEnrichments((prev) => ({
+              ...prev,
+              [detail.id]: { ...prev[detail.id], ...patch },
+            }));
+            setDetail((prev) => (prev ? { ...prev, ...patch } : prev));
+          }}
         />
       ) : null}
     </div>
@@ -2338,6 +2361,16 @@ function FilterPill({
 }
 
 function locationSummary(event: WorkshopEvent): string {
+  const venue = stripHtmlAndDecode(event.venue ?? "")
+    .replace(/\s+/g, " ")
+    .trim();
+  const address = stripHtmlAndDecode(event.address ?? "")
+    .replace(/\s+/g, " ")
+    .trim();
+  const neighborhood = stripHtmlAndDecode(event.neighborhood ?? "")
+    .replace(/\s+/g, " ")
+    .trim();
+
   if (event.format === "virtual") {
     return event.virtualLabel
       ? `Virtual (${event.virtualLabel})`
@@ -2345,15 +2378,25 @@ function locationSummary(event: WorkshopEvent): string {
   }
   if (event.format === "hybrid") {
     const online = event.virtualLabel ?? "Online";
-    const place = event.venue
-      ? `${event.venue}${event.address ? `, ${event.address}` : ""}`
+    const place = venue
+      ? `${venue}${address && !venue.includes(address) ? `, ${address}` : ""}`
       : "In-person location TBA";
     return `${online} · ${place}`;
   }
-  if (event.venue) {
-    return `${event.venue}${event.address ? ` — ${event.address}` : ""}${
-      event.neighborhood ? ` (${event.neighborhood})` : ""
-    }`;
+  if (venue) {
+    // Writer's Center (and similar) already bake street/city into venue as
+    // "Name · 4508 Walsh Street, Bethesda, MD, 20815" — don't append again.
+    if (venue.includes("·") && /\d/.test(venue)) {
+      return venue;
+    }
+    const addressPart =
+      address && !venue.includes(address) ? ` — ${address}` : "";
+    const neighborhoodPart =
+      neighborhood &&
+      !venue.toLowerCase().includes(neighborhood.toLowerCase())
+        ? ` (${neighborhood})`
+        : "";
+    return `${venue}${addressPart}${neighborhoodPart}`;
   }
   return "Venue to be announced";
 }
@@ -2367,44 +2410,85 @@ function EventDetailModal({
   event,
   city,
   onClose,
+  onEnrich,
 }: {
   event: WorkshopEvent;
   city: City;
   onClose: () => void;
+  onEnrich?: (patch: {
+    description?: string;
+    price?: PriceKind;
+    priceDetail?: string;
+  }) => void;
 }) {
   useEscapeKey(onClose);
 
   const isSample = event.listingProvenance === "sample";
   const whenStatus = eventWhenStatus(event);
-  const [synopsis, setSynopsis] = useState<string | null>(null);
 
   useEffect(() => {
-    setSynopsis(null);
+    const url = event.rsvpUrl?.trim();
+    if (!url || event.rsvpIsGeneralCalendar) return;
     if (
-      !event.rsvpUrl ||
-      !event.rsvpUrl.includes("politics-prose.com") ||
-      event.organizer !== "Politics and Prose"
+      !isSparseEventDescription(event.description) &&
+      event.price !== "unknown" &&
+      event.priceDetail
     ) {
       return;
     }
+
     const ac = new AbortController();
     (async () => {
       try {
-        const res = await fetch(event.rsvpUrl!, { signal: ac.signal });
+        const res = await fetch(
+          `/api/event-page-enrich?url=${encodeURIComponent(url)}`,
+          { signal: ac.signal, headers: { Accept: "application/json" } },
+        );
         if (!res.ok) return;
-        const html = await res.text();
-        const og =
-          html.match(/property=["']og:description["'][^>]*content=["']([^"']+)["']/i)?.[1] ??
-          html.match(/name=["']description["'][^>]*content=["']([^"']+)["']/i)?.[1] ??
-          null;
-        const cleaned = decodeHtmlEntities(og ?? "").replace(/\s+/g, " ").trim();
-        if (cleaned) setSynopsis(cleaned);
+        const parsed = (await res.json()) as {
+          description?: string;
+          price?: PriceKind;
+          priceDetail?: string;
+        };
+        const patch: {
+          description?: string;
+          price?: PriceKind;
+          priceDetail?: string;
+        } = {};
+        if (
+          parsed.description &&
+          isSparseEventDescription(event.description) &&
+          parsed.description.length > (event.description?.length ?? 0)
+        ) {
+          patch.description = parsed.description;
+        }
+        if (parsed.price && event.price === "unknown") {
+          patch.price = parsed.price;
+        }
+        if (parsed.priceDetail && !event.priceDetail) {
+          patch.priceDetail = parsed.priceDetail;
+          if (parsed.price) patch.price = parsed.price;
+        }
+        if (patch.description || patch.price || patch.priceDetail) onEnrich?.(patch);
       } catch (e) {
         if ((e as Error).name === "AbortError") return;
       }
     })();
     return () => ac.abort();
-  }, [event.organizer, event.rsvpUrl]);
+    // Intentionally omit onEnrich — parent passes an inline callback.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    event.id,
+    event.rsvpUrl,
+    event.rsvpIsGeneralCalendar,
+    event.description,
+    event.price,
+    event.priceDetail,
+  ]);
+
+  const aboutText = /<[a-z]/i.test(event.description)
+    ? stripHtmlAndDecode(event.description)
+    : event.description;
 
   return (
     <div
@@ -2495,8 +2579,8 @@ function EventDetailModal({
             <p className="text-[0.7rem] font-semibold uppercase tracking-[0.18em] text-[var(--muted)]">
               About
             </p>
-            <p className="mt-2 text-sm leading-relaxed text-[var(--muted)]">
-              {synopsis ?? stripHtmlAndDecode(event.description)}
+            <p className="mt-2 whitespace-pre-line text-sm leading-relaxed text-[var(--muted)]">
+              {aboutText}
             </p>
           </div>
 

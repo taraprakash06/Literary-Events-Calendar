@@ -1,5 +1,6 @@
 import type { BusboysEventsMoreRow } from "@/lib/busboys-poets-client";
 import { BUSBOYS_POETS_TIMEZONE, parseBusboysRowStart } from "@/lib/busboys-poets-client";
+import type { PriceKind } from "@/lib/workshop-types";
 import { DateTime } from "luxon";
 import { decodeHtmlEntities } from "@/lib/text";
 
@@ -19,6 +20,9 @@ const END_OVERRIDES_LOCAL: Record<number, { hour: number; minute?: number }> = {
 export type BusboysEventDetails = {
   title?: string;
   endISO?: string;
+  description?: string;
+  price?: PriceKind;
+  priceDetail?: string;
 };
 
 /** API list truncates long titles with an ellipsis entity. */
@@ -40,6 +44,129 @@ function parseEventPageTitle(html: string): string | null {
     .replace(/\s+/g, " ")
     .trim();
   return stripped || null;
+}
+
+function cleanBusboysAbout(plain: string): string {
+  return plain
+    .replace(
+      /(A Busboys and Poetry Event hosted this week by .+?)\s+\1/i,
+      "$1 ",
+    )
+    .replace(/([a-z])([A-Z])/g, "$1 $2")
+    .replace(/\s+/g, " ")
+    .replace(/\s*&\s*hellip;?\s*$/i, "")
+    .replace(/\u2026\s*$/g, "")
+    .trim()
+    .slice(0, 2500);
+}
+
+/** Pull About copy from Busboys event page HTML (Description block preferred over truncated JSON-LD). */
+export function parseBusboysDescriptionFromHtml(html: string): string | undefined {
+  const candidates: string[] = [];
+
+  const block = html.match(
+    /Description:\s*<\/[^>]+>\s*([\s\S]*?)(?:<h[1-4][^>]*>|\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{1,2},\s+20\d{2}\b|Go to Events)/i,
+  );
+  if (block?.[1]) {
+    const plain = cleanBusboysAbout(
+      decodeHtmlEntities(block[1].replace(/<[^>]+>/g, " ")),
+    );
+    if (plain.length > 60) candidates.push(plain);
+  }
+
+  for (const m of html.matchAll(
+    /<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi,
+  )) {
+    try {
+      const data = JSON.parse(m[1]) as unknown;
+      const nodes = Array.isArray(data)
+        ? data
+        : data && typeof data === "object" && "@graph" in (data as object)
+          ? ((data as { "@graph": unknown })["@graph"] as unknown[])
+          : [data];
+      for (const node of nodes) {
+        if (!node || typeof node !== "object") continue;
+        const n = node as { "@type"?: string | string[]; description?: string };
+        const type = n["@type"];
+        const isEvent =
+          type === "Event" ||
+          (Array.isArray(type) && type.includes("Event"));
+        if (!isEvent || !n.description?.trim()) continue;
+        const plain = cleanBusboysAbout(decodeHtmlEntities(n.description));
+        if (plain.length > 60) candidates.push(plain);
+      }
+    } catch {
+      /* ignore bad JSON-LD */
+    }
+  }
+
+  if (candidates.length === 0) return undefined;
+  candidates.sort((a, b) => b.length - a.length);
+  return candidates[0];
+}
+
+/** Cover / ticket language from Busboys listing pages (list API price is usually empty). */
+export function parseBusboysPricingFromText(text: string): {
+  price?: PriceKind;
+  priceDetail?: string;
+} {
+  if (!text.trim()) return {};
+
+  const cover = text.match(/\$\s*(\d+(?:\.\d{2})?)\s+cover\b/i);
+  if (cover) {
+    return { price: "paid", priceDetail: `$${cover[1]} cover` };
+  }
+
+  const admission = text.match(
+    /\b(?:admission|tickets?|cover(?:\s+charge)?)\s*(?:is|:)?\s*\$\s*(\d+(?:\.\d{2})?)\b/i,
+  );
+  if (admission) {
+    return { price: "paid", priceDetail: `$${admission[1]}` };
+  }
+
+  if (
+    /\bthis event is free\b/i.test(text) ||
+    /\bfree admission\b/i.test(text) ||
+    /\bfree and open to the public\b/i.test(text) ||
+    /\bno\s+cover\b/i.test(text)
+  ) {
+    return { price: "free" };
+  }
+
+  if (
+    /\bpurchase\s+(?:your\s+)?(?:wristbands?|tickets?)\b/i.test(text) ||
+    /\bticket purchase limit\b/i.test(text) ||
+    /\bwristbands?\s+are\s+available\s+for\s+purchase\b/i.test(text)
+  ) {
+    return { price: "paid" };
+  }
+
+  return {};
+}
+
+export function parseBusboysPricingFromHtml(html: string): {
+  price?: PriceKind;
+  priceDetail?: string;
+} {
+  const fromAbout = parseBusboysPricingFromText(
+    parseBusboysDescriptionFromHtml(html) ?? "",
+  );
+  if (fromAbout.price) return fromAbout;
+
+  const text = decodeHtmlEntities(
+    html
+      .replace(/<script[\s\S]*?<\/script>/gi, " ")
+      .replace(/<style[\s\S]*?<\/style>/gi, " ")
+      .replace(/<[^>]+>/g, " "),
+  ).replace(/\s+/g, " ");
+  return parseBusboysPricingFromText(text);
+}
+
+function looksLiteraryBusboysRow(row: BusboysEventsMoreRow): boolean {
+  const blob = `${row.name ?? ""} ${row.category ?? ""}`.toLowerCase();
+  return /\b(poetry|open\s*mic|author|book|writer|writing|literary|spoken\s*word|slam|reading)\b/.test(
+    blob,
+  );
 }
 
 /** e.g. "6 PM - 9 PM", "6:00pm–9:00pm" in page copy (not image OCR). */
@@ -112,12 +239,7 @@ function endISOFromStart(
 }
 
 /**
- * Resolves full titles for truncated list names, and end times only when the
- * event page (or a flyer-backed override) confirms them.
- *
- * We intentionally do **not** invent a +2h end: Busboys Event Espresso uses a
- * 2-hour default that often disagrees with flyers, and public pages usually
- * show start time only.
+ * Resolves full titles, flyer-backed end times, About copy, and pricing from event pages.
  */
 export async function resolveBusboysEventDetails(
   rows: BusboysEventsMoreRow[],
@@ -137,11 +259,18 @@ export async function resolveBusboysEventDetails(
   const needHtml = rows.filter(
     (r) =>
       r.url?.trim() &&
-      (isTruncatedBusboysName(r.name) || END_OVERRIDES_LOCAL[r.ID]),
+      (isTruncatedBusboysName(r.name) ||
+        END_OVERRIDES_LOCAL[r.ID] ||
+        looksLiteraryBusboysRow(r)),
   );
   const uniqueUrls = [...new Set(needHtml.map((r) => r.url.trim()))];
   const titleByUrl = new Map<string, string>();
   const rangeByUrl = new Map<string, { hour: number; minute: number }>();
+  const descriptionByUrl = new Map<string, string>();
+  const pricingByUrl = new Map<
+    string,
+    { price?: PriceKind; priceDetail?: string }
+  >();
 
   await mapWithConcurrency(uniqueUrls, 6, async (url) => {
     const html = await fetchHtml(url);
@@ -150,6 +279,10 @@ export async function resolveBusboysEventDetails(
     if (title) titleByUrl.set(url, title);
     const range = parseTimeRangeEndHour(html);
     if (range) rangeByUrl.set(url, range);
+    const description = parseBusboysDescriptionFromHtml(html);
+    if (description) descriptionByUrl.set(url, description);
+    const pricing = parseBusboysPricingFromHtml(html);
+    if (pricing.price) pricingByUrl.set(url, pricing);
   });
 
   for (const row of needHtml) {
@@ -157,6 +290,15 @@ export async function resolveBusboysEventDetails(
     const prev = byId.get(row.ID) ?? {};
     const title = titleByUrl.get(url);
     if (title) prev.title = title;
+
+    const description = descriptionByUrl.get(url);
+    if (description) prev.description = description;
+
+    const pricing = pricingByUrl.get(url);
+    if (pricing?.price) {
+      prev.price = pricing.price;
+      if (pricing.priceDetail) prev.priceDetail = pricing.priceDetail;
+    }
 
     // Prefer curated flyer override; else explicit text range on the page.
     if (!prev.endISO && rangeByUrl.has(url)) {
@@ -168,7 +310,9 @@ export async function resolveBusboysEventDetails(
       }
     }
 
-    if (prev.title || prev.endISO) byId.set(row.ID, prev);
+    if (prev.title || prev.endISO || prev.description || prev.price) {
+      byId.set(row.ID, prev);
+    }
   }
 
   return byId;

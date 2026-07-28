@@ -38,6 +38,86 @@ export function isTheaterWorkshopEvent(ev: WorkshopEvent): boolean {
   return isTheaterEventText(ev.title, ev.tagline, ev.description, ev.organizer);
 }
 
+/**
+ * True when the event is solely visual-art programming (exhibitions, studio
+ * crafts, gallery openings) with no literary / writing signal.
+ */
+export function isVisualArtOnlyEventText(
+  ...parts: (string | undefined)[]
+): boolean {
+  const b = parts.filter(Boolean).join(" ").toLowerCase();
+  if (!b.trim()) return false;
+
+  if (
+    /\b(book|author|poet|poetry|writer|writing|literary|open\s*mic|memoir|novel|essay|fiction|zine|spoken\s*word|slam|manuscript|publish|storytime|story\s*time|reading group|book club|creative writing|letterpress)\b/.test(
+      b,
+    )
+  ) {
+    return false;
+  }
+
+  return (
+    /\b(artomatic|art\s+all\s+night|visual\s+arts?|fine\s+arts?)\b/.test(b) ||
+    /\b(art\s+(exhibition|show|opening|walk|fair|gallery|reception|market))\b/.test(
+      b,
+    ) ||
+    /\b(gallery\s+opening|photography\s+exhibit|photo\s+exhibit)\b/.test(b) ||
+    /\b(watercolor|ceramics?|pottery|sculpture|printmaking)\b/.test(b) ||
+    /\b(painting|drawing)\s+(workshop|class|studio)\b/.test(b) ||
+    /\bartist\s+(talk|meet|meeting|reception|demo|demonstration)\b/.test(b) ||
+    (/\bexhibition\b/.test(b) && /\b(art|artist|gallery|painter|painting)\b/.test(b))
+  );
+}
+
+export function isVisualArtOnlyWorkshopEvent(ev: WorkshopEvent): boolean {
+  return isVisualArtOnlyEventText(
+    ev.title,
+    ev.tagline,
+    ev.description,
+    ev.organizer,
+    ev.venue,
+    ev.category,
+  );
+}
+
+/**
+ * True when the event is film/cinema programming (screenings, filmmaker panels)
+ * with no literary / writing signal. Keeps book–film hybrids and author events.
+ */
+export function isFilmOnlyEventText(
+  ...parts: (string | undefined)[]
+): boolean {
+  const b = parts.filter(Boolean).join(" ").toLowerCase();
+  if (!b.trim()) return false;
+
+  if (
+    /\b(book|author|poet|poetry|writer|writing|literary|open\s*mic|memoir|novel|essay|fiction|zine|spoken\s*word|slam|manuscript|publish|storytime|story\s*time|reading group|book club|creative writing|graphic novel)\b/.test(
+      b,
+    )
+  ) {
+    return false;
+  }
+
+  return (
+    /\bfilm\s*screening\b/.test(b) ||
+    /\bfilmmaker\b/.test(b) ||
+    /\b(movie|cinema)\s+(screening|night|panel)\b/.test(b) ||
+    (/\bfilm\b/.test(b) &&
+      /\b(panel|screening|festival|premiere|documentary)\b/.test(b))
+  );
+}
+
+export function isFilmOnlyWorkshopEvent(ev: WorkshopEvent): boolean {
+  return isFilmOnlyEventText(
+    ev.title,
+    ev.tagline,
+    ev.description,
+    ev.organizer,
+    ev.venue,
+    ev.category,
+  );
+}
+
 /** Map title + optional context strings to one of four calendar categories. */
 export function inferEventCategory(
   title: string,

@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { DateTime } from "luxon";
 import { fetchWritersCenterListingsForMonth } from "@/lib/writers-center-client";
+import {
+  priceDetailFromTwcCost,
+  resolveWritersCenterPricingByUrls,
+} from "@/lib/writers-center-details";
 import { mapTwcEventToWorkshops } from "@/lib/writers-center-map";
 
 export const revalidate = 600;
@@ -28,11 +32,38 @@ export async function GET(req: Request) {
 
   try {
     const raw = await fetchWritersCenterListingsForMonth(year, monthIndex);
-    const events = raw
-      .flatMap((row) => mapTwcEventToWorkshops(row))
+
+    const prelim = raw
+      .flatMap((row) =>
+        mapTwcEventToWorkshops(row, {
+          priceDetail: priceDetailFromTwcCost(row),
+        }),
+      )
       .filter((ev) =>
         inRequestedMonth(ev.start, ev.timeZone, year, monthIndex),
       );
+
+    // Only scrape pages for workshops that actually appear this month.
+    const workshopUrls = [
+      ...new Set(
+        prelim
+          .filter((ev) => ev.category === "workshop" && ev.price === "paid")
+          .map((ev) => ev.rsvpUrl?.trim())
+          .filter((u): u is string => Boolean(u)),
+      ),
+    ];
+    const pricingByUrl = await resolveWritersCenterPricingByUrls(workshopUrls);
+
+    const events = prelim.map((ev) => {
+      const url = ev.rsvpUrl?.trim();
+      const page = url ? pricingByUrl.get(url) : undefined;
+      if (!page?.priceDetail) return ev;
+      return {
+        ...ev,
+        price: page.price ?? ev.price,
+        priceDetail: page.priceDetail,
+      };
+    });
 
     return NextResponse.json({
       events,
@@ -44,6 +75,7 @@ export async function GET(req: Request) {
         categories: ["workshop", "event"],
         fetched: raw.length,
         listed: events.length,
+        pagesResolved: pricingByUrl.size,
       },
     });
   } catch (e) {

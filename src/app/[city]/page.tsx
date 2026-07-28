@@ -27,7 +27,7 @@ export default async function CityCalendarPage({
               <p className="text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-[var(--accent)]">
                 Now viewing
               </p>
-              <p className="mt-2 font-serif text-lg leading-snug text-[var(--ink)] sm:text-2xl">
+              <p className="mt-2 font-serif text-base leading-snug text-[var(--ink)] sm:text-xl">
                 {city.name}
               </p>
             </div>

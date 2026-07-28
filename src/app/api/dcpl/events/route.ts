@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import {
   isLibNetTheaterTags,
   isTheaterEventText,
+  isVisualArtOnlyEventText,
 } from "@/lib/event-category";
 import {
   DCPL_DEFAULT_EVENT_TYPE,
@@ -69,7 +70,13 @@ export async function GET(req: Request) {
       .filter(
         (row) =>
           !isLibNetTheaterTags(row.tagsArray) &&
-          !isTheaterEventText(row.title, row.sub_title, row.description),
+          !isTheaterEventText(row.title, row.sub_title, row.description) &&
+          !isVisualArtOnlyEventText(
+            row.title,
+            row.sub_title,
+            row.description,
+            (row.tagsArray ?? []).join(" "),
+          ),
       )
       .map((row) => mapDcplLibnetRowToWorkshopEvent(row, workshopCityId));
     return NextResponse.json({

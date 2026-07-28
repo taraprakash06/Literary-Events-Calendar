@@ -1,4 +1,4 @@
-import { isLibNetTheaterTags, isTheaterEventText } from "@/lib/event-category";
+import { isLibNetTheaterTags, isTheaterEventText, isVisualArtOnlyEventText } from "@/lib/event-category";
 import type { WorkshopEvent, WorkshopEventCategory } from "@/lib/workshop-types";
 import type { DcplLibnetRawEvent } from "@/lib/dcpl-libnet";
 import { DCPL_DEFAULT_EVENT_TYPE, mapLibNetAttendanceFormat } from "@/lib/dcpl-libnet";
@@ -8,6 +8,15 @@ export const MCPL_LIBNET_ORIGIN = "https://mcpl.libnet.info";
 
 /** MCPL uses the same Communico/LibNet `event_type` pattern as DCPL in practice. */
 export const MCPL_DEFAULT_EVENT_TYPE = DCPL_DEFAULT_EVENT_TYPE;
+
+/**
+ * Direct RSVP links when LibNet's `reg_url` is only the general LibraryC
+ * calendar (`https://libraryc.org/mcpl`) instead of the event page.
+ */
+const MCPL_RSVP_URL_OVERRIDES: Record<string, string> = {
+  // Creating Lasting Friendships… with Dr. Marisa Franco (Jul 28, 2026)
+  "16493983": "https://libraryc.org/mcpl/178050",
+};
 
 export type McplLibnetRawEvent = DcplLibnetRawEvent;
 
@@ -72,6 +81,7 @@ export function isMcplLiteraryWritingEvent(raw: McplLibnetRawEvent): boolean {
 
   if (isLibNetTheaterTags(tags)) return false;
   if (isTheaterEventText(title, sub, desc)) return false;
+  if (isVisualArtOnlyEventText(title, sub, desc, tags.join(" "))) return false;
 
   const titleLower = title.toLowerCase();
 
@@ -234,7 +244,10 @@ export function mapMcplLibnetRowToWorkshopEvent(
 
   const listUrl = raw.url ? normalizeMcplUrl(raw.url) : "";
   const thirdParty = raw.third_party_reg === "1" && raw.reg_url?.trim();
-  const rsvpUrl = thirdParty ? raw.reg_url!.trim() : listUrl || undefined;
+  const overrideRsvp = MCPL_RSVP_URL_OVERRIDES[String(raw.id)];
+  const rsvpUrl =
+    overrideRsvp ??
+    (thirdParty ? raw.reg_url!.trim() : listUrl || undefined);
 
   const regCost = raw.registration_cost?.trim();
   const price =

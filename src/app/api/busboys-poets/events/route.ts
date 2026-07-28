@@ -41,6 +41,9 @@ export async function GET(req: Request) {
           monthEnd,
           titleOverride: d?.title,
           endISO: d?.endISO,
+          descriptionOverride: d?.description,
+          price: d?.price,
+          priceDetail: d?.priceDetail,
         });
       })
       .filter((e): e is NonNullable<typeof e> => e !== null);

@@ -25,7 +25,32 @@ function parseVenueFromTitleHtml(raw?: string): string | undefined {
   return stripHtml(addr[1]).replace(/\s+,/g, ",") || undefined;
 }
 
-export function mapPnpEventToWorkshop(ev: PnpFullCalendarEvent): WorkshopEvent | null {
+/**
+ * About copy when the calendar feed has none and the event page is rate-limited.
+ * Prefer the live page via /api/event-page-enrich when it succeeds.
+ */
+const PNP_ABOUT_BY_PATH: Record<string, string> = {
+  "/donica-merhazion":
+    "In 1970s Ethiopia, 13-year-old Elen, determined to escape her arranged marriage, secretly abandons her tiny village hoping to find her aunt living in Asmara, the capital of Eritrea. Meanwhile, Girmai escapes his abusive stepmother after the death of his beloved father, only to end up homeless and starving on the streets of the city. Based on a true story, Born at the End of the World is a powerful narrative of patriotism, love, camaraderie, and courage, no less uplifting or appalling than Schindler's List. Merhazion will be in conversation with Bsrat Mezghebe.",
+};
+
+function aboutOverrideForUrl(rsvpUrl: string | undefined): string | undefined {
+  if (!rsvpUrl) return undefined;
+  try {
+    const path = new URL(rsvpUrl).pathname.replace(/\/+$/, "") || "/";
+    return PNP_ABOUT_BY_PATH[path];
+  } catch {
+    return undefined;
+  }
+}
+
+export function mapPnpEventToWorkshop(
+  ev: PnpFullCalendarEvent,
+  opts?: {
+    price?: WorkshopEvent["price"];
+    description?: string;
+  },
+): WorkshopEvent | null {
   const start = ev.start?.trim();
   if (!start) return null;
 
@@ -68,12 +93,15 @@ export function mapPnpEventToWorkshop(ev: PnpFullCalendarEvent): WorkshopEvent |
     cityId: "dmv",
     title,
     tagline,
-    description: "Details from Politics and Prose.",
+    description:
+      opts?.description?.trim() ||
+      aboutOverrideForUrl(rsvpUrl) ||
+      "Details from Politics and Prose.",
     start: startDt.toISO() ?? startDt.toUTC().toISO() ?? start,
     end: endIso,
     timeZone: tz,
     format: "in-person",
-    price: "unknown",
+    price: opts?.price ?? "unknown",
     category,
     organizer: "Politics and Prose",
     venue,
