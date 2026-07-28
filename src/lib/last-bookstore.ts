@@ -5,6 +5,7 @@ import type {
   WorkshopEvent,
   WorkshopEventCategory,
 } from "@/lib/workshop-types";
+import { isFilmOnlyEventText } from "@/lib/event-category";
 import { decodeHtmlEntities, stripHtmlAndDecode, toShortOverview } from "@/lib/text";
 
 const ORIGIN = "https://www.lastbookstorela.com";
@@ -218,9 +219,10 @@ function mapToWorkshop(
     price: PriceKind;
     format: EventFormat;
   },
-): WorkshopEvent {
+): WorkshopEvent | null {
   const title = decodeHtmlEntities(input.title).replace(/\s+/g, " ").trim();
   const description = toShortOverview(input.description, 520) || title;
+  if (isFilmOnlyEventText(title, description)) return null;
   const category = inferCategory(title, description);
   return {
     id: stableId(input.url, input.start),

@@ -6,7 +6,7 @@ import { DateTime } from "luxon";
 import { CITIES } from "@/data/cities";
 import { eventsForCity } from "@/data/workshop-events";
 import { CATEGORY_TAG_STYLES } from "@/lib/category-styles";
-import { stripHtmlAndDecode } from "@/lib/text";
+import { polishAboutText, stripHtmlAndDecode } from "@/lib/text";
 import { isSparseEventDescription } from "@/lib/rsvp-page-enrichment";
 import {
   applyEventFilters,
@@ -2372,9 +2372,13 @@ function locationSummary(event: WorkshopEvent): string {
     .trim();
 
   if (event.format === "virtual") {
-    return event.virtualLabel
-      ? `Virtual (${event.virtualLabel})`
-      : "Virtual";
+    const label = event.virtualLabel?.trim();
+    if (!label) return "Virtual";
+    if (/^zoom$/i.test(label) || /\bon\s+zoom\b/i.test(label)) {
+      return "Virtual on Zoom";
+    }
+    if (/^virtual\b/i.test(label)) return label;
+    return `Virtual (${label})`;
   }
   if (event.format === "hybrid") {
     const online = event.virtualLabel ?? "Online";
@@ -2486,9 +2490,11 @@ function EventDetailModal({
     event.priceDetail,
   ]);
 
-  const aboutText = /<[a-z]/i.test(event.description)
-    ? stripHtmlAndDecode(event.description)
-    : event.description;
+  const aboutText = polishAboutText(
+    /<[a-z]/i.test(event.description)
+      ? stripHtmlAndDecode(event.description)
+      : event.description,
+  );
 
   return (
     <div

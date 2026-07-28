@@ -7,7 +7,28 @@ import type {
 import type { AppCityId } from "@/lib/eventbrite-geo";
 import { classifyEventbriteLocation } from "@/lib/eventbrite-geo";
 import { DateTime } from "luxon";
-import { stripHtmlAndDecode, toShortOverview } from "@/lib/text";
+import { limitAboutToSentences, stripHtmlAndDecode, toShortOverview } from "@/lib/text";
+
+/** Curated About when Eventbrite summary/HTML leads with a location note. */
+const EB_ABOUT_BY_TITLE: Array<{ match: RegExp; about: string }> = [
+  {
+    match:
+      /poetry today book club.*ingrid jacobsen|sonnets on the attempted murder of me,\s*bugs b/i,
+    about:
+      "Book Club Bar's monthly Sunday-brunch poetry discussion takes up Sonnets on the Attempted Murder of Me, Bugs B by Ingrid Jacobsen—and Ingrid will join the conversation. Read the collection beforehand, then gather at Book Club Bar East Village for an intimate gab session led by bookseller Daniel Yadin; no other prep needed, just curiosity (boozy optional). Jacobsen's book is the first publication from The Can Press, which Yadin started with fellow BCB bookseller Mathuson and BCB alum Keri. Tickets include $8 off any drink; registration is capped, so register early, and tip bartenders separately.",
+  },
+  {
+    match: /adore,?\s*amor.*bronx is reading|adore,?\s*amor festival/i,
+    about:
+      "Adore, Amor is a new romance festival from The Bronx is Reading, staged as a lawn-and-garden party at the historic Andrew Freedman Home on the Grand Concourse. Spend the day celebrating romance culture with author talks, Instagrammable moments, and a bookish crowd marking Romance Bookstore Day in NYC. Mix and mingle—exchange a title you brought or make a new reading friend—with activities like DIY keychains, mini silk flower bouquets, and acrylic bookmarks (supplies first come, first served). Official booksellers The Bronx is Reading and Lavish Booktique will be on-site with participating authors' books and merch.",
+  },
+  {
+    match:
+      /books,\s*iced coffee\s*&\s*a side of dragons|amanda lovelace.*love\s*&\s*legends|love\s*&\s*legends.*amanda lovelace/i,
+    about:
+      "Love & Legends Books celebrates Amanda Lovelace's BOOKS, ICED COFFEE & A SIDE OF DRAGONS, with Lovelace in conversation with Megan (@booksnblazers). Expect a moderated discussion, audience Q&A, and a signing line afterward. The new graphic novel is a sugary-sweet sapphic romance set on the Jersey Shore—bookstore owner Luci, coffee-shop neighbor Aster, and a tiny wind dragon named Dandelion in Sea Witch Cove. Lovelace is the USA TODAY bestselling poet behind the women are some kind of magic series; Megan has been championing queer books on Instagram for a decade.",
+  },
+];
 
 /** Minimal Eventbrite event JSON (owned_events / organization events + expand=venue). */
 export type EbTextField = { text?: string; html?: string };
@@ -102,16 +123,67 @@ function mapCategory(ev: EbEventResource): WorkshopEventCategory {
   ).toLowerCase();
   const hay = `${t}\n${d}`;
 
-  if (/(book\s*club|book\s+discussion|reading\s+group)/.test(hay)) return "other";
   if (/(open\s*mic|mic\s*night|slam)/.test(hay)) return "open-mic";
   if (/(workshop|writing\s+workshop|creative\s+writing|screenwriting|memoir|novel|short\s+story|critique|writers'?(\s+)?group)/.test(hay))
     return "workshop";
+  // Poetry book clubs / poetry discussions still read as literary readings.
+  if (/(poetry\s+today|poetry\s+book\s+club|poetry\s+discussion)/.test(hay)) {
+    return "reading";
+  }
+  if (/(book\s*club|book\s+discussion|reading\s+group)/.test(hay)) return "other";
   if (/(poetry\s+reading|reading\b|author\s+talk|author\s+reading)/.test(hay)) return "reading";
   if (/(panel|conversation|in\s+conversation)/.test(hay)) return "other";
   if (/(festival)/.test(hay)) return "other";
   if (/(launch|book\s+launch)/.test(hay)) return "reading";
 
   return "other";
+}
+
+function cleanEventbriteAboutText(raw: string): string {
+  return raw
+    .replace(/\bOverview\b/gi, " ")
+    .replace(
+      /\*{0,2}\s*please note the location of this meeting[\s\S]*?\*{0,2}/gi,
+      " ",
+    )
+    .replace(
+      /\bWhat your ticket includes:\s*/i,
+      " ",
+    )
+    .replace(
+      /\bPlease note:\s*gratuity for the bartenders[\s\S]*$/i,
+      "",
+    )
+    .replace(
+      /\bPlease use your tickets at the beginning of the event\.?/i,
+      "",
+    )
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function resolveEventbriteAbout(ev: EbEventResource, title: string): string {
+  const blob = `${title}\n${textField(ev.description)}\n${textField(ev.summary)}`;
+  for (const row of EB_ABOUT_BY_TITLE) {
+    if (row.match.test(blob)) return row.about;
+  }
+
+  const fromHtml = ev.description?.html
+    ? stripHtmlAndDecode(ev.description.html)
+    : "";
+  const fromSummaryHtml = ev.summary?.html
+    ? stripHtmlAndDecode(ev.summary.html)
+    : "";
+  const cleaned = cleanEventbriteAboutText(
+    fromHtml || textField(ev.description) || fromSummaryHtml || textField(ev.summary),
+  );
+
+  return (
+    limitAboutToSentences(cleaned, 4) ||
+    toShortOverview(cleaned, 420) ||
+    cleaned ||
+    "Details on Eventbrite."
+  );
 }
 
 export function mapEbEventToWorkshop(
@@ -135,12 +207,7 @@ export function mapEbEventToWorkshop(
   if (isTheaterEventText(title, summaryPlain, descriptionPlain)) return null;
   if (isVisualArtOnlyEventText(title, summaryPlain, descriptionPlain)) return null;
 
-  const description =
-    (ev.description?.html ? toShortOverview(ev.description.html, 360) : "") ||
-    (ev.summary?.html ? toShortOverview(ev.summary.html, 240) : "") ||
-    descriptionPlain ||
-    summaryPlain ||
-    "Details on Eventbrite.";
+  const description = resolveEventbriteAbout(ev, title);
 
   const venue = ev.venue;
   const addr = venue?.address;

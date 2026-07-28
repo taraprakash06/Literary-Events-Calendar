@@ -29,22 +29,29 @@ function parseVenueFromTitleHtml(raw?: string): string | undefined {
 /**
  * About copy when the calendar feed has none and the event page is rate-limited.
  * Prefer the live page via /api/event-page-enrich when it succeeds.
+ * Keys may be exact paths or path substrings (matched after exact lookup).
  */
 const PNP_ABOUT_BY_PATH: Record<string, string> = {
   "/donica-merhazion":
     "Donica Merhazion discusses her debut novel Born at the End of the World in conversation with writer Bsrat Mezghebe. Based on a true story set in 1970s Ethiopia and Eritrea, the book follows two young people whose lives collide amid the Red Terror.",
   "/robert-g-parkinson73126":
     "Robert G. Parkinson will be in conversation with Dr. Lindsay M. Chervinsky about Tyrants and Rogues: Understanding the Declaration of Independence. From an acclaimed historian, a revelatory account of the Declaration centered on the grievances that shaped 1776—not only the lofty preamble.",
+  "summer-storytime-face-painting-conn-ave":
+    "Join us for summer story time series, where we will have a bookseller story time followed by face painting.",
 };
 
 function aboutOverrideForUrl(rsvpUrl: string | undefined): string | undefined {
   if (!rsvpUrl) return undefined;
   try {
     const path = new URL(rsvpUrl).pathname.replace(/\/+$/, "") || "/";
-    return PNP_ABOUT_BY_PATH[path];
+    if (PNP_ABOUT_BY_PATH[path]) return PNP_ABOUT_BY_PATH[path];
+    for (const [key, about] of Object.entries(PNP_ABOUT_BY_PATH)) {
+      if (key.startsWith("/") ? path === key : path.includes(key)) return about;
+    }
   } catch {
     return undefined;
   }
+  return undefined;
 }
 
 /** Prefer conversation-first About; never keep a long plot-only stub. */

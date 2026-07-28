@@ -132,9 +132,11 @@ export function formatEventDateTimeDetail(ev: WorkshopEvent, city: City): string
     return appendAbbr(base, zone, showAbbr, start);
   }
 
-  let label = start.toFormat("cccc, LLLL d, yyyy 'at' h:mm a");
+  let label = start.toFormat("cccc, LLLL d, yyyy");
   if (end?.isValid) {
-    label += ` · ends ${end.toFormat("h:mm a")}`;
+    label += ` · ${start.toFormat("h:mm a")} - ${end.toFormat("h:mm a")}`;
+  } else {
+    label += ` · ${start.toFormat("h:mm a")}`;
   }
   return appendAbbr(label, zone, showAbbr, start);
 }

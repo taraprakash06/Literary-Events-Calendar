@@ -46,11 +46,13 @@ function htmlToPlainDescription(html: string): string {
     html
       .replace(/<br\s*\/?>/gi, "\n")
       .replace(/<\/p>/gi, "\n\n")
-      .replace(/<\/h[1-6]>/gi, "\n\n")
+      // Headlines often omit a trailing period; keep a sentence break for About.
+      .replace(/<\/h[1-6]>/gi, ".\n\n")
       .replace(/<\/li>/gi, "\n")
       .replace(/<li[^>]*>/gi, "• ")
       .replace(/<hr[^>]*>/gi, "\n\n")
       .replace(/<[^>]+>/g, " ")
+      .replace(/([.!?…])\s*\./g, "$1")
       .replace(/[ \t]+\n/g, "\n")
       .replace(/\n[ \t]+/g, "\n")
       .replace(/\n{3,}/g, "\n\n")

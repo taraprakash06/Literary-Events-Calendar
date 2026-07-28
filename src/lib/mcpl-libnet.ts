@@ -18,6 +18,13 @@ const MCPL_RSVP_URL_OVERRIDES: Record<string, string> = {
   "16493983": "https://libraryc.org/mcpl/178050",
 };
 
+/** About copy when LibNet only exposes a short bio/title stub. */
+const MCPL_ABOUT_BY_ID: Record<string, string> = {
+  // Creating Lasting Friendships… with Dr. Marisa Franco (Jul 28, 2026)
+  "16493983":
+    "Join us in virtual conversation with bestselling author Dr. Marisa Franco, one of the world's leading experts in human connection. In Platonic: How the Science of Attachment Can Help You Make–And Keep–Friends, she unpacks how attachment styles—secure, anxious, or avoidant—shape our relationships, often in ways we don't realize, and why friendships require effort rather than happening organically. Drawing on attachment theory and the latest research on friendship, Franco offers a clear blueprint for making new friends and deepening longstanding ones at any age. A University of Maryland professor, TED speaker, and New York Times bestselling author, she turns the science of belonging into practical insights for forging lasting connections.",
+};
+
 export type McplLibnetRawEvent = DcplLibnetRawEvent;
 
 export function mcplEeventCalUrl(
@@ -238,6 +245,7 @@ export function mapMcplLibnetRowToWorkshopEvent(
   const plainDesc = (raw.description ?? "").trim();
   const longHtml = (raw.long_description ?? "").trim();
   const description =
+    MCPL_ABOUT_BY_ID[String(raw.id)] ||
     plainDesc ||
     (longHtml ? stripHtml(longHtml).slice(0, 2000) : "") ||
     "Details on the library event page.";

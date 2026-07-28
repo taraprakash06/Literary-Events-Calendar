@@ -767,10 +767,12 @@ function poetryMenuEvents(): CuratedSpec[] {
       poetryMenuEvent({
         slug: "crescent-moon-writers-night",
         date,
-        hour: 19,
+        hour: 18,
+        minute: 30,
         endHour: 21,
+        endMinute: 0,
         title: "The Crescent Moon Writers' Night: Open Mic",
-        tagline: "Crescent Moon Coffee · Lincoln · Signup at 6:30 PM",
+        tagline: "Crescent Moon Coffee · Lincoln",
         description:
           "Weekly writers' open mic hosted by Jeff Martinson. Signup begins at 6:30 PM. On the first Wednesday of each month, attendees are invited to stay afterward for the Write After writing group.",
         category: "open-mic",
@@ -778,7 +780,8 @@ function poetryMenuEvents(): CuratedSpec[] {
         venue: "Crescent Moon Coffee at The Apothecary",
         address: "140 N 8th St, Lincoln, NE 68508",
         neighborhood: "Lincoln",
-        rsvpUrl: "https://crescentmooncoffee.com/",
+        rsvpUrl:
+          "https://www.crescentmooncoffee.com/events/pg9ttfnaxrsxegg-b5rz4-nftxt-46ab5-bezhs-25l6k-324y5-49drs-5dx4a-cx6ap-3sjks-aldyw-7rhg2-scdxg-79t7a-xjdwd-cr4zk-4zhbf-pc7sd-xdhc6-s685x-9b7ye-pgfb6-r2zfl-w953c-mw8gn-9d3l7-cjdjj",
         price: "free",
       }),
     );
@@ -793,13 +796,14 @@ function poetryMenuEvents(): CuratedSpec[] {
       title: "Writing the Poem of Grief through Food with Preeti Vangani",
       tagline: "Nebraska Poetry Society · Online · $35 or free for members",
       description:
-        "An online poetry writing workshop led by Preeti Vangani on writing poems of grief through food.",
+        "Faiz Ahmed Faiz writes that the true subject of poetry is the loss of the beloved; entering the elegy through food strikes an intimacy with the dead and the dying. In this generative workshop led by Preeti Vangani, we'll look at poems by Gabrielle Calvocoressi, Li-Young Lee, Sharon Olds, Ross Gay, and others, and explore how meals shared together help us remember those we've lost. What physical and emotional rooms can memories of cooking, eating, or feasting communally help open up, and how can they resurrect joy in a poem of longing and mourning? Writers at all levels are welcome as they draft new work attentive to food's social, political, and historical connections.",
       category: "workshop",
       organizer: "Nebraska Poetry Society",
       venue: "Online",
       address: "Online",
       neighborhood: "Online",
-      rsvpUrl: "https://nepoetrysociety.org/workshops",
+      rsvpUrl:
+        "https://www.nepoetrysociety.org/event-details/writing-the-poem-of-grief-through-food-with-preeti-vangani",
       price: "paid",
       priceDetail: "$35 · free for members",
       format: "virtual",

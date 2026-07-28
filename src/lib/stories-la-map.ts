@@ -2,7 +2,7 @@ import type { StoriesLaEventV2Row, StoriesLaStoreInfo } from "@/lib/stories-la-c
 import { isTheaterEventText } from "@/lib/event-category";
 import type { EventFormat, WorkshopEvent, WorkshopEventCategory } from "@/lib/workshop-types";
 import { DateTime } from "luxon";
-import { stripHtmlAndDecode, toShortOverview } from "@/lib/text";
+import { stripHtmlAndDecode, toShortOverview, limitAboutToSentences } from "@/lib/text";
 
 const ORIGIN = "https://www.storiesla.com";
 const TZ = "America/Los_Angeles";
@@ -100,6 +100,7 @@ export function mapStoriesLaEventRowToWorkshop(
   const htmlDesc = (row.description ?? "").trim();
   const htmlSum = (row.summary ?? "").trim();
   const description =
+    limitAboutToSentences(htmlDesc || htmlSum || title, 4) ||
     toShortOverview(htmlDesc || htmlSum || title, 420) ||
     stripHtmlAndDecode(htmlDesc || htmlSum) ||
     "Event details on the Stories Books & Cafe website.";

@@ -12,6 +12,7 @@ export function isSparseEventDescription(description: string | undefined): boole
   if (/^see (the )?listing\b/i.test(d)) return true;
   if (/\bdetails from politics and prose\b/i.test(d)) return true;
   if (/\bdetails on the busboys and poets website\b/i.test(d)) return true;
+  if (/please note the location/i.test(d) && d.length < 220) return true;
   return false;
 }
 

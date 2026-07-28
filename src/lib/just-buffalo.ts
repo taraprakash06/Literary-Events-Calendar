@@ -1,6 +1,11 @@
 import { DateTime } from "luxon";
 import type { EventFormat, WorkshopEvent, WorkshopEventCategory } from "@/lib/workshop-types";
-import { decodeHtmlEntities, stripHtmlAndDecode, toShortOverview } from "@/lib/text";
+import {
+  decodeHtmlEntities,
+  limitAboutToSentences,
+  stripHtmlAndDecode,
+  toShortOverview,
+} from "@/lib/text";
 
 const ORIGIN = "https://www.justbuffalo.org";
 const SOURCE_URL = `${ORIGIN}/literary-events-in-buffalo/`;
@@ -219,9 +224,13 @@ async function fetchDetailSessionStarts(
   fallbackStart: DateTime,
   fallbackEnd: DateTime,
   signal?: AbortSignal,
+  title = "",
 ): Promise<{
   sessions: { start: DateTime; end: DateTime }[];
   priceFree: boolean;
+  price?: WorkshopEvent["price"];
+  priceDetail?: string;
+  description?: string;
 } | null> {
   const ua =
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36";
@@ -237,6 +246,8 @@ async function fetchDetailSessionStarts(
   });
   if (!res.ok) return null;
   const text = htmlToPlainText(await res.text());
+  const description = extractAboutFromDetailPlain(text, title);
+  const priced = parseJustBuffaloTicketPrice(text);
 
   // Only expand when the page advertises a multi-week / multi-date series.
   const looksMulti =
@@ -245,10 +256,30 @@ async function fetchDetailSessionStarts(
       `\\b(?:${MONTH_NAMES})\\s+\\d{1,2}\\s*/\\s*(?:(?:${MONTH_NAMES})\\s+)?\\d{1,2}\\b`,
       "i",
     ).test(text);
-  if (!looksMulti) return null;
+  if (!looksMulti) {
+    return description || priced.price || priced.priceFree
+      ? {
+          sessions: [],
+          priceFree: priced.priceFree,
+          price: priced.price,
+          priceDetail: priced.priceDetail,
+          description,
+        }
+      : null;
+  }
 
   const days = parseSessionDaysFromDetailText(text, year);
-  if (days.length < 2) return null;
+  if (days.length < 2) {
+    return description || priced.price || priced.priceFree
+      ? {
+          sessions: [],
+          priceFree: priced.priceFree,
+          price: priced.price,
+          priceDetail: priced.priceDetail,
+          description,
+        }
+      : null;
+  }
 
   const clocks = parseSessionClockRange(text);
   const startClock = clocks?.start ?? {
@@ -279,8 +310,156 @@ async function fetchDetailSessionStarts(
 
   return {
     sessions,
-    priceFree: /\bthis workshop is free\b|\bfree and aimed at\b/i.test(text),
+    priceFree: priced.priceFree,
+    price: priced.price,
+    priceDetail: priced.priceDetail,
+    description,
   };
+}
+
+/** Pull the event-page About, including audience notes like “aimed at teachers.” */
+function extractAboutFromDetailPlain(text: string, title = ""): string | undefined {
+  const silo = synthesizeSiloCityAbout(text, title);
+  if (silo) return silo;
+
+  const joinAt = text.search(/\bJoin us\b/i);
+  if (joinAt < 0) return undefined;
+  let slice = text.slice(joinAt);
+  slice =
+    slice.split(
+      /\bBPS teachers\b|\bNon-BPS teachers\b|\bTags:\b|\bTeacher & Educator\b|\bCreative Writing Programs for Teachers\b|\b(?:Mondays?|Tuesdays?|Wednesdays?|Thursdays?|Fridays?|Saturdays?|Sundays?)\s*@/i,
+    )[0] ?? slice;
+  let about = limitAboutToSentences(slice, 4);
+  if (!about) return undefined;
+
+  const audience =
+    text.match(/\bThis workshop is FREE and aimed at teachers\.?/i)?.[0] ??
+    text.match(/\bThis workshop is aimed at teachers\.?/i)?.[0];
+  if (audience && !/\baimed at teachers\b/i.test(about)) {
+    about = `${about} ${audience.replace(/\.*$/, ".")}`;
+  }
+  return about;
+}
+
+/**
+ * Silo City pages bury useful details in pipe-separated ticket lines and sale banners.
+ * Rebuild a concise About so the modal stands alone before RSVP.
+ */
+function synthesizeSiloCityAbout(text: string, title: string): string | undefined {
+  if (!/silo\s+city/i.test(`${title}\n${text}`)) return undefined;
+  if (/season\s+subscription/i.test(title)) return undefined;
+
+  const joinAt = text.search(/\bJoin us for the\b/i);
+  if (joinAt < 0) return undefined;
+  let featureSlice = text.slice(joinAt);
+  featureSlice =
+    featureSlice.split(
+      /\*{0,3}\s*TICKETS ON SALE|\*{0,3}\s*ON SALE|\bGuaranteed Seat\b|\bSEASON TICKETS\b/i,
+    )[0] ?? featureSlice;
+  const cleanFeature = featureSlice
+    .replace(/\s+/g, " ")
+    .replace(/\s+,/g, ",")
+    .replace(/\s+\./g, ".")
+    .trim()
+    .replace(/[.\s]+$/, ".");
+  if (cleanFeature.length < 40) return undefined;
+
+  const doors = text.match(/Doors at\s+(\d{1,2}(?::\d{2})?\s*[ap]\.?m\.?)/i)?.[1];
+  const begins = text.match(
+    /Reading begins at\s+(\d{1,2}(?::\d{2})?\s*[ap]\.?m\.?)/i,
+  )?.[1];
+  const seat = text.match(/Guaranteed Seat\s*\$\s*(\d+)/i)?.[1];
+  const standing = text.match(
+    /(?:GA\s+)?Standing Room(?: Only)?\s*\$\s*(\d+)/i,
+  )?.[1];
+
+  const parts: string[] = [cleanFeature];
+
+  const scheduleBits: string[] = [];
+  if (doors && begins) {
+    scheduleBits.push(
+      `Doors open at ${normalizeClockLabel(doors)} and the reading begins at ${normalizeClockLabel(begins)}`,
+    );
+  } else if (begins) {
+    scheduleBits.push(`The reading begins at ${normalizeClockLabel(begins)}`);
+  }
+  if (seat && standing) {
+    scheduleBits.push(
+      `tickets are $${seat} for a guaranteed seat or $${standing} for GA standing room`,
+    );
+  } else if (seat) {
+    scheduleBits.push(`tickets are $${seat} for a guaranteed seat`);
+  } else if (standing) {
+    scheduleBits.push(`tickets are $${standing} for GA standing room`);
+  }
+  if (scheduleBits.length) {
+    parts.push(`${scheduleBits.join("; ")}.`);
+  }
+
+  if (/\bFitz Books\b/i.test(text)) {
+    parts.push("Books will be available for purchase from Fitz Books.");
+  }
+  if (/\bASL interpretation\b/i.test(text)) {
+    parts.push(
+      "Request ASL interpretation in advance by emailing info@justbuffalo.org.",
+    );
+  }
+
+  return parts.slice(0, 4).join(" ");
+}
+
+function normalizeClockLabel(raw: string): string {
+  const cleaned = raw.replace(/\./g, "").replace(/\s+/g, " ").trim();
+  const dt = DateTime.fromFormat(normalizeTimeToken(cleaned), "h:mm a", {
+    zone: TZ,
+    locale: "en",
+  });
+  return dt.isValid ? dt.toFormat("h:mm a") : cleaned;
+}
+
+function parseJustBuffaloTicketPrice(text: string): {
+  price?: WorkshopEvent["price"];
+  priceDetail?: string;
+  priceFree: boolean;
+} {
+  if (/\bthis workshop is free\b|\bfree and aimed at\b/i.test(text)) {
+    return { price: "free", priceFree: true };
+  }
+  const seat = text.match(/Guaranteed Seat\s*\$\s*(\d+)/i)?.[1];
+  const standing = text.match(
+    /(?:GA\s+)?Standing Room(?: Only)?\s*\$\s*(\d+)/i,
+  )?.[1];
+  if (seat && standing) {
+    return {
+      price: "paid",
+      priceDetail: `$${seat} guaranteed seat · $${standing} standing`,
+      priceFree: false,
+    };
+  }
+  if (seat) {
+    return { price: "paid", priceDetail: `$${seat}`, priceFree: false };
+  }
+  if (standing) {
+    return { price: "paid", priceDetail: `$${standing}`, priceFree: false };
+  }
+  const single = text.match(/\$\s*(\d+(?:\.\d{2})?)\s*(?:per|tickets?|in advance)/i);
+  if (single) {
+    return { price: "paid", priceDetail: `$${single[1]}`, priceFree: false };
+  }
+  return { priceFree: false };
+}
+
+function ensureTeacherAudienceNote(title: string, description: string): string {
+  if (/\baimed at teachers\b/i.test(description)) return description;
+  if (!/teachers?\s+are\s+writers/i.test(title)) return description;
+  const note = "This workshop is aimed at teachers.";
+  return description.trim() ? `${description.trim()} ${note}` : note;
+}
+
+function shouldSkipJustBuffaloListing(title: string, rsvpUrl?: string): boolean {
+  if (/season\s+subscriptions?\s+sold\s+out/i.test(title)) return true;
+  if (rsvpUrl && /season-subscriptions/i.test(rsvpUrl)) return true;
+  return false;
 }
 
 function withSessionTimes(
@@ -500,12 +679,17 @@ export async function fetchJustBuffaloLiteraryEventsForMonth(
 
   const expanded: Omit<WorkshopEvent, "cityId">[] = [];
   for (const ev of parsed) {
+    if (shouldSkipJustBuffaloListing(ev.title, ev.rsvpUrl)) continue;
+
     const start = DateTime.fromISO(ev.start, { zone: TZ });
     const end = ev.end
       ? DateTime.fromISO(ev.end, { zone: TZ })
       : start.plus({ hours: 1 });
     if (!start.isValid || !ev.rsvpUrl) {
-      expanded.push(ev);
+      expanded.push({
+        ...ev,
+        description: ensureTeacherAudienceNote(ev.title, ev.description),
+      });
       continue;
     }
 
@@ -516,20 +700,36 @@ export async function fetchJustBuffaloLiteraryEventsForMonth(
         start,
         end.isValid ? end : start.plus({ hours: 1 }),
         signal,
+        ev.title,
       );
-      if (detail && detail.sessions.length >= 2) {
-        for (const sess of detail.sessions) {
-          const row = withSessionTimes(ev, sess.start, sess.end);
-          expanded.push(
-            detail.priceFree ? { ...row, price: "free" } : row,
-          );
+      if (detail) {
+        const withAbout = {
+          ...ev,
+          description: ensureTeacherAudienceNote(
+            ev.title,
+            detail.description?.trim() || ev.description,
+          ),
+          price: detail.priceFree
+            ? ("free" as const)
+            : detail.price ?? ev.price,
+          priceDetail: detail.priceDetail ?? ev.priceDetail,
+        };
+        if (detail.sessions.length >= 2) {
+          for (const sess of detail.sessions) {
+            expanded.push(withSessionTimes(withAbout, sess.start, sess.end));
+          }
+          continue;
         }
+        expanded.push(withAbout);
         continue;
       }
     } catch {
       // Detail-page expansion is best-effort; keep the listing date.
     }
-    expanded.push(ev);
+    expanded.push({
+      ...ev,
+      description: ensureTeacherAudienceNote(ev.title, ev.description),
+    });
   }
 
   const inMonth = expanded.filter((e) => {

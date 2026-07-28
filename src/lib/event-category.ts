@@ -100,10 +100,14 @@ export function isFilmOnlyEventText(
 
   return (
     /\bfilm\s*screening\b/.test(b) ||
+    /\bscreening of\b/.test(b) ||
+    /\b\d+(?:st|nd|rd|th)?\s+anniversary\s+screening\b/.test(b) ||
     /\bfilmmaker\b/.test(b) ||
     /\b(movie|cinema)\s+(screening|night|panel)\b/.test(b) ||
     (/\bfilm\b/.test(b) &&
-      /\b(panel|screening|festival|premiere|documentary)\b/.test(b))
+      /\b(panel|screening|festival|premiere|documentary)\b/.test(b)) ||
+    (/\bscreening\b/.test(b) &&
+      /\b(director|filmmaker|q\s*&\s*a\s+featuring)\b/.test(b))
   );
 }
 
