@@ -74,7 +74,7 @@ export function eventCopySaysFree(ev: WorkshopEvent): boolean {
     ) ||
     /\bfree[.;,]?\s*please rsvp\b/.test(blob) ||
     /\bfree · registration required\b/.test(blob) ||
-    /\bfree[^.]{0,48}registration required\b/.test(blob) ||
+    /\bfree[^.]{0,48}registration(?:\s+is)?\s+required\b/.test(blob) ||
     /\bfree of charge\b/.test(blob) ||
     /\bno (?:cost|charge|fee|ticket(?:s)? required)\b/.test(blob) ||
     /\bcomplimentary\b/.test(blob)
@@ -99,9 +99,9 @@ export function eventRequiresAdvanceRegistration(ev: WorkshopEvent): boolean {
   }
 
   return (
-    /\bpre-?registration(?:\s+required)?\b/.test(blob) ||
-    /\b(?:advance\s+)?registration required\b/.test(blob) ||
-    /\brsvp required\b/.test(blob) ||
+    /\bpre-?registration(?:\s+is)?(?:\s+required)?\b/.test(blob) ||
+    /\b(?:advance\s+)?registration(?:\s+is)?\s+required\b/.test(blob) ||
+    /\brsvp(?:\s+is)?\s+required\b/.test(blob) ||
     /\bplease rsvp\b/.test(blob) ||
     /\bmust rsvp\b/.test(blob) ||
     /\brsvp to (?:attend|reserve|hold|secure)\b/.test(blob) ||
@@ -110,7 +110,7 @@ export function eventRequiresAdvanceRegistration(ev: WorkshopEvent): boolean {
     /\bregistration is capped\b/.test(blob) ||
     /\brsvp required to receive (?:the )?zoom\b/.test(blob) ||
     (/\bspace is limited\b/.test(blob) && /\brsvp\b/.test(blob)) ||
-    /\bfree[^.]{0,48}registration required\b/.test(blob) ||
+    /\bfree[^.]{0,48}registration(?:\s+is)?\s+required\b/.test(blob) ||
     /\bfree · registration required\b/.test(blob) ||
     /\bfree · please rsvp\b/.test(blob) ||
     /\bfree to attend[.;,]?\s*please rsvp\b/.test(blob) ||
