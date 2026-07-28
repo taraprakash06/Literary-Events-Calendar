@@ -98,7 +98,7 @@ export type EventFilters = {
   categoryIncluded: Set<WorkshopEventCategory>;
   /**
    * When true, only show events that require advance registration / RSVP.
-   * When false, do not filter on registration.
+   * When false (default), show all events regardless of RSVP requirement.
    */
   registrationRequiredOnly: boolean;
   rangeStart: string;

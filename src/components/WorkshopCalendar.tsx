@@ -1787,18 +1787,20 @@ export function WorkshopCalendar({ city }: { city: City }) {
               <legend className="text-xs text-[var(--muted)]">
                 Access
               </legend>
-              <div className="mt-1.5 flex flex-wrap gap-1.5">
-                <FilterPill
-                  label="RSVP / registration required"
-                  selected={filters.registrationRequiredOnly}
-                  onToggle={() =>
+              <label className="mt-1.5 flex cursor-pointer items-start gap-2 text-sm text-[var(--ink)]">
+                <input
+                  type="checkbox"
+                  checked={filters.registrationRequiredOnly}
+                  onChange={(e) =>
                     setFilters((prev) => ({
                       ...prev,
-                      registrationRequiredOnly: !prev.registrationRequiredOnly,
+                      registrationRequiredOnly: e.target.checked,
                     }))
                   }
+                  className="mt-0.5 h-4 w-4 shrink-0 accent-[var(--accent)]"
                 />
-              </div>
+                <span>RSVP/registration-required events only</span>
+              </label>
             </fieldset>
           </div>
 
