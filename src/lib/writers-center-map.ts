@@ -4,7 +4,7 @@ import type {
   WorkshopEvent,
   WorkshopEventCategory,
 } from "@/lib/workshop-types";
-import { stripHtmlAndDecode } from "@/lib/text";
+import { decodeHtmlEntities, stripHtmlAndDecode, toShortOverview } from "@/lib/text";
 
 const DEFAULT_TZ = "America/New_York";
 
