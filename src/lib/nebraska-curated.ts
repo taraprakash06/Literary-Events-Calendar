@@ -40,6 +40,7 @@ type CuratedSpec = {
   priceDetail?: string;
   format?: WorkshopEvent["format"];
   virtualLabel?: string;
+  registrationRequired?: boolean;
 };
 
 const CURATED: CuratedSpec[] = [
@@ -690,6 +691,7 @@ type PoetryMenuInput = {
   priceDetail?: string;
   format?: WorkshopEvent["format"];
   virtualLabel?: string;
+  registrationRequired?: boolean;
 };
 
 function poetryMenuEvent(input: PoetryMenuInput): CuratedSpec {
@@ -720,6 +722,7 @@ function poetryMenuEvent(input: PoetryMenuInput): CuratedSpec {
     priceDetail: input.priceDetail,
     format: input.format,
     virtualLabel: input.virtualLabel,
+    registrationRequired: input.registrationRequired,
   };
 }
 
@@ -808,6 +811,7 @@ function poetryMenuEvents(): CuratedSpec[] {
       priceDetail: "$35 · free for members",
       format: "virtual",
       virtualLabel: "Online",
+      registrationRequired: true,
     }),
     poetryMenuEvent({
       slug: "neihardt-day-poetry-picnic",
@@ -1242,6 +1246,7 @@ function poetryMenuEvents(): CuratedSpec[] {
       priceDetail: "$35 · free for members",
       format: "virtual",
       virtualLabel: "Online",
+      registrationRequired: true,
     }),
   );
 
@@ -1289,6 +1294,7 @@ function mapSpec(spec: CuratedSpec): WorkshopEvent {
     format: spec.format ?? "in-person",
     price: spec.price ?? "unknown",
     priceDetail: spec.priceDetail,
+    registrationRequired: spec.registrationRequired,
     category: spec.category,
     organizer: spec.organizer,
     venue: spec.venue,

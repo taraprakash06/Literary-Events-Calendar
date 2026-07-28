@@ -247,6 +247,8 @@ export function mapEbEventToWorkshop(
     format,
     price,
     category: mapCategory(ev),
+    // Eventbrite listings are advance ticket / registration flows.
+    registrationRequired: true,
     organizer: "Eventbrite",
     venue: line,
     address,

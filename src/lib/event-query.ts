@@ -53,6 +53,108 @@ export function matchesSearch(ev: WorkshopEvent, q: string): boolean {
   return hay.includes(s);
 }
 
+function eventAccessCopyBlob(ev: WorkshopEvent): string {
+  return [ev.title, ev.tagline, ev.description, ev.priceDetail]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase()
+    .replace(/\s+/g, " ");
+}
+
+/** True when About / price copy says the event is free to attend. */
+export function eventCopySaysFree(ev: WorkshopEvent): boolean {
+  const blob = eventAccessCopyBlob(ev);
+  if (/\bnot free\b/.test(blob) || /\bfree with (?:purchase|ticket)\b/.test(blob)) {
+    return false;
+  }
+  return (
+    /\bfree to attend\b/.test(blob) ||
+    /\bfree(?:\s+and\s+open)?(?:\s+to\s+the\s+public)?[.;,]?\s*(?:please\s+)?rsvp\b/.test(
+      blob,
+    ) ||
+    /\bfree[.;,]?\s*please rsvp\b/.test(blob) ||
+    /\bfree · registration required\b/.test(blob) ||
+    /\bfree[^.]{0,48}registration required\b/.test(blob) ||
+    /\bfree of charge\b/.test(blob) ||
+    /\bno (?:cost|charge|fee|ticket(?:s)? required)\b/.test(blob) ||
+    /\bcomplimentary\b/.test(blob)
+  );
+}
+
+/**
+ * Whether the listing asks people to register or RSVP ahead of time
+ * (not same-day door signup alone).
+ */
+export function eventRequiresAdvanceRegistration(ev: WorkshopEvent): boolean {
+  if (ev.registrationRequired === true) return true;
+  if (ev.registrationRequired === false) return false;
+
+  const blob = eventAccessCopyBlob(ev);
+
+  if (
+    /\bno (?:registration|rsvp) (?:required|necessary|needed)\b/.test(blob) ||
+    /\bregistration not required\b/.test(blob)
+  ) {
+    return false;
+  }
+
+  return (
+    /\bpre-?registration(?:\s+required)?\b/.test(blob) ||
+    /\b(?:advance\s+)?registration required\b/.test(blob) ||
+    /\brsvp required\b/.test(blob) ||
+    /\bplease rsvp\b/.test(blob) ||
+    /\bmust rsvp\b/.test(blob) ||
+    /\brsvp to (?:attend|reserve|hold|secure)\b/.test(blob) ||
+    /\bregister (?:in advance|ahead(?: of time)?|online|today)\b/.test(blob) ||
+    /\bregister to (?:attend|perform|participate)\b/.test(blob) ||
+    /\bregistration is capped\b/.test(blob) ||
+    /\brsvp required to receive (?:the )?zoom\b/.test(blob) ||
+    (/\bspace is limited\b/.test(blob) && /\brsvp\b/.test(blob)) ||
+    /\bfree[^.]{0,48}registration required\b/.test(blob) ||
+    /\bfree · registration required\b/.test(blob) ||
+    /\bfree · please rsvp\b/.test(blob) ||
+    /\bfree to attend[.;,]?\s*please rsvp\b/.test(blob) ||
+    /\btickets? are \$\d+/.test(blob) ||
+    /\b(?:buy|purchase) (?:your )?tickets?\b/.test(blob) ||
+    /\bregister early if you (?:are )?planning on attending\b/.test(blob)
+  );
+}
+
+/**
+ * Infer free + registration-required from About / price copy when scrapers
+ * left price as unknown (e.g. Landmark “Free to attend; please RSVP.”).
+ */
+export function enrichEventAccessFromCopy(ev: WorkshopEvent): WorkshopEvent {
+  const saysFree = eventCopySaysFree(ev);
+  const needsReg = eventRequiresAdvanceRegistration(ev);
+  if (!saysFree && !needsReg) return ev;
+
+  const blob = eventAccessCopyBlob(ev);
+  const next: WorkshopEvent = { ...ev };
+  if (saysFree && (ev.price === "unknown" || !ev.price)) {
+    next.price = "free";
+  }
+  if (needsReg && ev.registrationRequired !== false) {
+    next.registrationRequired = true;
+  }
+
+  const detail = ev.priceDetail?.trim() ?? "";
+  const detailIsAutoOrBlank =
+    !detail ||
+    /^free$/i.test(detail) ||
+    /^unknown$/i.test(detail) ||
+    /^free · registration required$/i.test(detail) ||
+    /^free · please rsvp$/i.test(detail);
+  if (saysFree && needsReg && detailIsAutoOrBlank) {
+    next.priceDetail = /\bplease rsvp\b/.test(blob)
+      ? "Free · please RSVP"
+      : "Free · registration required";
+  } else if (saysFree && detailIsAutoOrBlank) {
+    next.priceDetail = "Free";
+  }
+  return next;
+}
+
 export function applyEventFilters(
   events: WorkshopEvent[],
   filters: EventFilters,
@@ -65,6 +167,12 @@ export function applyEventFilters(
     if (!filters.formats.has(ev.format)) return false;
     if (!filters.prices.has(ev.price)) return false;
     if (!filters.categoryIncluded.has(ev.category)) return false;
+    if (
+      filters.registrationRequiredOnly &&
+      !eventRequiresAdvanceRegistration(ev)
+    ) {
+      return false;
+    }
     if (!eventOccursInRange(ev, filters.rangeStart, filters.rangeEnd)) {
       return false;
     }

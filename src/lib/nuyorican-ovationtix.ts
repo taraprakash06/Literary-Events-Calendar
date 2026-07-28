@@ -17,6 +17,7 @@ type SeriesEnrichment = {
   priceDetail?: string;
   rsvpUrl?: string;
   virtualLabel?: string;
+  registrationRequired?: boolean;
   /** Override feed wall-clock times (venue-local) when ticketing uses doors/open. */
   clock?: {
     startHour: number;
@@ -45,6 +46,7 @@ const NUYORICAN_SERIES: SeriesEnrichment[] = [
     price: "paid",
     priceDetail: "$20",
     rsvpUrl: BOWERY_SLAM_RSVP,
+    registrationRequired: true,
   },
   {
     match: /final\s+friday\s+slam/i,
@@ -55,6 +57,7 @@ const NUYORICAN_SERIES: SeriesEnrichment[] = [
     priceDetail: "$25",
     // Feed lists doors (7:00); site program time is 7:30–10:30 PM.
     clock: { startHour: 19, startMinute: 30, endHour: 22, endMinute: 30 },
+    registrationRequired: true,
   },
   {
     match: /w\.?o\.?w\.?\s+open\s+mic|womxn\s+orator/i,
@@ -63,6 +66,7 @@ const NUYORICAN_SERIES: SeriesEnrichment[] = [
     format: "in-person",
     price: "paid",
     priceDetail: "$10",
+    registrationRequired: true,
   },
   {
     match: /open\s+mic\s+hosted\s+by\s+brian|brian\s+acosta/i,
@@ -71,6 +75,7 @@ const NUYORICAN_SERIES: SeriesEnrichment[] = [
     format: "in-person",
     price: "paid",
     priceDetail: "$10",
+    registrationRequired: true,
   },
   {
     match: /online\s+open\s+mic|hosted\s+by\s+elemen/i,
@@ -79,6 +84,7 @@ const NUYORICAN_SERIES: SeriesEnrichment[] = [
     format: "virtual",
     price: "free",
     virtualLabel: "Zoom",
+    registrationRequired: true,
   },
   {
     match: /slam\s+workshop/i,
@@ -87,6 +93,7 @@ const NUYORICAN_SERIES: SeriesEnrichment[] = [
     format: "virtual",
     price: "free",
     virtualLabel: "Zoom",
+    registrationRequired: true,
   },
 ];
 
@@ -453,6 +460,7 @@ export async function fetchNuyoricanEventsForMonth(
       address: addr,
       neighborhood,
       virtualLabel,
+      registrationRequired: series?.registrationRequired,
       rsvpUrl:
         series?.rsvpUrl ??
         `${FRONTEND_ORIGIN}/${CLIENT_ID}/production/${s.productionId}`,

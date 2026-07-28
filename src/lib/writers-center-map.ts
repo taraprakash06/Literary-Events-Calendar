@@ -159,6 +159,8 @@ function buildWorkshopFromTwc(
     format,
     price,
     priceDetail: opts.priceDetail,
+    // Workshops and readings are ticketed/registered on writer.org.
+    registrationRequired: true,
     category: mapCategory(ev, title),
     organizer: "The Writer's Center",
     venue,

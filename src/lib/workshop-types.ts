@@ -65,6 +65,11 @@ export type WorkshopEvent = {
   price: PriceKind;
   /** Human-readable ticket cost, e.g. "$12.51 – $30.12". */
   priceDetail?: string;
+  /**
+   * When true/false, overrides text inference for whether advance
+   * registration or RSVP is required. When omitted, inferred from copy.
+   */
+  registrationRequired?: boolean;
   category: WorkshopEventCategory;
   organizer: string;
   venue?: string;
@@ -91,6 +96,11 @@ export type EventFilters = {
   formats: Set<EventFormat>;
   prices: Set<PriceKind>;
   categoryIncluded: Set<WorkshopEventCategory>;
+  /**
+   * When true, only show events that require advance registration / RSVP.
+   * When false, do not filter on registration.
+   */
+  registrationRequiredOnly: boolean;
   rangeStart: string;
   rangeEnd: string;
 };

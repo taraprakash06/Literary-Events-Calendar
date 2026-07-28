@@ -177,6 +177,7 @@ export function mapEventbritePublicToWorkshop(
     format: "in-person",
     price: info.isFree ? "free" : "paid",
     priceDetail: info.isFree ? undefined : ctx.priceDetail,
+    registrationRequired: true,
     category: inferEventCategory(title, description),
     organizer,
     venue: venueName,

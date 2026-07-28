@@ -11,6 +11,7 @@ import { isSparseEventDescription } from "@/lib/rsvp-page-enrichment";
 import {
   applyEventFilters,
   distinctCategories,
+  enrichEventAccessFromCopy,
   monthRangeISO,
 } from "@/lib/event-query";
 import {
@@ -224,23 +225,25 @@ function toggleFilterInSet<T extends string>(set: Set<T>, value: T): Set<T> {
 
 function allFilterSelections(): Pick<
   EventFilters,
-  "formats" | "prices" | "categoryIncluded"
+  "formats" | "prices" | "categoryIncluded" | "registrationRequiredOnly"
 > {
   return {
     formats: new Set(ALL_EVENT_FORMATS),
     prices: new Set(ALL_PRICE_KINDS),
     categoryIncluded: new Set(ALL_WORKSHOP_CATEGORIES),
+    registrationRequiredOnly: false,
   };
 }
 
 function noFilterSelections(): Pick<
   EventFilters,
-  "formats" | "prices" | "categoryIncluded"
+  "formats" | "prices" | "categoryIncluded" | "registrationRequiredOnly"
 > {
   return {
     formats: new Set(),
     prices: new Set(),
     categoryIncluded: new Set(),
+    registrationRequiredOnly: false,
   };
 }
 
@@ -364,6 +367,7 @@ export function WorkshopCalendar({ city }: { city: City }) {
       formats: new Set(ALL_EVENT_FORMATS),
       prices: new Set(ALL_PRICE_KINDS),
       categoryIncluded: new Set(ALL_WORKSHOP_CATEGORIES),
+      registrationRequiredOnly: false,
       rangeStart: r.start,
       rangeEnd: r.end,
     };
@@ -1468,10 +1472,10 @@ export function WorkshopCalendar({ city }: { city: City }) {
   );
 
   const cityEventsEnriched = useMemo(() => {
-    if (Object.keys(rsvpEnrichments).length === 0) return cityEvents;
     return cityEvents.map((ev) => {
       const patch = rsvpEnrichments[ev.id];
-      return patch ? { ...ev, ...patch } : ev;
+      const merged = patch ? { ...ev, ...patch } : ev;
+      return enrichEventAccessFromCopy(merged);
     });
   }, [cityEvents, rsvpEnrichments]);
 
@@ -1549,7 +1553,8 @@ export function WorkshopCalendar({ city }: { city: City }) {
   const openEventDetail = (ev: WorkshopEvent) => {
     setDayPanelKey(null);
     const patch = rsvpEnrichments[ev.id];
-    setDetail(patch ? { ...ev, ...patch } : ev);
+    const merged = patch ? { ...ev, ...patch } : ev;
+    setDetail(enrichEventAccessFromCopy(merged));
   };
 
   const weekAnchor = useMemo(() => {
@@ -1776,6 +1781,23 @@ export function WorkshopCalendar({ city }: { city: City }) {
                     }
                   />
                 ))}
+              </div>
+            </fieldset>
+            <fieldset className="min-w-0">
+              <legend className="text-xs text-[var(--muted)]">
+                Access
+              </legend>
+              <div className="mt-1.5 flex flex-wrap gap-1.5">
+                <FilterPill
+                  label="RSVP / registration required"
+                  selected={filters.registrationRequiredOnly}
+                  onToggle={() =>
+                    setFilters((prev) => ({
+                      ...prev,
+                      registrationRequiredOnly: !prev.registrationRequiredOnly,
+                    }))
+                  }
+                />
               </div>
             </fieldset>
           </div>
@@ -2183,7 +2205,9 @@ export function WorkshopCalendar({ city }: { city: City }) {
               ...prev,
               [detail.id]: { ...prev[detail.id], ...patch },
             }));
-            setDetail((prev) => (prev ? { ...prev, ...patch } : prev));
+            setDetail((prev) =>
+              prev ? enrichEventAccessFromCopy({ ...prev, ...patch }) : prev,
+            );
           }}
         />
       ) : null}
@@ -2406,8 +2430,9 @@ function locationSummary(event: WorkshopEvent): string {
 }
 
 function priceSummary(event: WorkshopEvent): string {
-  if (event.price === "paid" && event.priceDetail) return event.priceDetail;
-  return PRICE_LABELS[event.price];
+  const enriched = enrichEventAccessFromCopy(event);
+  if (enriched.priceDetail?.trim()) return enriched.priceDetail.trim();
+  return PRICE_LABELS[enriched.price];
 }
 
 function EventDetailModal({

@@ -1,4 +1,5 @@
 import { DateTime } from "luxon";
+import { enrichEventAccessFromCopy } from "@/lib/event-query";
 import type {
   WorkshopEvent,
   WorkshopEventCategory,
@@ -109,6 +110,8 @@ type CuratedSpec = {
   rsvpIsGeneralCalendar?: boolean;
   sourceChannel: WorkshopEvent["sourceChannel"];
   price?: WorkshopEvent["price"];
+  priceDetail?: string;
+  registrationRequired?: boolean;
 };
 
 const PLENTY_EVENTS_URL = "https://www.plentybookshop.org/events";
@@ -131,6 +134,9 @@ type NplRow = {
   /** Optional deep link; defaults to the NPL events list. */
   rsvpUrl?: string;
   slug: string;
+  price?: WorkshopEvent["price"];
+  priceDetail?: string;
+  registrationRequired?: boolean;
 };
 
 const BRANCH: Record<
@@ -215,6 +221,9 @@ function nplEvent(row: NplRow): CuratedSpec {
     neighborhood: loc.neighborhood,
     rsvpUrl: nplRsvpUrl(row.slug, row.date, row.rsvpUrl),
     sourceChannel: "library",
+    price: row.price,
+    priceDetail: row.priceDetail,
+    registrationRequired: row.registrationRequired,
   };
 }
 
@@ -320,6 +329,9 @@ const NPL_WRITING_EVENTS: CuratedSpec[] = [
     title: "Playwriting Workshop",
     branch: "Hadley Park",
     slug: "playwriting-workshop",
+    description:
+      "Drop by to receive instruction on playwriting including how to brainstorm, formatting, and technique.",
+    price: "free",
   }),
   nplEvent({
     date: "2026-08-08",
@@ -329,6 +341,14 @@ const NPL_WRITING_EVENTS: CuratedSpec[] = [
     branch: "Donelson",
     category: "other",
     slug: "carnegie-writers",
+    tagline:
+      "Second Saturday · free community writing workshop · Donelson Library",
+    description:
+      "Second Saturday. Join the Carnegie Writers’ Group of Nashville for a free, " +
+      "community-based writing workshop series meeting monthly. Open to writers of all " +
+      "experience levels, the group explores multiple genres and features power writing, " +
+      "workshops, guest speakers, and professional readings.",
+    price: "free",
   }),
   nplEvent({
     date: "2026-08-10",
@@ -412,9 +432,14 @@ const NPL_WRITING_EVENTS: CuratedSpec[] = [
     date: "2026-08-27",
     hour: 17,
     minute: 0,
+    endHour: 18,
+    endMinute: 0,
     title: "Creative Writing Club",
     branch: "Bordeaux",
+    canceled: true,
     slug: "creative-writing-club",
+    description:
+      "Calling all 3rd, 4th, and 5th Graders! Join Ms. Dee for creative writing and bring your stories to life! You'll be able to practice and share your work, while also learning about different creative writing outlets. Contact Bordeaux Branch at (615) 862-5856.",
   }),
   nplEvent({
     date: "2026-09-01",
@@ -434,6 +459,9 @@ const NPL_WRITING_EVENTS: CuratedSpec[] = [
     title: "Playwriting Workshop",
     branch: "Hadley Park",
     slug: "playwriting-workshop",
+    description:
+      "Drop by to receive instruction on playwriting including how to brainstorm, formatting, and technique.",
+    price: "free",
   }),
   nplEvent({
     date: "2026-09-12",
@@ -443,6 +471,14 @@ const NPL_WRITING_EVENTS: CuratedSpec[] = [
     branch: "Donelson",
     category: "other",
     slug: "carnegie-writers",
+    tagline:
+      "Second Saturday · free community writing workshop · Donelson Library",
+    description:
+      "Second Saturday. Join the Carnegie Writers’ Group of Nashville for a free, " +
+      "community-based writing workshop series meeting monthly. Open to writers of all " +
+      "experience levels, the group explores multiple genres and features power writing, " +
+      "workshops, guest speakers, and professional readings.",
+    price: "free",
   }),
   nplEvent({
     date: "2026-09-15",
@@ -488,6 +524,9 @@ const NPL_WRITING_EVENTS: CuratedSpec[] = [
     title: "Playwriting Workshop",
     branch: "Hadley Park",
     slug: "playwriting-workshop",
+    description:
+      "Drop by to receive instruction on playwriting including how to brainstorm, formatting, and technique.",
+    price: "free",
   }),
   nplEvent({
     date: "2026-10-06",
@@ -544,6 +583,9 @@ const NPL_WRITING_EVENTS: CuratedSpec[] = [
     title: "Playwriting Workshop",
     branch: "Hadley Park",
     slug: "playwriting-workshop",
+    description:
+      "Drop by to receive instruction on playwriting including how to brainstorm, formatting, and technique.",
+    price: "free",
   }),
   nplEvent({
     date: "2026-11-17",
@@ -664,6 +706,9 @@ const UNION_AVE_EVENTS: CuratedSpec[] = [
     neighborhood: "Knoxville",
     rsvpUrl: "https://unionavebooks.com/event/2026-07-22/pages-pours-tern-club",
     sourceChannel: "bookstore",
+    price: "free",
+    priceDetail: "Free · please RSVP",
+    registrationRequired: true,
   },
   {
     id: "tn-uab-book-club-20260727",
@@ -762,6 +807,9 @@ const UNION_AVE_EVENTS: CuratedSpec[] = [
     neighborhood: "Knoxville",
     rsvpUrl: "https://unionavebooks.com/event/2026-08-19/pages-pours-fly-night",
     sourceChannel: "bookstore",
+    price: "free",
+    priceDetail: "Free · please RSVP",
+    registrationRequired: true,
   },
   {
     id: "tn-uab-noah-soltau-20260820",
@@ -1182,6 +1230,7 @@ const PLENTY_TALES_ON_THE_TRAIL: CuratedSpec[] = [
     neighborhood: "Cookeville",
     rsvpUrl: `https://www.plentybookshop.org/event-details-registration/tales-on-the-trail-a-monthly-audiobook-walk-${date}-09-00`,
     sourceChannel: "bookstore",
+    price: "free",
   };
 });
 
@@ -1294,6 +1343,9 @@ const PLENTY_ONE_OFFS: CuratedSpec[] = [
     rsvpUrl:
       "https://www.plentybookshop.org/event-details-registration/author-event-lauren-nossett-in-conversation-with-rea-frey",
     sourceChannel: "bookstore",
+    price: "free",
+    priceDetail: "Free · please RSVP",
+    registrationRequired: true,
   },
   {
     id: "tn-plenty-hannah-whitten-midnight-20260810",
@@ -1318,32 +1370,6 @@ const PLENTY_ONE_OFFS: CuratedSpec[] = [
       "https://www.plentybookshop.org/event-details-registration/midnight-release-party-meet-the-author-reliquary-by-hannah-whitten",
     sourceChannel: "bookstore",
     price: "paid",
-  },
-  {
-    id: "tn-plenty-book-club-101-20260811",
-    year: 2026,
-    monthIndex: 7,
-    day: 11,
-    hour: 18,
-    minute: 0,
-    endHour: 19,
-    endMinute: 0,
-    timeZone: TZ_CENTRAL,
-    title: "Book Club 101: Selecting the Right Book for Your Club",
-    tagline: "PLENTY Downtown Bookshop · Cookeville · Free · Quarterly series",
-    description:
-      "Thinking about starting a book club but not sure where to begin? Join Plenty Downtown Bookshop for the second installment of the quarterly Book Club 101 series. " +
-      "This free, conversational workshop is designed for anyone interested in building a thriving book club. " +
-      "This session focuses on selecting the right book for your club — what makes for engaging discussions, how to match titles to your group's interests, and related strategies.",
-    category: "workshop",
-    organizer: "PLENTY Downtown Bookshop",
-    venue: "PLENTY Downtown Bookshop",
-    address: "41 W Broad St, Cookeville, TN 38501",
-    neighborhood: "Cookeville",
-    rsvpUrl:
-      "https://www.plentybookshop.org/event-details-registration/book-club-101",
-    sourceChannel: "bookstore",
-    price: "free",
   },
   {
     id: "tn-plenty-jennifer-moorman-storytime-20260815",
@@ -1378,9 +1404,9 @@ const PLENTY_ONE_OFFS: CuratedSpec[] = [
     endMinute: 0,
     timeZone: TZ_CENTRAL,
     title: "An Evening with Ruta Sepetys",
-    tagline: "DelMonaco Winery & Vineyards · Baxter · Presented with Plenty",
+    tagline: "DelMonaco Winery & Vineyards · Baxter · Presented with Plenty · Tickets",
     description:
-      "An evening with Ruta Sepetys at DelMonaco Winery & Vineyards in Baxter, listed on the Plenty Bookshop events calendar.",
+      "This Speakeasy themed party will be held at DelMonaco Winery in the Tuscany Room where Ruta Sepetys will be discussing her adult debut novel, Fortune of Sand. This is a ticketed event and tickets will include a copy of the book, a glass of wine, appetizers, and some extras from Ruta!",
     category: "reading",
     organizer: "PLENTY Downtown Bookshop",
     venue: "DelMonaco Winery & Vineyards",
@@ -1389,6 +1415,9 @@ const PLENTY_ONE_OFFS: CuratedSpec[] = [
     rsvpUrl:
       "https://www.plentybookshop.org/event-details-registration/an-evening-with-ruta-sepetys",
     sourceChannel: "bookstore",
+    price: "paid",
+    priceDetail: "$60 (1 guest + book) · $80 (2 guests + book)",
+    registrationRequired: true,
   },
   {
     id: "tn-plenty-jeff-zentner-20260821",
@@ -1792,6 +1821,9 @@ const EVENTS: CuratedSpec[] = [
     neighborhood: "Franklin",
     rsvpUrl: "https://www.landmarkbooksellers.com/event/writers-open-mic-night-aug-2026",
     sourceChannel: "bookstore",
+    price: "free",
+    priceDetail: "Free · registration required",
+    registrationRequired: true,
   },
   {
     id: "tn-landmark-yance-wyatt-20260822",
@@ -2017,6 +2049,7 @@ const EVENTS: CuratedSpec[] = [
     neighborhood: "Columbia",
     rsvpUrl: "https://www.maurycounty-tn.gov/Calendar.aspx?EID=2658",
     sourceChannel: "library",
+    price: "free",
   },
   {
     id: "tn-poets-playground-alondus-20260724",
@@ -2699,7 +2732,7 @@ function mapSpec(spec: CuratedSpec): WorkshopEvent {
 
   const title = spec.canceled ? `Canceled: ${spec.title}` : spec.title;
 
-  return {
+  return enrichEventAccessFromCopy({
     id: spec.id,
     cityId: "tn",
     title,
@@ -2711,6 +2744,8 @@ function mapSpec(spec: CuratedSpec): WorkshopEvent {
     timeTbd: spec.timeTbd,
     format: "in-person",
     price: spec.price ?? "unknown",
+    priceDetail: spec.priceDetail,
+    registrationRequired: spec.registrationRequired,
     category: spec.category,
     organizer: spec.organizer,
     venue: spec.venue,
@@ -2721,7 +2756,7 @@ function mapSpec(spec: CuratedSpec): WorkshopEvent {
     source: "Tennessee curated listings",
     sourceChannel: spec.sourceChannel,
     listingProvenance: "live",
-  };
+  });
 }
 
 export function fetchTennesseeCuratedEventsForMonth(
