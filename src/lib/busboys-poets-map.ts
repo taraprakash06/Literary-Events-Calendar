@@ -104,6 +104,11 @@ export function mapBusboysRowToWorkshop(
     monthEnd: DateTime;
     /** Full title from event page when API name is truncated with &hellip; */
     titleOverride?: string;
+    /**
+     * End time only when confirmed (flyer override or page copy). Omit the
+     * former invented +2h default — Busboys CMS ends are often inaccurate.
+     */
+    endISO?: string;
   },
 ): WorkshopEvent | null {
   if (shouldExclude(row)) return null;
@@ -126,8 +131,6 @@ export function mapBusboysRowToWorkshop(
   const category = mapCategory(catLabel);
   const format = mapFormat(row);
 
-  const end = start.plus({ hours: 2 });
-
   return {
     id: `busboys-poets-${row.ID}`,
     cityId: "dmv",
@@ -139,7 +142,7 @@ export function mapBusboysRowToWorkshop(
         360,
       ) || "Details on the Busboys and Poets website.",
     start: start.toISO() ?? start.toUTC().toISO() ?? start.toString(),
-    end: end.toISO() ?? undefined,
+    end: opts.endISO,
     timeZone: BUSBOYS_POETS_TIMEZONE,
     format,
     price: "unknown",

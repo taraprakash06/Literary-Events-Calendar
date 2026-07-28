@@ -39,10 +39,11 @@ export function mapPnpEventToWorkshop(ev: PnpFullCalendarEvent): WorkshopEvent |
   if (!startDt.isValid) return null;
 
   const endRaw = ev.end?.trim();
-  const endDt = endRaw
-    ? DateTime.fromISO(endRaw, { zone: tz })
-    : startDt.plus({ hours: 1 });
-  const endIso = endDt.isValid ? endDt.toISO() ?? undefined : undefined;
+  const endDt = endRaw ? DateTime.fromISO(endRaw, { zone: tz }) : null;
+  const endIso =
+    endDt && endDt.isValid && endDt > startDt
+      ? endDt.toISO() ?? undefined
+      : undefined;
 
   const path = ev.url?.trim();
   const rsvpUrl =

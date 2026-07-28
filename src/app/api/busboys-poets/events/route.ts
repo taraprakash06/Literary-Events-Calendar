@@ -7,7 +7,7 @@ import {
   parseBusboysRowStart,
 } from "@/lib/busboys-poets-client";
 import { mapBusboysRowToWorkshop } from "@/lib/busboys-poets-map";
-import { resolveFullBusboysTitles } from "@/lib/busboys-poets-titles";
+import { resolveBusboysEventDetails } from "@/lib/busboys-poets-details";
 
 export const revalidate = 600;
 
@@ -32,15 +32,17 @@ export async function GET(req: Request) {
       const start = parseBusboysRowStart(row);
       return start && start >= monthStart && start <= monthEnd;
     });
-    const fullTitles = await resolveFullBusboysTitles(monthRows);
+    const details = await resolveBusboysEventDetails(monthRows);
     const events = raw
-      .map((row) =>
-        mapBusboysRowToWorkshop(row, {
+      .map((row) => {
+        const d = details.get(row.ID);
+        return mapBusboysRowToWorkshop(row, {
           monthStart,
           monthEnd,
-          titleOverride: fullTitles.get(row.ID),
-        }),
-      )
+          titleOverride: d?.title,
+          endISO: d?.endISO,
+        });
+      })
       .filter((e): e is NonNullable<typeof e> => e !== null);
 
     return NextResponse.json({
