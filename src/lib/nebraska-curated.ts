@@ -833,19 +833,47 @@ function poetryMenuEvent(input: PoetryMenuInput): CuratedSpec {
 function poetryMenuEvents(): CuratedSpec[] {
   const events: CuratedSpec[] = [];
 
-  const lauritzenDates = ["2026-07-25", "2026-08-08", "2026-08-15", "2026-09-12"];
-  for (const date of lauritzenDates) {
+  const lauritzenWorkshops: Array<{
+    date: string;
+    title: string;
+    description: string;
+  }> = [
+    {
+      date: "2026-07-25",
+      title: "Poetry Writing Workshop with Julie S. Paschold",
+      description:
+        "Poetry writing workshop with Lauritzen Gardens resident poetry instructor Julie S. Paschold. Bring a notebook and something to write with. Registration required.",
+    },
+    {
+      date: "2026-08-08",
+      title: "Poetry Writing Workshop with Julie S. Paschold",
+      description:
+        "Poetry writing workshop with Lauritzen Gardens resident poetry instructor Julie S. Paschold. Bring a notebook and something to write with. Registration required.",
+    },
+    {
+      date: "2026-08-15",
+      title: "Poetry Writing Workshop: Gathering Words",
+      description:
+        "Do you have a favorite word? Ever been handed a smattering of words and told “Here, write a poem with these”? Now is your time to be challenged with the strange, the beautiful, the bizarre, the lovely. Led by Julie S. Paschold, we will discuss the meaning behind certain words, how mixing them together changes their meanings, and how some words have several definitions depending on how they are used. Participants are asked to bring a notebook, something to write with, and their pensive brain. Registration required.",
+    },
+    {
+      date: "2026-09-12",
+      title: "Poetry Writing Workshop with Julie S. Paschold",
+      description:
+        "Poetry writing workshop with Lauritzen Gardens resident poetry instructor Julie S. Paschold. Bring a notebook and something to write with. Registration required.",
+    },
+  ];
+  for (const workshop of lauritzenWorkshops) {
     events.push(
       poetryMenuEvent({
         slug: "lauritzen-poetry-workshop",
-        date,
+        date: workshop.date,
         hour: 10,
         endHour: 11,
         endMinute: 30,
-        title: "Poetry Writing Workshop with Julie S. Paschold",
-        tagline: "Lauritzen Gardens · Omaha · Registration required",
-        description:
-          "Poetry writing workshop with Lauritzen Gardens resident poetry instructor Julie S. Paschold.",
+        title: workshop.title,
+        tagline: "Lauritzen Gardens · Omaha · $20 · Registration required",
+        description: workshop.description,
         category: "workshop",
         organizer: "Lauritzen Gardens",
         venue: "Lauritzen Gardens",
@@ -853,6 +881,9 @@ function poetryMenuEvents(): CuratedSpec[] {
         neighborhood: "Omaha",
         rsvpUrl:
           "https://lauritzen.ticketapp.org/portal/product/51/event/d25ffeb9-e830-40f1-9c0d-aa29cb9f1999",
+        price: "paid",
+        priceDetail: "$20 · 20% off for Garden members",
+        registrationRequired: true,
       }),
     );
   }
