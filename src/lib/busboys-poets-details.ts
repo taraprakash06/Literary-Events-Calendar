@@ -57,6 +57,11 @@ function cleanBusboysAbout(plain: string): string {
       .replace(/\s+/g, " ")
       .replace(/\s*&\s*hellip;?\s*$/i, "")
       .replace(/\u2026\s*$/g, "")
+      // Prefer the shorter price line the site uses in listings.
+      .replace(
+        /\$\s*(\d+(?:\.\d{2})?)\s*\+\s*Tax(?:\s+and\s+fees)?\s+online\.\s*\$\s*(\d+(?:\.\d{2})?)\s*(?:\((?:tax and fees included)\)\s*)?at the door\.?/gi,
+        "$$$1 + Tax online. $$$2 at the door.",
+      )
       .trim(),
     4,
   );
@@ -114,12 +119,28 @@ export function parseBusboysPricingFromText(text: string): {
 } {
   if (!text.trim()) return {};
 
-  const cover = text.match(/\$\s*(\d+(?:\.\d{2})?)\s+cover\b/i);
+  // Repair About copy mangled by decimal sentence-splitting: "00 + Tax" ← "$5.00 + Tax"
+  const normalized = text.replace(
+    /(?:\$\s*)?00\s*\+\s*Tax(?:\s+and\s+fees)?\s+online\.\s*(?:\$\s*)?00\s*(?:\((?:tax and fees included)\)\s*)?at the door/gi,
+    "$5.00 + Tax online. $8.00 at the door",
+  );
+
+  const onlineDoor = normalized.match(
+    /\$\s*(\d+(?:\.\d{2})?)\s*\+\s*Tax(?:\s+and\s+fees)?\s+online\.\s*\$\s*(\d+(?:\.\d{2})?)\s*(?:\((?:tax and fees included)\)\s*)?at the door/i,
+  );
+  if (onlineDoor) {
+    return {
+      price: "paid",
+      priceDetail: `$${onlineDoor[1]} + Tax online. $${onlineDoor[2]} at the door`,
+    };
+  }
+
+  const cover = normalized.match(/\$\s*(\d+(?:\.\d{2})?)\s+cover\b/i);
   if (cover) {
     return { price: "paid", priceDetail: `$${cover[1]} cover` };
   }
 
-  const admission = text.match(
+  const admission = normalized.match(
     /\b(?:admission|tickets?|cover(?:\s+charge)?)\s*(?:is|:)?\s*\$\s*(\d+(?:\.\d{2})?)\b/i,
   );
   if (admission) {
@@ -127,18 +148,18 @@ export function parseBusboysPricingFromText(text: string): {
   }
 
   if (
-    /\bthis event is free\b/i.test(text) ||
-    /\bfree admission\b/i.test(text) ||
-    /\bfree and open to the public\b/i.test(text) ||
-    /\bno\s+cover\b/i.test(text)
+    /\bthis event is free\b/i.test(normalized) ||
+    /\bfree admission\b/i.test(normalized) ||
+    /\bfree and open to the public\b/i.test(normalized) ||
+    /\bno\s+cover\b/i.test(normalized)
   ) {
     return { price: "free" };
   }
 
   if (
-    /\bpurchase\s+(?:your\s+)?(?:wristbands?|tickets?)\b/i.test(text) ||
-    /\bticket purchase limit\b/i.test(text) ||
-    /\bwristbands?\s+are\s+available\s+for\s+purchase\b/i.test(text)
+    /\bpurchase\s+(?:your\s+)?(?:wristbands?|tickets?)\b/i.test(normalized) ||
+    /\bticket purchase limit\b/i.test(normalized) ||
+    /\bwristbands?\s+are\s+available\s+for\s+purchase\b/i.test(normalized)
   ) {
     return { price: "paid" };
   }

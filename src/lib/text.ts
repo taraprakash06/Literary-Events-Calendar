@@ -270,8 +270,10 @@ export function limitAboutToSentences(
 }
 
 function splitAboutSentences(text: string): string[] {
-  // Protect common abbreviations so "8:00 P.M. Eastern" isn't three sentences.
+  // Protect abbreviations and money amounts so "$5.00" isn't split on the decimal.
   const protectedText = text
+    .replace(/\$(\d+)\.(\d{2})\b/g, "$$$1·$2")
+    .replace(/\b(\d+)\.(\d{2})\b/g, "$1·$2")
     .replace(/\b([AP])\.\s*M\./gi, "$1·M·")
     .replace(/\b(Mr|Mrs|Ms|Dr|Prof|St|vs|etc)\./gi, "$1·");
   const matches = protectedText.match(/[^.!?]+[.!?]+(?:\s+|$)|[^.!?]+$/g);
