@@ -40,6 +40,7 @@ function endpointsForCity(cityId: string): string[] {
       "/api/planet-word/events",
       "/api/write-to-right/events",
       "/api/dc-art-all-night/events",
+      "/api/dmv-curated/events",
       "/api/eventbrite/events",
     ];
   }

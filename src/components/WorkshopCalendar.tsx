@@ -414,6 +414,7 @@ export function WorkshopCalendar({ city }: { city: City }) {
   const [dcArtAllNightEvents, setDcArtAllNightEvents] = useState<WorkshopEvent[]>(
     [],
   );
+  const [dmvCuratedEvents, setDmvCuratedEvents] = useState<WorkshopEvent[]>([]);
   const [eventbriteEvents, setEventbriteEvents] = useState<WorkshopEvent[]>([]);
   const [eventbriteMeta, setEventbriteMeta] = useState<
     | {
@@ -498,6 +499,7 @@ export function WorkshopCalendar({ city }: { city: City }) {
       setPlanetWordEvents([]);
       setWriteToRightEvents([]);
       setDcArtAllNightEvents([]);
+      setDmvCuratedEvents([]);
       return;
     }
     const y = year;
@@ -518,6 +520,7 @@ export function WorkshopCalendar({ city }: { city: City }) {
           pwRes,
           writeToRightRes,
           dcArtAllNightRes,
+          dmvCuratedRes,
         ] =
           await Promise.all([
           fetch(`/api/dcpl/events?${q}`, { signal: ac.signal }),
@@ -544,6 +547,9 @@ export function WorkshopCalendar({ city }: { city: City }) {
             signal: ac.signal,
           }),
           fetch(`/api/dc-art-all-night/events?year=${y}&month=${m}`, {
+            signal: ac.signal,
+          }),
+          fetch(`/api/dmv-curated/events?year=${y}&month=${m}`, {
             signal: ac.signal,
           }),
         ]);
@@ -577,6 +583,9 @@ export function WorkshopCalendar({ city }: { city: City }) {
         const dcArtAllNightJson = dcArtAllNightRes.ok
           ? ((await dcArtAllNightRes.json()) as { events?: WorkshopEvent[] })
           : {};
+        const dmvCuratedJson = dmvCuratedRes.ok
+          ? ((await dmvCuratedRes.json()) as { events?: WorkshopEvent[] })
+          : {};
         const dcEv = Array.isArray(dcJson.events) ? dcJson.events : [];
         const mcEv = Array.isArray(mcJson.events) ? mcJson.events : [];
         const twcEv = Array.isArray(twcJson.events) ? twcJson.events : [];
@@ -591,6 +600,9 @@ export function WorkshopCalendar({ city }: { city: City }) {
         const dcArtAllNightEv = Array.isArray(dcArtAllNightJson.events)
           ? dcArtAllNightJson.events
           : [];
+        const dmvCuratedEv = Array.isArray(dmvCuratedJson.events)
+          ? dmvCuratedJson.events
+          : [];
         setLibnetEvents([...dcEv, ...mcEv]);
         setWritersCenterEvents(twcEv);
         setPoliticsProseEvents(pnpEv);
@@ -600,6 +612,7 @@ export function WorkshopCalendar({ city }: { city: City }) {
         setPlanetWordEvents(pwEv);
         setWriteToRightEvents(writeToRightEv);
         setDcArtAllNightEvents(dcArtAllNightEv);
+        setDmvCuratedEvents(dmvCuratedEv);
       } catch (e) {
         if ((e as Error).name === "AbortError") return;
         setLibnetEvents([]);
@@ -611,6 +624,7 @@ export function WorkshopCalendar({ city }: { city: City }) {
         setPlanetWordEvents([]);
         setWriteToRightEvents([]);
         setDcArtAllNightEvents([]);
+        setDmvCuratedEvents([]);
       } finally {
         finishLoad();
       }
@@ -1334,6 +1348,7 @@ export function WorkshopCalendar({ city }: { city: City }) {
     const pw = city.id === "dmv" ? planetWordEvents : [];
     const writeToRight = city.id === "dmv" ? writeToRightEvents : [];
     const dcArtAllNight = city.id === "dmv" ? dcArtAllNightEvents : [];
+    const dmvCurated = city.id === "dmv" ? dmvCuratedEvents : [];
     const lapl = city.id === "la" ? laplEvents : [];
     const lyric = city.id === "la" ? lyricHyperionEvents : [];
     const annual = city.id === "la" ? laAnnualEvents : [];
@@ -1385,6 +1400,7 @@ export function WorkshopCalendar({ city }: { city: City }) {
       ...pw,
       ...writeToRight,
       ...dcArtAllNight,
+      ...dmvCurated,
       ...lapl,
       ...lyric,
       ...annual,
@@ -1431,6 +1447,7 @@ export function WorkshopCalendar({ city }: { city: City }) {
     planetWordEvents,
     writeToRightEvents,
     dcArtAllNightEvents,
+    dmvCuratedEvents,
     laplEvents,
     lyricHyperionEvents,
     laAnnualEvents,
@@ -1611,7 +1628,7 @@ export function WorkshopCalendar({ city }: { city: City }) {
     }
 
     if (city.id === "dmv") {
-      return "No DMV listings for this month from the libraries, Scrawl Books, Busboys and Poets, Maryland Humanities, Politics and Prose, The Writer's Center, Planet Word, Write to Right, DC Art All Night, or Eventbrite — or one of the feeds could not be reached. Try another month or check your connection.";
+      return "No DMV listings for this month from the libraries, Scrawl Books, Busboys and Poets, Maryland Humanities, Politics and Prose, The Writer's Center, Planet Word, Write to Right, curated campus events, DC Art All Night, or Eventbrite — or one of the feeds could not be reached. Try another month or check your connection.";
     }
 
     if (city.id === "la") {
