@@ -96,6 +96,9 @@ export function mapPnpEventToWorkshop(
   const title = parseTitle(ev.title);
   if (!title) return null;
 
+  // Retail / membership promos are not literary programming.
+  if (/\bmember\s+sale\b|\bmembership\s+sale\b/i.test(title)) return null;
+
   const tz = "America/New_York";
   // P&P FullCalendar strings are local times for the store (DC). Ensure the stored ISO
   // includes an offset so display is stable across user locales.

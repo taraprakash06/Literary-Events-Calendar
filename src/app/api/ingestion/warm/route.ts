@@ -94,6 +94,9 @@ function endpointsForCity(cityId: string): string[] {
   if (cityId === "ne") {
     return ["/api/nebraska/events", "/api/omaha-public-library/events"];
   }
+  if (cityId === "sd") {
+    return ["/api/san-diego/events", "/api/sdcl/events"];
+  }
   return [];
 }
 

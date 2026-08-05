@@ -339,9 +339,9 @@ const CURATED: CuratedSpec[] = [
     hour: 19,
     minute: 0,
     timeZone: TZ,
-    title: "Valerie Hsiung Jennifer S. Cheng, Jennifer Elise Foerster, and Samantha Giles",
+    title: "Valerie Hsiung, Jennifer S. Cheng, Jennifer Elise Foerster, and Samantha Giles",
     tagline: "Green Apple Books · Inner Sunset · Free · RSVP",
-    description: "Green Apple Books presents Valerie Hsiung Jennifer S. Cheng, Jennifer Elise Foerster, and Samantha Giles. Free; please RSVP.",
+    description: "Green Apple Books presents Valerie Hsiung, Jennifer S. Cheng, Jennifer Elise Foerster, and Samantha Giles. Free; please RSVP.",
     category: "reading",
     organizer: "Green Apple Books",
     venue: "Green Apple Books on the Park (9th Ave)",
@@ -361,7 +361,7 @@ const CURATED: CuratedSpec[] = [
     timeZone: TZ,
     title: "DVAN presents Carolyn Huynh, Trinity Nguyen, and Aimee Phan",
     tagline: "Green Apple Books · Inner Sunset · RSVP",
-    description: "Green Apple Books presents DVAN presents Carolyn Huynh, Trinity Nguyen, and Aimee Phan. See listing for details.",
+    description: "Green Apple Books presents Carolyn Huynh, Trinity Nguyen, and Aimee Phan (DVAN). See listing for details.",
     category: "reading",
     organizer: "Green Apple Books",
     venue: "Green Apple Books on the Park (9th Ave)",
@@ -1346,17 +1346,35 @@ function mapSpec(spec: CuratedSpec): WorkshopEvent {
         )
       : start.plus({ hours: 1 });
 
+  const isGreenApple = /green apple/i.test(spec.organizer);
+  const price = spec.price ?? (isGreenApple ? "free" : "unknown");
+  let description = spec.description;
+  if (/see listing for details\.?$/i.test(description.trim())) {
+    description = isGreenApple
+      ? description.replace(
+          /\s*See listing for details\.?$/i,
+          price === "free"
+            ? " Free author event; please RSVP."
+            : " See the Green Apple Books listing for details and RSVP.",
+        )
+      : description;
+  }
+  const tagline =
+    price === "free" && isGreenApple && !/\bfree\b/i.test(spec.tagline)
+      ? spec.tagline.replace(/ · RSVP$/i, " · Free · RSVP")
+      : spec.tagline;
+
   return {
     id: spec.id,
     cityId: "sf",
     title: spec.title,
-    tagline: spec.tagline,
-    description: spec.description,
+    tagline,
+    description,
     start: start.toISO()!,
     end: end.toISO()!,
     timeZone: spec.timeZone,
     format: "in-person",
-    price: spec.price ?? "unknown",
+    price,
     category: spec.category,
     organizer: spec.organizer,
     venue: spec.venue,

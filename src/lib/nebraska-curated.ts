@@ -166,6 +166,7 @@ const CURATED: CuratedSpec[] = [
       "https://bookwormomaha.com/event/2026-09-12/evening-ariel-lawhon-ticketed-event",
     sourceChannel: "bookstore",
     price: "paid",
+    priceDetail: "$39 (includes book)",
   },
   {
     id: "ne-bookworm-william-kent-krueger-gods-country-20261003",

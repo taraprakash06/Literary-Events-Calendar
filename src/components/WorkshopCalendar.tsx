@@ -34,8 +34,85 @@ import {
   type WorkshopEvent,
   type WorkshopEventCategory,
 } from "@/lib/workshop-types";
+import {
+  fetchDmvMonthSources,
+  monthCacheKey,
+  type DmvMonthSources,
+  type DmvSourceKey,
+} from "@/lib/dmv-month-fetch";
 
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const;
+
+/** Client-side cache so revisiting a month (or prefetch) skips the empty loading state. */
+const dmvMonthCache = new Map<string, DmvMonthSources>();
+
+function applyDmvSourcePartial(
+  key: DmvSourceKey,
+  events: WorkshopEvent[],
+  setters: {
+    setLibnetEvents: (e: WorkshopEvent[]) => void;
+    setWritersCenterEvents: (e: WorkshopEvent[]) => void;
+    setPoliticsProseEvents: (e: WorkshopEvent[]) => void;
+    setScrawlBooksEvents: (e: WorkshopEvent[]) => void;
+    setBusboysPoetsEvents: (e: WorkshopEvent[]) => void;
+    setMdHumanitiesEvents: (e: WorkshopEvent[]) => void;
+    setPlanetWordEvents: (e: WorkshopEvent[]) => void;
+    setWriteToRightEvents: (e: WorkshopEvent[]) => void;
+    setDcArtAllNightEvents: (e: WorkshopEvent[]) => void;
+    setDmvCuratedEvents: (e: WorkshopEvent[]) => void;
+  },
+) {
+  switch (key) {
+    case "libnet":
+      setters.setLibnetEvents(events);
+      break;
+    case "writersCenter":
+      setters.setWritersCenterEvents(events);
+      break;
+    case "politicsProse":
+      setters.setPoliticsProseEvents(events);
+      break;
+    case "scrawlBooks":
+      setters.setScrawlBooksEvents(events);
+      break;
+    case "busboysPoets":
+      setters.setBusboysPoetsEvents(events);
+      break;
+    case "mdHumanities":
+      setters.setMdHumanitiesEvents(events);
+      break;
+    case "planetWord":
+      setters.setPlanetWordEvents(events);
+      break;
+    case "writeToRight":
+      setters.setWriteToRightEvents(events);
+      break;
+    case "dcArtAllNight":
+      setters.setDcArtAllNightEvents(events);
+      break;
+    case "dmvCurated":
+      setters.setDmvCuratedEvents(events);
+      break;
+    case "eventbrite":
+      break;
+  }
+}
+
+function applyDmvMonthSources(
+  sources: DmvMonthSources,
+  setters: Parameters<typeof applyDmvSourcePartial>[2],
+) {
+  setters.setLibnetEvents(sources.libnet);
+  setters.setWritersCenterEvents(sources.writersCenter);
+  setters.setPoliticsProseEvents(sources.politicsProse);
+  setters.setScrawlBooksEvents(sources.scrawlBooks);
+  setters.setBusboysPoetsEvents(sources.busboysPoets);
+  setters.setMdHumanitiesEvents(sources.mdHumanities);
+  setters.setPlanetWordEvents(sources.planetWord);
+  setters.setWriteToRightEvents(sources.writeToRight);
+  setters.setDcArtAllNightEvents(sources.dcArtAllNight);
+  setters.setDmvCuratedEvents(sources.dmvCurated);
+}
 
 function buildMonthGrid(year: number, monthIndex: number): (number | null)[] {
   const first = new Date(year, monthIndex, 1);
@@ -487,6 +564,8 @@ export function WorkshopCalendar({ city }: { city: City }) {
   const [tennesseeEvents, setTennesseeEvents] = useState<WorkshopEvent[]>([]);
   const [nebraskaEvents, setNebraskaEvents] = useState<WorkshopEvent[]>([]);
   const [omahaLibraryEvents, setOmahaLibraryEvents] = useState<WorkshopEvent[]>([]);
+  const [sanDiegoEvents, setSanDiegoEvents] = useState<WorkshopEvent[]>([]);
+  const [sdclLibraryEvents, setSdclLibraryEvents] = useState<WorkshopEvent[]>([]);
 
   useEffect(() => {
     if (city.id !== "dmv") {
@@ -502,129 +581,60 @@ export function WorkshopCalendar({ city }: { city: City }) {
       setDmvCuratedEvents([]);
       return;
     }
-    const y = year;
-    const m = monthIndex + 1;
     const ac = new AbortController();
     const finishLoad = beginSourceLoad(loadEpochRef, pendingLoadsRef, setSourcesLoading);
-    const q = `year=${y}&month=${m}&cityId=dmv`;
+    const setters = {
+      setLibnetEvents,
+      setWritersCenterEvents,
+      setPoliticsProseEvents,
+      setScrawlBooksEvents,
+      setBusboysPoetsEvents,
+      setMdHumanitiesEvents,
+      setPlanetWordEvents,
+      setWriteToRightEvents,
+      setDcArtAllNightEvents,
+      setDmvCuratedEvents,
+    };
+    const cacheKey = monthCacheKey("dmv", year, monthIndex);
+    const cached = dmvMonthCache.get(cacheKey);
+    if (cached) {
+      // Instant paint from a prior visit / prefetch — still refresh below.
+      applyDmvMonthSources(cached, setters);
+    }
+
+    // Prefetch neighbors ASAP (don't wait for the current month to finish) so
+    // Next/Prev can paint from cache instead of an empty "Loading calendar…".
+    for (const n of [shiftMonth(year, monthIndex, -1), shiftMonth(year, monthIndex, 1)]) {
+      const nKey = monthCacheKey("dmv", n.year, n.monthIndex);
+      if (dmvMonthCache.has(nKey)) continue;
+      void fetchDmvMonthSources(n.year, n.monthIndex).then((s) => {
+        dmvMonthCache.set(nKey, s);
+      });
+    }
+
     (async () => {
       try {
-        const [
-          dcRes,
-          mcRes,
-          twcRes,
-          pnpRes,
-          scrawlRes,
-          busboysRes,
-          mdHumRes,
-          pwRes,
-          writeToRightRes,
-          dcArtAllNightRes,
-          dmvCuratedRes,
-        ] =
-          await Promise.all([
-          fetch(`/api/dcpl/events?${q}`, { signal: ac.signal }),
-          fetch(`/api/mcpl/events?${q}`, { signal: ac.signal }),
-          fetch(`/api/writers-center/events?year=${y}&month=${m}`, {
-            signal: ac.signal,
-          }),
-          fetch(`/api/politics-prose/events?year=${y}&month=${m}`, {
-            signal: ac.signal,
-          }),
-          fetch(`/api/scrawl-books/events?year=${y}&month=${m}`, {
-            signal: ac.signal,
-          }),
-          fetch(`/api/busboys-poets/events?year=${y}&month=${m}`, {
-            signal: ac.signal,
-          }),
-          fetch(`/api/mdhumanities/events?year=${y}&month=${m}`, {
-            signal: ac.signal,
-          }),
-          fetch(`/api/planet-word/events?year=${y}&month=${m}`, {
-            signal: ac.signal,
-          }),
-          fetch(`/api/write-to-right/events?year=${y}&month=${m}`, {
-            signal: ac.signal,
-          }),
-          fetch(`/api/dc-art-all-night/events?year=${y}&month=${m}`, {
-            signal: ac.signal,
-          }),
-          fetch(`/api/dmv-curated/events?year=${y}&month=${m}`, {
-            signal: ac.signal,
-          }),
-        ]);
-        const dcJson = dcRes.ok
-          ? ((await dcRes.json()) as { events?: WorkshopEvent[] })
-          : {};
-        const mcJson = mcRes.ok
-          ? ((await mcRes.json()) as { events?: WorkshopEvent[] })
-          : {};
-        const twcJson = twcRes.ok
-          ? ((await twcRes.json()) as { events?: WorkshopEvent[] })
-          : {};
-        const pnpJson = pnpRes.ok
-          ? ((await pnpRes.json()) as { events?: WorkshopEvent[] })
-          : {};
-        const scrawlJson = scrawlRes.ok
-          ? ((await scrawlRes.json()) as { events?: WorkshopEvent[] })
-          : {};
-        const busboysJson = busboysRes.ok
-          ? ((await busboysRes.json()) as { events?: WorkshopEvent[] })
-          : {};
-        const mdHumJson = mdHumRes.ok
-          ? ((await mdHumRes.json()) as { events?: WorkshopEvent[] })
-          : {};
-        const pwJson = pwRes.ok
-          ? ((await pwRes.json()) as { events?: WorkshopEvent[] })
-          : {};
-        const writeToRightJson = writeToRightRes.ok
-          ? ((await writeToRightRes.json()) as { events?: WorkshopEvent[] })
-          : {};
-        const dcArtAllNightJson = dcArtAllNightRes.ok
-          ? ((await dcArtAllNightRes.json()) as { events?: WorkshopEvent[] })
-          : {};
-        const dmvCuratedJson = dmvCuratedRes.ok
-          ? ((await dmvCuratedRes.json()) as { events?: WorkshopEvent[] })
-          : {};
-        const dcEv = Array.isArray(dcJson.events) ? dcJson.events : [];
-        const mcEv = Array.isArray(mcJson.events) ? mcJson.events : [];
-        const twcEv = Array.isArray(twcJson.events) ? twcJson.events : [];
-        const pnpEv = Array.isArray(pnpJson.events) ? pnpJson.events : [];
-        const scrawlEv = Array.isArray(scrawlJson.events) ? scrawlJson.events : [];
-        const busboysEv = Array.isArray(busboysJson.events) ? busboysJson.events : [];
-        const mdHumEv = Array.isArray(mdHumJson.events) ? mdHumJson.events : [];
-        const pwEv = Array.isArray(pwJson.events) ? pwJson.events : [];
-        const writeToRightEv = Array.isArray(writeToRightJson.events)
-          ? writeToRightJson.events
-          : [];
-        const dcArtAllNightEv = Array.isArray(dcArtAllNightJson.events)
-          ? dcArtAllNightJson.events
-          : [];
-        const dmvCuratedEv = Array.isArray(dmvCuratedJson.events)
-          ? dmvCuratedJson.events
-          : [];
-        setLibnetEvents([...dcEv, ...mcEv]);
-        setWritersCenterEvents(twcEv);
-        setPoliticsProseEvents(pnpEv);
-        setScrawlBooksEvents(scrawlEv);
-        setBusboysPoetsEvents(busboysEv);
-        setMdHumanitiesEvents(mdHumEv);
-        setPlanetWordEvents(pwEv);
-        setWriteToRightEvents(writeToRightEv);
-        setDcArtAllNightEvents(dcArtAllNightEv);
-        setDmvCuratedEvents(dmvCuratedEv);
+        const sources = await fetchDmvMonthSources(year, monthIndex, {
+          signal: ac.signal,
+          onPartial: (key, events) => {
+            applyDmvSourcePartial(key, events, setters);
+          },
+        });
+        dmvMonthCache.set(cacheKey, sources);
       } catch (e) {
         if ((e as Error).name === "AbortError") return;
-        setLibnetEvents([]);
-        setWritersCenterEvents([]);
-        setPoliticsProseEvents([]);
-        setScrawlBooksEvents([]);
-        setBusboysPoetsEvents([]);
-        setMdHumanitiesEvents([]);
-        setPlanetWordEvents([]);
-        setWriteToRightEvents([]);
-        setDcArtAllNightEvents([]);
-        setDmvCuratedEvents([]);
+        if (!cached) {
+          setLibnetEvents([]);
+          setWritersCenterEvents([]);
+          setPoliticsProseEvents([]);
+          setScrawlBooksEvents([]);
+          setBusboysPoetsEvents([]);
+          setMdHumanitiesEvents([]);
+          setPlanetWordEvents([]);
+          setWriteToRightEvents([]);
+          setDcArtAllNightEvents([]);
+          setDmvCuratedEvents([]);
+        }
       } finally {
         finishLoad();
       }
@@ -1293,6 +1303,66 @@ export function WorkshopCalendar({ city }: { city: City }) {
   }, [city.id, year, monthIndex]);
 
   useEffect(() => {
+    if (city.id !== "sd") {
+      setSanDiegoEvents([]);
+      return;
+    }
+    const y = year;
+    const m = monthIndex + 1;
+    const ac = new AbortController();
+    const finishLoad = beginSourceLoad(loadEpochRef, pendingLoadsRef, setSourcesLoading);
+    (async () => {
+      try {
+        const res = await fetch(`/api/san-diego/events?year=${y}&month=${m}`, {
+          signal: ac.signal,
+        });
+        if (!res.ok) {
+          setSanDiegoEvents([]);
+          return;
+        }
+        const body = (await res.json()) as { events?: WorkshopEvent[] };
+        setSanDiegoEvents(Array.isArray(body.events) ? body.events : []);
+      } catch (e) {
+        if ((e as Error).name === "AbortError") return;
+        setSanDiegoEvents([]);
+      } finally {
+        finishLoad();
+      }
+    })();
+    return () => ac.abort();
+  }, [city.id, year, monthIndex]);
+
+  useEffect(() => {
+    if (city.id !== "sd") {
+      setSdclLibraryEvents([]);
+      return;
+    }
+    const y = year;
+    const m = monthIndex + 1;
+    const ac = new AbortController();
+    const finishLoad = beginSourceLoad(loadEpochRef, pendingLoadsRef, setSourcesLoading);
+    (async () => {
+      try {
+        const res = await fetch(`/api/sdcl/events?year=${y}&month=${m}`, {
+          signal: ac.signal,
+        });
+        if (!res.ok) {
+          setSdclLibraryEvents([]);
+          return;
+        }
+        const body = (await res.json()) as { events?: WorkshopEvent[] };
+        setSdclLibraryEvents(Array.isArray(body.events) ? body.events : []);
+      } catch (e) {
+        if ((e as Error).name === "AbortError") return;
+        setSdclLibraryEvents([]);
+      } finally {
+        finishLoad();
+      }
+    })();
+    return () => ac.abort();
+  }, [city.id, year, monthIndex]);
+
+  useEffect(() => {
     if (
       city.id !== "dmv" &&
       city.id !== "nyc" &&
@@ -1382,6 +1452,8 @@ export function WorkshopCalendar({ city }: { city: City }) {
     const tn = city.id === "tn" ? tennesseeEvents : [];
     const ne = city.id === "ne" ? nebraskaEvents : [];
     const opl = city.id === "ne" ? omahaLibraryEvents : [];
+    const sd = city.id === "sd" ? sanDiegoEvents : [];
+    const sdcl = city.id === "sd" ? sdclLibraryEvents : [];
     const eb =
       city.id === "dmv" ||
       city.id === "nyc" ||
@@ -1434,6 +1506,8 @@ export function WorkshopCalendar({ city }: { city: City }) {
       ...tn,
       ...ne,
       ...opl,
+      ...sd,
+      ...sdcl,
       ...eb,
     ];
   }, [
@@ -1481,6 +1555,8 @@ export function WorkshopCalendar({ city }: { city: City }) {
     tennesseeEvents,
     nebraskaEvents,
     omahaLibraryEvents,
+    sanDiegoEvents,
+    sdclLibraryEvents,
     eventbriteEvents,
   ]);
   const categoryOptions = useMemo(
@@ -1655,6 +1731,9 @@ export function WorkshopCalendar({ city }: { city: City }) {
     }
     if (city.id === "ne") {
       return "No Omaha / Lincoln listings for this month from curated bookstores, Nebraska Writers Collective, or Omaha Public Library — or a feed could not be reached. Try another month or check your connection.";
+    }
+    if (city.id === "sd") {
+      return "No San Diego listings for this month from curated sources or San Diego County Library — or a feed could not be reached. Try another month or check your connection.";
     }
 
     return "No verified events loaded for this city yet. Wire ingestion (Eventbrite, library calendars, RSS, etc.) so only real dated listings appear here.";

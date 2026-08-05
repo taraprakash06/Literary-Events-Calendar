@@ -221,7 +221,7 @@ function nplEvent(row: NplRow): CuratedSpec {
     neighborhood: loc.neighborhood,
     rsvpUrl: nplRsvpUrl(row.slug, row.date, row.rsvpUrl),
     sourceChannel: "library",
-    price: row.price,
+    price: row.price ?? "free",
     priceDetail: row.priceDetail,
     registrationRequired: row.registrationRequired,
   };
@@ -1197,6 +1197,7 @@ const PLENTY_WRITERS_WORKSHOPS: CuratedSpec[] = [
     rsvpUrl: `https://www.plentybookshop.org/event-details-registration/${rsvpSlug}`,
     sourceChannel: "bookstore",
     price: "paid",
+    priceDetail: "$20 (includes a drink)",
   };
 });
 
@@ -1721,6 +1722,7 @@ const EVENTS: CuratedSpec[] = [
       "https://www.landmarkbooksellers.com/event/an-evening-with-eric-metaxas-revolution-jul-2026",
     sourceChannel: "bookstore",
     price: "paid",
+    priceDetail: "$15 entry · $45 with signed copy",
   },
   {
     id: "tn-landmark-gail-southwell-20260725",
@@ -1741,6 +1743,7 @@ const EVENTS: CuratedSpec[] = [
     neighborhood: "Franklin",
     rsvpUrl: "https://www.landmarkbooksellers.com/event/gail-southwell-jul-2026",
     sourceChannel: "bookstore",
+    price: "free",
   },
   {
     id: "tn-landmark-jenny-carlton-20260731",
@@ -1761,6 +1764,7 @@ const EVENTS: CuratedSpec[] = [
     neighborhood: "Franklin",
     rsvpUrl: "https://www.landmarkbooksellers.com/event/jenny-carlton-jul-2026",
     sourceChannel: "bookstore",
+    price: "free",
   },
   {
     id: "tn-landmark-hope-beryl-green-20260801",
@@ -1781,6 +1785,7 @@ const EVENTS: CuratedSpec[] = [
     neighborhood: "Franklin",
     rsvpUrl: "https://www.landmarkbooksellers.com/event/hope-beryl-green-aug-2026",
     sourceChannel: "bookstore",
+    price: "free",
   },
   {
     id: "tn-landmark-dorena-williamson-20260815",
@@ -1801,6 +1806,7 @@ const EVENTS: CuratedSpec[] = [
     neighborhood: "Franklin",
     rsvpUrl: "https://www.landmarkbooksellers.com/event/dorena-williamson-aug-2026",
     sourceChannel: "bookstore",
+    price: "free",
   },
   {
     id: "tn-landmark-writers-open-mic-20260820",
@@ -1844,6 +1850,7 @@ const EVENTS: CuratedSpec[] = [
     neighborhood: "Franklin",
     rsvpUrl: "https://www.landmarkbooksellers.com/event/yance-wyatt-aug-2026",
     sourceChannel: "bookstore",
+    price: "free",
   },
   {
     id: "tn-landmark-nathan-carter-johnson-20260827",
@@ -1864,6 +1871,7 @@ const EVENTS: CuratedSpec[] = [
     neighborhood: "Franklin",
     rsvpUrl: "https://www.landmarkbooksellers.com/event/nathan-carter-johnson-aug-2026",
     sourceChannel: "bookstore",
+    price: "free",
   },
   {
     id: "tn-npl-yance-wyatt-watersmith-20260816",
@@ -2076,6 +2084,7 @@ const EVENTS: CuratedSpec[] = [
       "https://www.facebook.com/events/island-vibes-restaurant/poets-playground-headlining-alondus/1107248584793605/",
     sourceChannel: "literary_org",
     price: "paid",
+    priceDetail: "$10 Eventbrite · $15+ at door",
   },
   {
     id: "tn-vintage-bean-open-mic-matt-awesome-20260731",
@@ -2374,6 +2383,7 @@ const EVENTS: CuratedSpec[] = [
       "https://parnassusbooks.net/event/2026-09-08/ariel-lawhon-pirate-queen",
     sourceChannel: "bookstore",
     price: "paid",
+    priceDetail: "$35.25 (includes signed copy)",
   },
   {
     id: "tn-novel-skaja-wicker-poetry-20260908",
@@ -2427,6 +2437,7 @@ const EVENTS: CuratedSpec[] = [
       "https://parnassusbooks.net/event/2026-09-14/emily-st-john-mandel-exit-party-adam-ross",
     sourceChannel: "bookstore",
     price: "paid",
+    priceDetail: "$37.50 (includes signed copy)",
   },
   {
     id: "tn-novel-cody-wayne-morris-same-house-20260926",
@@ -2478,6 +2489,7 @@ const EVENTS: CuratedSpec[] = [
       "https://www.eventbrite.com/e/author-event-with-jodi-picoult-tickets-1991794386628",
     sourceChannel: "bookstore",
     price: "paid",
+    priceDetail: "$37.50 (includes pre-signed copy)",
   },
   {
     id: "tn-parnassus-john-green-hollywood-ending-20260930",
@@ -2504,6 +2516,7 @@ const EVENTS: CuratedSpec[] = [
       "https://www.eventbrite.com/e/author-event-with-john-green-tickets-1992769985671",
     sourceChannel: "bookstore",
     price: "paid",
+    priceDetail: "$36.75 (includes signed copy)",
   },
   {
     id: "tn-novel-freida-mcfadden-the-witch-20261006",

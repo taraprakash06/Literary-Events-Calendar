@@ -48,6 +48,14 @@ export const CITIES: City[] = [
     timeZone: "America/Chicago",
     showTimezoneAbbr: true,
   },
+  {
+    id: "sd",
+    slug: "san-diego",
+    name: "San Diego, CA",
+    label: "San Diego",
+    timeZone: "America/Los_Angeles",
+    showTimezoneAbbr: true,
+  },
 ];
 
 const bySlug = new Map(CITIES.map((c) => [c.slug, c] as const));
