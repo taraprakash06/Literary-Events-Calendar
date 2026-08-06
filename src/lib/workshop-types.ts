@@ -92,7 +92,10 @@ export type WorkshopEvent = {
 };
 
 export type EventFilters = {
-  /** Checked = included; unchecked = excluded */
+  /**
+   * Facet filters (e-commerce style): empty set = no restriction (show all).
+   * Non-empty = match any checked value (OR within facet). Facets AND together.
+   */
   formats: Set<EventFormat>;
   prices: Set<PriceKind>;
   categoryIncluded: Set<WorkshopEventCategory>;

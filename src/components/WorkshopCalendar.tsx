@@ -300,19 +300,8 @@ function toggleFilterInSet<T extends string>(set: Set<T>, value: T): Set<T> {
   return next;
 }
 
-function allFilterSelections(): Pick<
-  EventFilters,
-  "formats" | "prices" | "categoryIncluded" | "registrationRequiredOnly"
-> {
-  return {
-    formats: new Set(ALL_EVENT_FORMATS),
-    prices: new Set(ALL_PRICE_KINDS),
-    categoryIncluded: new Set(ALL_WORKSHOP_CATEGORIES),
-    registrationRequiredOnly: false,
-  };
-}
-
-function noFilterSelections(): Pick<
+/** Clear facet checkboxes — empty sets mean no restriction (show all). */
+function clearFilterSelections(): Pick<
   EventFilters,
   "formats" | "prices" | "categoryIncluded" | "registrationRequiredOnly"
 > {
@@ -441,9 +430,9 @@ export function WorkshopCalendar({ city }: { city: City }) {
   const [filters, setFilters] = useState<EventFilters>(() => {
     const r = monthRangeISO(today.getFullYear(), today.getMonth());
     return {
-      formats: new Set(ALL_EVENT_FORMATS),
-      prices: new Set(ALL_PRICE_KINDS),
-      categoryIncluded: new Set(ALL_WORKSHOP_CATEGORIES),
+      formats: new Set(),
+      prices: new Set(),
+      categoryIncluded: new Set(),
       registrationRequiredOnly: false,
       rangeStart: r.start,
       rangeEnd: r.end,
@@ -1791,42 +1780,28 @@ export function WorkshopCalendar({ city }: { city: City }) {
             <p className="text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-[var(--muted)]">
               Filters
             </p>
-            <div className="flex items-center gap-2 text-xs text-[var(--muted)]">
-              <button
-                type="button"
-                onClick={() =>
-                  setFilters((prev) => ({ ...prev, ...allFilterSelections() }))
-                }
-                className="font-medium underline-offset-2 hover:text-[var(--ink)] hover:underline"
-              >
-                Select All
-              </button>
-              <span aria-hidden className="text-[var(--line)]">
-                ·
-              </span>
-              <button
-                type="button"
-                onClick={() =>
-                  setFilters((prev) => ({ ...prev, ...noFilterSelections() }))
-                }
-                className="font-medium underline-offset-2 hover:text-[var(--ink)] hover:underline"
-              >
-                Clear All
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={() =>
+                setFilters((prev) => ({ ...prev, ...clearFilterSelections() }))
+              }
+              className="text-xs font-medium text-[var(--muted)] underline-offset-2 hover:text-[var(--ink)] hover:underline"
+            >
+              Clear filters
+            </button>
           </div>
           <div className="mt-3 flex flex-col gap-3.5 lg:flex-row lg:flex-wrap lg:items-start lg:gap-x-8 lg:gap-y-3">
             <fieldset className="min-w-0">
               <legend className="text-xs text-[var(--muted)]">
                 Format
               </legend>
-              <div className="mt-1.5 flex flex-wrap gap-1.5">
+              <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1.5">
                 {ALL_EVENT_FORMATS.map((f) => (
-                  <FilterPill
+                  <FilterCheckbox
                     key={f}
                     label={FORMAT_LABELS[f]}
-                    selected={filters.formats.has(f)}
-                    onToggle={() =>
+                    checked={filters.formats.has(f)}
+                    onChange={() =>
                       setFilters((prev) => ({
                         ...prev,
                         formats: toggleFilterInSet(prev.formats, f),
@@ -1840,13 +1815,13 @@ export function WorkshopCalendar({ city }: { city: City }) {
               <legend className="text-xs text-[var(--muted)]">
                 Price
               </legend>
-              <div className="mt-2 flex flex-wrap gap-1.5">
+              <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1.5">
                 {ALL_PRICE_KINDS.map((p) => (
-                  <FilterPill
+                  <FilterCheckbox
                     key={p}
                     label={PRICE_LABELS[p]}
-                    selected={filters.prices.has(p)}
-                    onToggle={() =>
+                    checked={filters.prices.has(p)}
+                    onChange={() =>
                       setFilters((prev) => ({
                         ...prev,
                         prices: toggleFilterInSet(prev.prices, p),
@@ -1860,13 +1835,13 @@ export function WorkshopCalendar({ city }: { city: City }) {
               <legend className="text-xs text-[var(--muted)]">
                 Event type
               </legend>
-              <div className="mt-1.5 flex flex-wrap gap-1.5">
+              <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1.5">
                 {categoryOptions.map((c) => (
-                  <FilterPill
+                  <FilterCheckbox
                     key={c}
                     label={CATEGORY_LABELS[c]}
-                    selected={filters.categoryIncluded.has(c)}
-                    onToggle={() =>
+                    checked={filters.categoryIncluded.has(c)}
+                    onChange={() =>
                       setFilters((prev) => ({
                         ...prev,
                         categoryIncluded: toggleFilterInSet(
@@ -2455,30 +2430,25 @@ function useEscapeKey(onClose: () => void) {
   }, [onClose]);
 }
 
-function FilterPill({
+function FilterCheckbox({
   label,
-  selected,
-  onToggle,
+  checked,
+  onChange,
 }: {
   label: string;
-  selected: boolean;
-  onToggle: () => void;
+  checked: boolean;
+  onChange: () => void;
 }) {
   return (
-    <button
-      type="button"
-      role="checkbox"
-      aria-checked={selected}
-      onClick={onToggle}
-      className={[
-        "border px-2.5 py-1 text-xs font-medium transition-colors",
-        selected
-          ? "border-[var(--ink)] bg-[var(--ink)] text-[var(--surface)]"
-          : "border-[var(--line)] bg-transparent text-[var(--muted)] line-through decoration-[var(--muted)] decoration-1 hover:border-[var(--ink)]/35 hover:text-[var(--ink)]",
-      ].join(" ")}
-    >
-      {label}
-    </button>
+    <label className="flex cursor-pointer items-center gap-2 text-sm text-[var(--ink)]">
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={onChange}
+        className="h-4 w-4 shrink-0 accent-[var(--accent)]"
+      />
+      <span>{label}</span>
+    </label>
   );
 }
 

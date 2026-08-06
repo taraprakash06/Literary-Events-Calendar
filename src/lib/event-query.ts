@@ -193,9 +193,20 @@ export function applyEventFilters(
     if (isTheaterWorkshopEvent(ev)) return false;
     if (isVisualArtOnlyWorkshopEvent(ev)) return false;
     if (isFilmOnlyWorkshopEvent(ev)) return false;
-    if (!filters.formats.has(ev.format)) return false;
-    if (!filters.prices.has(ev.price)) return false;
-    if (!filters.categoryIncluded.has(ev.category)) return false;
+    // Empty facet = no restriction (e-commerce style). Non-empty = OR within
+    // the facet; facets combine with AND.
+    if (filters.formats.size > 0 && !filters.formats.has(ev.format)) {
+      return false;
+    }
+    if (filters.prices.size > 0 && !filters.prices.has(ev.price)) {
+      return false;
+    }
+    if (
+      filters.categoryIncluded.size > 0 &&
+      !filters.categoryIncluded.has(ev.category)
+    ) {
+      return false;
+    }
     if (
       filters.registrationRequiredOnly &&
       !eventRequiresAdvanceRegistration(ev)
