@@ -39,7 +39,7 @@ const EVENTS: CuratedSpec[] = [
     title: "Open Mic at the Library featuring Nina Lior",
     tagline: "Beyond the Page · Twinbrook Library · Free · No registration required",
     description:
-      "Beyond the Page returns to Twinbrook Library for an afternoon of poetry and community. Blackout poetry materials are available starting at 2:30pm; featured local poet Nina Lior kicks off the open mic at 3:00pm. Free; no registration required, and all are welcome. RSVP appreciated. Twinbrook Library, 202 Meadow Hall Drive, Rockville, MD 20851.",
+      "Blackout poetry materials are available starting at 2:30pm; featured local poet Nina Lior kicks off the open mic at 3:00pm. All are welcome; RSVP appreciated.",
     category: "reading",
     organizer: "Beyond the Page",
     venue: "Twinbrook Library",
@@ -62,7 +62,7 @@ const EVENTS: CuratedSpec[] = [
     title: "The Writers' RoundTable: Poets In Conversation — Ann LoLondo & Jenny Isaacs",
     tagline: "Maryland Hall · Annapolis · Free · Registration required",
     description:
-      "Poets In Conversation: Ann LoLondo and Jenny Isaacs discuss their writing experiences and their new poetry chapbooks. Presented by The Writers' RoundTable at Maryland Hall. Free; please register at marylandhall.org/events. Community Room (2nd floor), Maryland Hall, 801 Chase St., Annapolis, MD 21401. Contact: writers.mdhall@gmail.com · 443-995-0054.",
+      "Ann LoLondo and Jenny Isaacs discuss their writing experiences and their new poetry chapbooks. Contact: writers.mdhall@gmail.com · 443-995-0054.",
     category: "reading",
     organizer: "The Writers' RoundTable at Maryland Hall",
     venue: "Maryland Hall — Community Room (2nd floor)",
@@ -132,7 +132,7 @@ const EVENTS: CuratedSpec[] = [
     title: "The Writers' RoundTable: The Power of Poetry — Sistah Joy",
     tagline: "Maryland Hall · Annapolis · Free · Registration required",
     description:
-      "Sistah Joy, award-winning poet, author, journalist, and cable talk-show host, will be joined by other poets to discuss \"The Power of Poetry\" to build bridges and enhance our communities. Presented by The Writers' RoundTable at Maryland Hall. Free; please register at marylandhall.org/events. Community Room (2nd floor), Maryland Hall, 801 Chase St., Annapolis, MD 21401. Contact: writers.mdhall@gmail.com · 443-995-0054.",
+      "Sistah Joy, award-winning poet, author, journalist, and cable talk-show host, will be joined by other poets to discuss \"The Power of Poetry\" to build bridges and enhance our communities. Contact: writers.mdhall@gmail.com · 443-995-0054.",
     category: "reading",
     organizer: "The Writers' RoundTable at Maryland Hall",
     venue: "Maryland Hall — Community Room (2nd floor)",
