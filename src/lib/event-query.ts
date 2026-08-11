@@ -184,6 +184,20 @@ export function enrichEventAccessFromCopy(ev: WorkshopEvent): WorkshopEvent {
   return next;
 }
 
+/** True when the user has narrowed results via facets, RSVP toggle, or search. */
+export function hasActiveNarrowingFilters(
+  filters: EventFilters,
+  search: string,
+): boolean {
+  return (
+    filters.formats.size > 0 ||
+    filters.prices.size > 0 ||
+    filters.categoryIncluded.size > 0 ||
+    filters.registrationRequiredOnly ||
+    search.trim().length > 0
+  );
+}
+
 export function applyEventFilters(
   events: WorkshopEvent[],
   filters: EventFilters,

@@ -10,7 +10,7 @@ import { polishAboutText, stripHtmlAndDecode } from "@/lib/text";
 import { isSparseEventDescription } from "@/lib/rsvp-page-enrichment";
 import {
   applyEventFilters,
-  distinctCategories,
+  hasActiveNarrowingFilters,
   enrichEventAccessFromCopy,
   monthRangeISO,
 } from "@/lib/event-query";
@@ -1548,10 +1548,7 @@ export function WorkshopCalendar({ city }: { city: City }) {
     sdclLibraryEvents,
     eventbriteEvents,
   ]);
-  const categoryOptions = useMemo(
-    () => distinctCategories(cityEvents),
-    [cityEvents],
-  );
+  const categoryOptions = ALL_WORKSHOP_CATEGORIES;
 
   const cityEventsEnriched = useMemo(() => {
     return cityEvents.map((ev) => {
@@ -1688,8 +1685,12 @@ export function WorkshopCalendar({ city }: { city: City }) {
       (showList && listSorted.length === 0));
 
   const emptyMessage = (() => {
-    if (cityEvents.length > 0) {
+    if (hasActiveNarrowingFilters(filters, search) && cityEvents.length > 0) {
       return "No events match your filters — try adjusting them.";
+    }
+
+    if (cityEvents.length > 0 && inVisibleMonth.length === 0) {
+      return "No events in this month yet. Try another month.";
     }
 
     if (city.id === "dmv") {
@@ -1790,6 +1791,11 @@ export function WorkshopCalendar({ city }: { city: City }) {
               Clear filters
             </button>
           </div>
+          <p className="mt-1 text-xs text-[var(--muted)]">
+            {hasActiveNarrowingFilters(filters, search)
+              ? "Showing events that match your checked filters."
+              : "Showing all events. Check a box to narrow the list."}
+          </p>
           <div className="mt-3 flex flex-col gap-3.5 lg:flex-row lg:flex-wrap lg:items-start lg:gap-x-8 lg:gap-y-3">
             <fieldset className="min-w-0">
               <legend className="text-xs text-[var(--muted)]">
@@ -2445,6 +2451,7 @@ function FilterCheckbox({
         type="checkbox"
         checked={checked}
         onChange={onChange}
+        autoComplete="off"
         className="h-4 w-4 shrink-0 accent-[var(--accent)]"
       />
       <span>{label}</span>
