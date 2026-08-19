@@ -59,9 +59,14 @@ export const CITIES: City[] = [
 ];
 
 const bySlug = new Map(CITIES.map((c) => [c.slug, c] as const));
+const byId = new Map(CITIES.map((c) => [c.id, c] as const));
 
 export function getCityBySlug(slug: string): City | undefined {
   return bySlug.get(slug);
+}
+
+export function getCityById(id: string): City | undefined {
+  return byId.get(id);
 }
 
 export const DEFAULT_CITY_SLUG = "dmv";

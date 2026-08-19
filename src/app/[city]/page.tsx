@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { CITIES, getCityBySlug } from "@/data/cities";
+import { SubscribeForm } from "@/components/SubscribeForm";
 import { WorkshopCalendar } from "@/components/WorkshopCalendar";
 
 export function generateStaticParams() {
@@ -38,6 +39,7 @@ export default async function CityCalendarPage({
             bring them together in one place. Use the filters below to discover
             events near you that fit your interests.
           </p>
+          <SubscribeForm city={city} />
         </div>
       </header>
 

@@ -12,3 +12,11 @@ services:
         value: "20"
       - key: NEXT_PUBLIC_SITE_URL
         value: https://litlist.onrender.com
+      - key: RESEND_API_KEY
+        sync: false
+      - key: RESEND_FROM
+        sync: false
+      - key: CRON_SECRET
+        sync: false
+      - key: SUBSCRIBE_SECRET
+        sync: false

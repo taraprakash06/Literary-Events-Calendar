@@ -1,0 +1,30 @@
+name: Monthly LitList email
+
+on:
+  schedule:
+    # 12:00 UTC on the 1st — morning in US Eastern
+    - cron: "0 12 1 * *"
+  workflow_dispatch:
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send monthly city emails
+        env:
+          BASE_URL: ${{ secrets.CALENDAR_BASE_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          if [ -z "$BASE_URL" ]; then
+            echo "Missing secret CALENDAR_BASE_URL (e.g. https://litlist.onrender.com)" >&2
+            exit 1
+          fi
+          if [ -z "$CRON_SECRET" ]; then
+            echo "Missing secret CRON_SECRET" >&2
+            exit 1
+          fi
+          URL="${BASE_URL%/}/api/subscribe/send-monthly"
+          echo "POST $URL"
+          curl -fsSL -X POST "$URL" \
+            -H "Authorization: Bearer ${CRON_SECRET}" \
+            -H "Content-Type: application/json"
