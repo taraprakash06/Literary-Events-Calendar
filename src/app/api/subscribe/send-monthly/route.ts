@@ -22,8 +22,11 @@ async function run(req: Request) {
   if (!isAuthorized(req)) {
     return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
   }
-  const force = new URL(req.url).searchParams.get("force") === "1";
-  const result = await sendMonthlyLitListEmails({ force });
+  const url = new URL(req.url);
+  const force = url.searchParams.get("force") === "1";
+  const to = url.searchParams.get("to") ?? undefined;
+  const cityId = url.searchParams.get("city") ?? "dmv";
+  const result = await sendMonthlyLitListEmails({ force, to, cityId });
   return NextResponse.json(result);
 }
 

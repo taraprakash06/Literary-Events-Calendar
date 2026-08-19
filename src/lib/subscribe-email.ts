@@ -215,9 +215,30 @@ function monthParts(now = DateTime.now().setZone("America/New_York")): {
 
 export async function sendMonthlyLitListEmails(opts?: {
   force?: boolean;
+  to?: string;
+  cityId?: string;
 }): Promise<MonthlySendResult> {
   const { monthKey, monthName } = monthParts();
   const dryRun = !hasResend();
+  const testTo = opts?.to?.trim().toLowerCase();
+  const testCity = opts?.cityId ? getCityById(opts.cityId) : undefined;
+  if (testTo && testCity) {
+    const result = await sendResendEmail({
+      to: testTo,
+      subject: `What’s happening in the literary world this ${monthName}?`,
+      html: monthlyHtml(testCity, monthName, testTo),
+    });
+    return {
+      monthKey,
+      monthName,
+      attempted: 1,
+      sent: result.ok ? 1 : 0,
+      skipped: 0,
+      failed: result.ok ? 0 : 1,
+      dryRun,
+      errors: result.ok ? [] : [result.error ?? "send failed"],
+    };
+  }
   const subs = await listSubscriptions();
   const errors: string[] = [];
   let sent = 0;

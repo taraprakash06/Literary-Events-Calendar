@@ -82,6 +82,9 @@ async function resendFetch(
   } catch {
     json = null;
   }
+  if (!res.ok) {
+    console.warn("[subscribe] Resend", pathname, res.status, json);
+  }
   return { ok: res.ok, status: res.status, json };
 }
 
@@ -103,11 +106,39 @@ type ResendContact = {
   id?: string;
   email?: string;
   unsubscribed?: boolean;
+  last_name?: string;
   properties?: Record<string, string>;
 };
 
+const LAST_NAME_PREFIX = "litlist:";
+const KNOWN_CITY_IDS = new Set([
+  "dmv",
+  "nyc",
+  "la",
+  "sf",
+  "tn",
+  "ne",
+  "sd",
+]);
+
+function citiesFromLastName(lastName: string | undefined): string[] {
+  const raw = lastName?.trim() ?? "";
+  if (!raw.startsWith(LAST_NAME_PREFIX)) return [];
+  return splitList(raw.slice(LAST_NAME_PREFIX.length)).filter((id) =>
+    KNOWN_CITY_IDS.has(id),
+  );
+}
+
+function lastNameFromCities(cities: string[]): string {
+  return `${LAST_NAME_PREFIX}${joinList(cities)}`;
+}
+
 function contactCities(c: ResendContact): string[] {
-  return splitList(c.properties?.[CITIES_PROP]);
+  const fromProps = splitList(c.properties?.[CITIES_PROP]).filter((id) =>
+    KNOWN_CITY_IDS.has(id),
+  );
+  if (fromProps.length > 0) return fromProps;
+  return citiesFromLastName(c.last_name);
 }
 
 function contactSent(c: ResendContact): Record<string, string> {
@@ -142,17 +173,18 @@ async function upsertResendCities(
   await ensureContactProperties();
   const existing = await getResendContact(email);
   const nextCities = mutate(existing ? contactCities(existing) : []);
-  const properties = {
-    ...(existing?.properties ?? {}),
-    [CITIES_PROP]: joinList(nextCities),
+  const payload = {
+    unsubscribed: nextCities.length === 0,
+    last_name: lastNameFromCities(nextCities),
+    properties: {
+      ...(existing?.properties ?? {}),
+      [CITIES_PROP]: joinList(nextCities),
+    },
   };
   if (existing?.id) {
     await resendFetch(`/contacts/${existing.id}`, {
       method: "PATCH",
-      body: JSON.stringify({
-        unsubscribed: nextCities.length === 0 ? true : false,
-        properties,
-      }),
+      body: JSON.stringify(payload),
     });
     return;
   }
@@ -160,8 +192,7 @@ async function upsertResendCities(
     method: "POST",
     body: JSON.stringify({
       email,
-      unsubscribed: false,
-      properties,
+      ...payload,
     }),
   });
 }
