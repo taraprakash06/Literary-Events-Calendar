@@ -49,7 +49,8 @@ export function SubscribeForm({ city }: { city: City }) {
   }
 
   return (
-    <div className="mt-6 max-w-xl border-t border-[var(--line)] pt-5">
+    <div className="mx-auto mt-10 max-w-6xl border-t border-[var(--line)] pt-8">
+      <div className="max-w-xl">
       <p className="font-serif text-[1.15rem] leading-snug text-[var(--ink)]">
         Never miss what’s happening.
       </p>
@@ -128,6 +129,7 @@ export function SubscribeForm({ city }: { city: City }) {
           {message}
         </p>
       ) : null}
+      </div>
     </div>
   );
 }

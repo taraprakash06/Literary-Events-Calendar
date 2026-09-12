@@ -40,6 +40,7 @@ import {
   type DmvMonthSources,
   type DmvSourceKey,
 } from "@/lib/dmv-month-fetch";
+import { capDmvCrowdedDays } from "@/lib/dmv-day-cap";
 
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const;
 
@@ -555,6 +556,7 @@ export function WorkshopCalendar({ city }: { city: City }) {
   const [omahaLibraryEvents, setOmahaLibraryEvents] = useState<WorkshopEvent[]>([]);
   const [sanDiegoEvents, setSanDiegoEvents] = useState<WorkshopEvent[]>([]);
   const [sdclLibraryEvents, setSdclLibraryEvents] = useState<WorkshopEvent[]>([]);
+  const [madisonEvents, setMadisonEvents] = useState<WorkshopEvent[]>([]);
 
   useEffect(() => {
     if (city.id !== "dmv") {
@@ -1352,6 +1354,36 @@ export function WorkshopCalendar({ city }: { city: City }) {
   }, [city.id, year, monthIndex]);
 
   useEffect(() => {
+    if (city.id !== "madison") {
+      setMadisonEvents([]);
+      return;
+    }
+    const y = year;
+    const m = monthIndex + 1;
+    const ac = new AbortController();
+    const finishLoad = beginSourceLoad(loadEpochRef, pendingLoadsRef, setSourcesLoading);
+    (async () => {
+      try {
+        const res = await fetch(`/api/madison/events?year=${y}&month=${m}`, {
+          signal: ac.signal,
+        });
+        if (!res.ok) {
+          setMadisonEvents([]);
+          return;
+        }
+        const body = (await res.json()) as { events?: WorkshopEvent[] };
+        setMadisonEvents(Array.isArray(body.events) ? body.events : []);
+      } catch (e) {
+        if ((e as Error).name === "AbortError") return;
+        setMadisonEvents([]);
+      } finally {
+        finishLoad();
+      }
+    })();
+    return () => ac.abort();
+  }, [city.id, year, monthIndex]);
+
+  useEffect(() => {
     if (
       city.id !== "dmv" &&
       city.id !== "nyc" &&
@@ -1443,6 +1475,7 @@ export function WorkshopCalendar({ city }: { city: City }) {
     const opl = city.id === "ne" ? omahaLibraryEvents : [];
     const sd = city.id === "sd" ? sanDiegoEvents : [];
     const sdcl = city.id === "sd" ? sdclLibraryEvents : [];
+    const madison = city.id === "madison" ? madisonEvents : [];
     const eb =
       city.id === "dmv" ||
       city.id === "nyc" ||
@@ -1450,7 +1483,7 @@ export function WorkshopCalendar({ city }: { city: City }) {
       city.id === "sf"
         ? eventbriteEvents
         : [];
-    return [
+    const merged = [
       ...base,
       ...lib,
       ...twc,
@@ -1497,8 +1530,10 @@ export function WorkshopCalendar({ city }: { city: City }) {
       ...opl,
       ...sd,
       ...sdcl,
+      ...madison,
       ...eb,
     ];
+    return city.id === "dmv" ? capDmvCrowdedDays(merged) : merged;
   }, [
     city.id,
     libnetEvents,
@@ -1546,6 +1581,7 @@ export function WorkshopCalendar({ city }: { city: City }) {
     omahaLibraryEvents,
     sanDiegoEvents,
     sdclLibraryEvents,
+    madisonEvents,
     eventbriteEvents,
   ]);
   const categoryOptions = ALL_WORKSHOP_CATEGORIES;
@@ -1724,6 +1760,9 @@ export function WorkshopCalendar({ city }: { city: City }) {
     }
     if (city.id === "sd") {
       return "No San Diego listings for this month from curated sources or San Diego County Library — or a feed could not be reached. Try another month or check your connection.";
+    }
+    if (city.id === "madison") {
+      return "No Madison listings for this month from curated sources — or a feed could not be reached. Try another month or check your connection.";
     }
 
     return "No verified events loaded for this city yet. Wire ingestion (Eventbrite, library calendars, RSS, etc.) so only real dated listings appear here.";
@@ -2590,10 +2629,12 @@ function EventDetailModal({
     event.priceDetail,
   ]);
 
+  const displayEvent = enrichEventAccessFromCopy(event);
+
   const aboutText = polishAboutText(
-    /<[a-z]/i.test(event.description)
-      ? stripHtmlAndDecode(event.description)
-      : event.description,
+    /<[a-z]/i.test(displayEvent.description)
+      ? stripHtmlAndDecode(displayEvent.description)
+      : displayEvent.description,
   );
 
   return (
@@ -2668,7 +2709,7 @@ function EventDetailModal({
               Price
             </p>
             <p className="mt-2 text-sm leading-relaxed text-[var(--ink)]">
-              {priceSummary(event)}
+              {priceSummary(displayEvent)}
             </p>
           </div>
 
@@ -2677,7 +2718,7 @@ function EventDetailModal({
               Location
             </p>
             <p className="mt-2 text-sm leading-relaxed text-[var(--ink)]">
-              {locationSummary(event)}
+              {locationSummary(displayEvent)}
             </p>
           </div>
 
@@ -2695,24 +2736,24 @@ function EventDetailModal({
               Organizer
             </p>
             <p className="mt-2 text-sm font-medium text-[var(--ink)]">
-              {event.organizer}
+              {displayEvent.organizer}
             </p>
           </div>
 
-          {event.rsvpUrl ? (
+          {displayEvent.rsvpUrl ? (
             <div className="space-y-2">
-              {event.rsvpIsGeneralCalendar ? (
+              {displayEvent.rsvpIsGeneralCalendar ? (
                 <p className="text-sm text-[var(--muted)]">
                   No direct link to this event — the full events list is here:
                 </p>
               ) : null}
               <a
-                href={event.rsvpUrl}
+                href={displayEvent.rsvpUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex min-h-12 w-full items-center justify-center bg-[var(--accent)] px-5 py-3 text-sm font-semibold text-[var(--surface)] transition hover:bg-[var(--accent-ink)]"
               >
-                {event.rsvpIsGeneralCalendar
+                {displayEvent.rsvpIsGeneralCalendar
                   ? "View full events calendar"
                   : "RSVP / Learn more"}
               </a>

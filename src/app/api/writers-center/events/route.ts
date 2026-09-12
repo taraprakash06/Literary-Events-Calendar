@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { DateTime } from "luxon";
 import { fetchWritersCenterListingsForMonth } from "@/lib/writers-center-client";
 import {
-  priceDetailFromTwcCost,
+  resolveWritersCenterEventPricing,
   resolveWritersCenterPricingByUrls,
 } from "@/lib/writers-center-details";
 import { mapTwcEventToWorkshops } from "@/lib/writers-center-map";
@@ -34,16 +34,18 @@ export async function GET(req: Request) {
     const raw = await fetchWritersCenterListingsForMonth(year, monthIndex);
 
     const prelim = raw
-      .flatMap((row) =>
-        mapTwcEventToWorkshops(row, {
-          priceDetail: priceDetailFromTwcCost(row),
-        }),
-      )
+      .flatMap((row) => {
+        const pricing = resolveWritersCenterEventPricing(row);
+        return mapTwcEventToWorkshops(row, {
+          price: pricing.price,
+          priceDetail: pricing.priceDetail,
+        });
+      })
       .filter((ev) =>
         inRequestedMonth(ev.start, ev.timeZone, year, monthIndex),
       );
 
-    // Only scrape pages for workshops that actually appear this month.
+    // Scrape workshop pages this month for richer member/non-member Cost lines.
     const workshopUrls = [
       ...new Set(
         prelim

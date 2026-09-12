@@ -39,7 +39,6 @@ export default async function CityCalendarPage({
             bring them together in one place. Use the filters below to discover
             events near you that fit your interests.
           </p>
-          <SubscribeForm city={city} />
         </div>
       </header>
 
@@ -48,6 +47,7 @@ export default async function CityCalendarPage({
         className="flex flex-1 flex-col px-4 pb-14 pt-6 sm:px-6 sm:pb-16 sm:pt-8"
       >
         <WorkshopCalendar city={city} />
+        <SubscribeForm city={city} />
       </main>
     </div>
   );

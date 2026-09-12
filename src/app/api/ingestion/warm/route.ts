@@ -97,6 +97,9 @@ function endpointsForCity(cityId: string): string[] {
   if (cityId === "sd") {
     return ["/api/san-diego/events", "/api/sdcl/events"];
   }
+  if (cityId === "madison") {
+    return ["/api/madison/events"];
+  }
   return [];
 }
 

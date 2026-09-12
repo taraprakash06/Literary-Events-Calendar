@@ -28,6 +28,8 @@ export function cityInCopy(city: City): string {
       return "Omaha / Lincoln";
     case "sd":
       return "San Diego";
+    case "madison":
+      return "Madison";
     default:
       return city.label;
   }

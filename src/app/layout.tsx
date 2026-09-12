@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Libre_Baskerville, Source_Sans_3 } from "next/font/google";
+import { Analytics } from "@/components/Analytics";
 import { SITE_URL } from "@/lib/site-url";
 import "./globals.css";
 
@@ -44,7 +45,10 @@ export default function RootLayout({
       className={`${sourceSans.variable} ${libreBaskerville.variable} h-full antialiased`}
       style={{ colorScheme: "light" }}
     >
-      <body className="flex min-h-full flex-col font-sans">{children}</body>
+      <body className="flex min-h-full flex-col font-sans">
+        <Analytics />
+        {children}
+      </body>
     </html>
   );
 }

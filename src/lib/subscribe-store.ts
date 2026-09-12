@@ -119,6 +119,7 @@ const KNOWN_CITY_IDS = new Set([
   "tn",
   "ne",
   "sd",
+  "madison",
 ]);
 
 function citiesFromLastName(lastName: string | undefined): string[] {

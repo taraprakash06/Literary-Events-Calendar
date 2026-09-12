@@ -83,7 +83,7 @@ function mapPrice(cost?: string, ev?: TwcTribeEvent): WorkshopEvent["price"] {
   }
   const decoded = stripHtmlAndDecode(cost);
   const c = decoded.toLowerCase();
-  if (c.includes("free") || c === "0") return "free";
+  if (c.includes("free") || c === "0" || c === "$0") return "free";
   if (/\$|€|£|\d/.test(decoded)) return "paid";
   return "unknown";
 }

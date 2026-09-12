@@ -61,7 +61,7 @@ export function collapseAboutWhitespace(text: string): string {
     .replace(/([a-z0-9…’”'"”])[ \t]*\n+[ \t]*(?=[A-Z])/g, "$1. ")
     // Already-flattened joins (HTML tags stripped to spaces only).
     .replace(
-      /([a-z0-9…’”'"”])\s+(?=(?:This workshop|Join us|Each week|By the end|No preparation|In-person class)\b)/g,
+      /([a-z0-9…’”'"”])\s+(?=(?:This workshop|Join us|Each week|By the end|No preparation|In-person class|Application Deadline|Workshop Dates|Register below|Write your|Meet )\b)/g,
       "$1. ",
     )
     .replace(/\n+/g, " ")
@@ -75,7 +75,8 @@ const NAME_PARTICLE =
 
 /**
  * Fix common feed-copy issues before display: unpunctuated author lists that
- * run into the next sentence, missing commas between names, stray spaces.
+ * run into the next sentence, missing commas between names, stray spaces,
+ * and capitalization after cleanup (e.g. stripping a Cost line).
  */
 export function polishAboutText(input: string): string {
   let t = collapseAboutWhitespace(stripHtmlAndDecode(input).replace(/\uFFFD/g, ""));
@@ -83,12 +84,61 @@ export function polishAboutText(input: string): string {
 
   t = punctuateLabeledNameList(t);
   t = insertPeriodBeforeTrailingOrgSentence(t);
+  t = repairAboutPunctuationAndCaps(t);
 
-  return t
+  return t;
+}
+
+/**
+ * Normalize punctuation/spacing/caps so About reads cleanly after scrapers
+ * or price-stripping leave joins like "months Write your memoir".
+ */
+export function repairAboutPunctuationAndCaps(text: string): string {
+  let t = text.replace(/\u00a0/g, " ").replace(/\uFFFD/g, "");
+
+  // Insert a period when a clause runs into a new sentence without punctuation.
+  t = t.replace(
+    /([a-z0-9…’”'"”)\]])\s+(?=(?:This|That|These|Those|Join|Meet|Write|Register|Application|Workshop|Each|By|No|In-person|Online|Please|All|Come|Bring|Featured|Blackout|Poets?|Authors?|Readers?|Community)\b)/g,
+    "$1. ",
+  );
+  t = t.replace(
+    /([a-z0-9…’”'"”)\]])\s+(?=please\s+(?:register|rsvp)\b)/gi,
+    "$1. ",
+  );
+
+  // "months Write" / "below Application" style joins after mid-string deletions.
+  t = t.replace(
+    /\b(months|weeks|days|years?|answered|questions|welcome|below|hand|too|here|now|tonight|today|poetry|events)\s+(?=[A-Z])/g,
+    "$1. ",
+  );
+
+  t = t
     .replace(/\s+([.!?,;:])/g, "$1")
     .replace(/([.!?]){2,}/g, "$1")
+    .replace(/,\s*,+/g, ",")
+    .replace(/([.!?]),/g, "$1")
+    .replace(/,(?=[A-Za-z])/g, ", ")
+    .replace(/\(\s+/g, "(")
+    .replace(/\s+\)/g, ")")
+    .replace(/\s+\/\s+/g, " / ")
+    .replace(/\s*—\s*/g, " — ")
     .replace(/\s+/g, " ")
     .trim();
+
+  // Drop orphan punctuation left at the start or after another mark.
+  t = t.replace(/^[.,;:]+(?:\s+|$)/, "").replace(/([.!?])\s*[.,;:]+/g, "$1");
+
+  // Capitalize the start of the blurb and each sentence.
+  t = t.replace(/(^|[.!?]\s+)([a-z])/g, (_, lead: string, ch: string) => {
+    return lead + ch.toUpperCase();
+  });
+
+  // If the text has multiple clauses and no terminal punctuation, add a period.
+  if (t.length > 40 && !/[.!?…]"?$/.test(t) && /\s/.test(t)) {
+    t = `${t}.`;
+  }
+
+  return t.replace(/\s+/g, " ").trim();
 }
 
 /**

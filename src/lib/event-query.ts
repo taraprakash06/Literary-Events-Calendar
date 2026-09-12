@@ -1,3 +1,4 @@
+import { polishAboutText } from "@/lib/text";
 import { isFilmOnlyWorkshopEvent, isTheaterWorkshopEvent, isVisualArtOnlyWorkshopEvent } from "@/lib/event-category";
 import type {
   EventFilters,
@@ -69,6 +70,9 @@ export function eventCopySaysFree(ev: WorkshopEvent): boolean {
   }
   return (
     /\bfree to attend\b/.test(blob) ||
+    /\bfree admission\b/.test(blob) ||
+    /\badmission is free\b/.test(blob) ||
+    /\bthis (?:event|program|workshop|reading) is free\b/.test(blob) ||
     /\bfree(?:\s+and\s+open)?(?:\s+to\s+the\s+public)?[.;,]?\s*(?:please\s+)?rsvp\b/.test(
       blob,
     ) ||
@@ -88,7 +92,9 @@ function eventCopyImpliesAdvanceRegistration(ev: WorkshopEvent): boolean {
   const blob = eventAccessCopyBlob(ev);
 
   if (
-    /\bno (?:registration|rsvp) (?:required|necessary|needed)\b/.test(blob) ||
+    /\bno (?:registration|rsvp)(?:\s+is)?\s+(?:required|necessary|needed)\b/.test(
+      blob,
+    ) ||
     /\bregistration not required\b/.test(blob)
   ) {
     return false;
@@ -134,7 +140,9 @@ export function eventRequiresAdvanceRegistration(ev: WorkshopEvent): boolean {
 
   const blob = eventAccessCopyBlob(ev);
   if (
-    /\bno (?:registration|rsvp) (?:required|necessary|needed)\b/.test(blob) ||
+    /\bno (?:registration|rsvp)(?:\s+is)?\s+(?:required|necessary|needed)\b/.test(
+      blob,
+    ) ||
     /\bregistration not required\b/.test(blob)
   ) {
     return false;
@@ -148,39 +156,243 @@ export function eventRequiresAdvanceRegistration(ev: WorkshopEvent): boolean {
 /**
  * Infer free + registration-required from About / price copy when scrapers
  * left price as unknown (e.g. Landmark “Free to attend; please RSVP.”).
+ * Also reconciles `$0` / free stickers with Cost lines in About, then removes
+ * pricing language from About so cost lives only in the Price field.
  */
 export function enrichEventAccessFromCopy(ev: WorkshopEvent): WorkshopEvent {
-  const saysFree = eventCopySaysFree(ev);
+  const priced = reconcileEventPricingFromCopy(ev);
+  const saysFree = eventCopySaysFree(priced);
   // Price-detail wording follows copy only (not merely having an RSVP URL).
   const needsRegFromCopy =
-    ev.registrationRequired === true ||
-    (ev.registrationRequired !== false && eventCopyImpliesAdvanceRegistration(ev));
-  const needsReg = eventRequiresAdvanceRegistration(ev);
-  if (!saysFree && !needsReg) return ev;
+    priced.registrationRequired === true ||
+    (priced.registrationRequired !== false &&
+      eventCopyImpliesAdvanceRegistration(priced));
+  const needsReg = eventRequiresAdvanceRegistration(priced);
 
-  const blob = eventAccessCopyBlob(ev);
-  const next: WorkshopEvent = { ...ev };
-  if (saysFree && (ev.price === "unknown" || !ev.price)) {
+  const next: WorkshopEvent = { ...priced };
+  if (saysFree && (priced.price === "unknown" || !priced.price)) {
     next.price = "free";
   }
-  if (needsReg && ev.registrationRequired !== false) {
+  if (needsReg && priced.registrationRequired !== false) {
     next.registrationRequired = true;
   }
 
+  if (saysFree || needsReg) {
+    const blob = eventAccessCopyBlob(priced);
+    const detail = next.priceDetail?.trim() ?? "";
+    const detailIsAutoOrBlank =
+      !detail ||
+      isBareZeroPriceDetail(detail) ||
+      /^free$/i.test(detail) ||
+      /^unknown$/i.test(detail) ||
+      /^free · registration required$/i.test(detail) ||
+      /^free · please rsvp$/i.test(detail);
+    if (saysFree && needsRegFromCopy && detailIsAutoOrBlank) {
+      next.priceDetail = /\bplease rsvp\b/.test(blob)
+        ? "Free · please RSVP"
+        : "Free · registration required";
+    } else if ((saysFree || next.price === "free") && detailIsAutoOrBlank) {
+      next.priceDetail = "Free";
+    }
+  }
+
+  if (next.description) {
+    next.description = polishAboutText(
+      stripPricingFromAboutText(next.description),
+    );
+  }
+
+  return next;
+}
+
+/**
+ * Remove cost / ticket / free-price wording from About after it has been
+ * copied into `price` / `priceDetail`.
+ */
+export function stripPricingFromAboutText(input: string): string {
+  let t = input.replace(/\u00a0/g, " ");
+
+  t = t.replace(
+    /\bCost:\s*\$\s*[\d,]+(?:\.\d{2})?\s*[|｜]\s*Members?\s*\$\s*[\d,]+(?:\.\d{2})?/gi,
+    " ",
+  );
+  t = t.replace(
+    /\bCost:\s*\$\s*[\d,]+(?:\.\d{2})?(?:\s*[-–—]\s*\$\s*[\d,]+(?:\.\d{2})?)?/gi,
+    " ",
+  );
+  t = t.replace(
+    /\$\s*[\d,]+(?:\.\d{2})?\s*for\s+members\s*\$\s*[\d,]+(?:\.\d{2})?\s*for\s+non-?members/gi,
+    " ",
+  );
+  t = t.replace(
+    /\b(?:tuition|workshop fee|program fee|registration fee)\s*[:=]?\s*\$\s*[\d,]+(?:\.\d{2})?/gi,
+    " ",
+  );
+  t = t.replace(
+    /\b(?:tickets?|admission)\s*(?:are\s+|is\s+|:\s*)?\$\s*[\d,]+(?:\.\d{2})?(?:\s*(?:\+?\s*tax|cover|online|at the door))?/gi,
+    " ",
+  );
+  t = t.replace(/\$\s*[\d,]+(?:\.\d{2})?\s+cover\b/gi, " ");
+  t = t.replace(
+    /\b(?:online\s+)?\$\s*[\d,]+(?:\.\d{2})?\s*(?:\+?\s*tax)?\s*,?\s*\$\s*[\d,]+(?:\.\d{2})?\s+at the door\b/gi,
+    " ",
+  );
+  t = t.replace(
+    /\b(?:this\s+(?:event|program|workshop|reading)\s+is\s+free|admission\s+is\s+free|free\s+admission|free\s+to\s+attend|free\s+of\s+charge)\b[.,;!]*/gi,
+    " ",
+  );
+  t = t.replace(
+    /\bfree\s*[·•]\s*(?:registration required|please rsvp|no registration required|optional[^.]{0,40}donation)\b/gi,
+    " ",
+  );
+  t = t.replace(
+    /\ban?\s+optional\s+\$\s*[\d,]+(?:\.\d{2})?\s+donation\b[^.!?]*/gi,
+    " ",
+  );
+  // "Free; please register…" / sentence-leading Free.
+  t = t.replace(/(^|[.!?]\s*)Free\b[.;:,]?\s*/g, "$1");
+  t = t.replace(/\bFree[.;:]\s+(?=please\s+(?:register|rsvp))/gi, "");
+
+  // If we deleted mid-sentence price copy, avoid leaving " , " or "  ".
+  return t
+    .replace(/\s{2,}/g, " ")
+    .replace(/\s+([.,!?])/g, "$1")
+    .replace(/([.!?]){2,}/g, "$1")
+    .replace(/^[.,;:\s]+/, "")
+    .trim();
+}
+
+/** True when priceDetail is a useless bare zero (not a $0–$10 range). */
+export function isBareZeroPriceDetail(detail: string | undefined): boolean {
+  if (!detail) return false;
+  const d = detail.trim();
+  return /^\$?\s*0+(?:\.0+)?(?:\s*(?:usd|dollars?))?$/i.test(d);
+}
+
+/**
+ * Pull a positive Cost / tuition / ticket amount from About (and similar copy),
+ * ignoring parking-only and suggested-donation phrasing when a Cost: line exists.
+ */
+export function extractAboutCostDetail(
+  text: string,
+): string | undefined {
+  const t = text.replace(/\s+/g, " ").trim();
+  if (!t) return undefined;
+
+  const money = (raw: string) => {
+    const n = Number(raw.replace(/,/g, ""));
+    return Number.isFinite(n) ? n : NaN;
+  };
+  const trimMoney = (raw: string) => {
+    const src = raw.trim();
+    if (/,/.test(src)) return src.replace(/\.00$/, "");
+    const n = src.replace(/,/g, "");
+    if (/\.00$/.test(n)) return n.slice(0, -3);
+    return n;
+  };
+
+  const pipeMembers = t.match(
+    /\bCost:\s*\$\s*([\d,]+(?:\.\d{2})?)\s*[|｜]\s*Members?\s*\$\s*([\d,]+(?:\.\d{2})?)/i,
+  );
+  if (pipeMembers) {
+    const a = money(pipeMembers[1]);
+    const b = money(pipeMembers[2]);
+    if (a > 0 || b > 0) {
+      return `$${trimMoney(pipeMembers[1])} · Members $${trimMoney(pipeMembers[2])}`;
+    }
+  }
+
+  const member = t.match(
+    /\$\s*([\d,]+(?:\.\d{2})?)\s*for\s+members\s*\$\s*([\d,]+(?:\.\d{2})?)\s*for\s+non-?members/i,
+  );
+  if (member) {
+    const a = money(member[1]);
+    const b = money(member[2]);
+    if (a > 0 || b > 0) {
+      return `$${trimMoney(member[1])} members · $${trimMoney(member[2])} non-members`;
+    }
+  }
+
+  const costLine = t.match(
+    /\bCost:\s*\$\s*([\d,]+(?:\.\d{2})?)(?:\s*[-–—]\s*\$\s*([\d,]+(?:\.\d{2})?))?/i,
+  );
+  if (costLine) {
+    const a = money(costLine[1]);
+    const b = costLine[2] ? money(costLine[2]) : NaN;
+    if (costLine[2] && (a > 0 || b > 0)) {
+      return `$${trimMoney(costLine[1])}–$${trimMoney(costLine[2])}`;
+    }
+    if (a > 0) return `$${trimMoney(costLine[1])}`;
+  }
+
+  const tuition = t.match(
+    /\b(?:tuition|workshop fee|program fee|registration fee)\s*[:=]?\s*\$\s*([\d,]+(?:\.\d{2})?)/i,
+  );
+  if (tuition && money(tuition[1]) > 0) {
+    return `$${trimMoney(tuition[1])}`;
+  }
+
+  const tickets = t.match(
+    /\b(?:tickets?|admission)\s*(?:are\s+|is\s+|:)?\s*\$\s*([\d,]+(?:\.\d{2})?)\b/i,
+  );
+  if (tickets && money(tickets[1]) > 0) {
+    return `$${trimMoney(tickets[1])}`;
+  }
+
+  return undefined;
+}
+
+/**
+ * Ensure Price matches About: never show bare `$0` when copy has a real cost;
+ * show "Free" for free events with no better detail.
+ */
+export function reconcileEventPricingFromCopy(
+  ev: WorkshopEvent,
+): WorkshopEvent {
+  const aboutBlob = [ev.title, ev.tagline, ev.description]
+    .filter(Boolean)
+    .join("\n");
+  const aboutCost = extractAboutCostDetail(aboutBlob);
   const detail = ev.priceDetail?.trim() ?? "";
-  const detailIsAutoOrBlank =
-    !detail ||
-    /^free$/i.test(detail) ||
-    /^unknown$/i.test(detail) ||
-    /^free · registration required$/i.test(detail) ||
-    /^free · please rsvp$/i.test(detail);
-  if (saysFree && needsRegFromCopy && detailIsAutoOrBlank) {
-    next.priceDetail = /\bplease rsvp\b/.test(blob)
-      ? "Free · please RSVP"
-      : "Free · registration required";
-  } else if (saysFree && detailIsAutoOrBlank) {
+  const bareZero = isBareZeroPriceDetail(detail);
+  const next: WorkshopEvent = { ...ev };
+
+  if (aboutCost) {
+    // About has a real dollar cost — never leave Price as bare $0 / free sticker.
+    if (
+      bareZero ||
+      !detail ||
+      /^free\b/i.test(detail) ||
+      ev.price === "free" ||
+      ev.price === "unknown"
+    ) {
+      next.price = "paid";
+      next.priceDetail = aboutCost;
+      return next;
+    }
+  }
+
+  if (bareZero) {
+    // Useless $0 with no About cost: treat as free display.
+    next.price = next.price === "paid" ? "unknown" : next.price === "free" ? "free" : next.price;
+    if (next.price === "free" || eventCopySaysFree(ev)) {
+      next.price = "free";
+      next.priceDetail = "Free";
+    } else {
+      next.priceDetail = undefined;
+      if (next.price === "paid") next.price = "unknown";
+    }
+    return next;
+  }
+
+  if (
+    (next.price === "free" || eventCopySaysFree(next)) &&
+    (!detail || /^unknown$/i.test(detail))
+  ) {
+    next.price = "free";
     next.priceDetail = "Free";
   }
+
   return next;
 }
 
