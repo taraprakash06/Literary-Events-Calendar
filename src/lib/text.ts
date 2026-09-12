@@ -97,8 +97,16 @@ export function repairAboutPunctuationAndCaps(text: string): string {
   let t = text.replace(/\u00a0/g, " ").replace(/\uFFFD/g, "");
 
   // Insert a period when a clause runs into a new sentence without punctuation.
+  // Demonstratives (This/These/…) only when the next word is lowercase so we
+  // don’t split book titles like “These Are My People”.
   t = t.replace(
-    /([a-z0-9…’”'"”)\]])\s+(?=(?:This|That|These|Those|Join|Meet|Write|Register|Application|Workshop|Each|By|No|In-person|Online|Please|All|Come|Bring|Featured|Blackout|Poets?|Authors?|Readers?|Community)\b)/g,
+    /([a-z0-9…’”'"”)\]])\s+(?=(?:This|That|These|Those)\s+[a-z])/g,
+    "$1. ",
+  );
+  // Conservative sentence-starters only — avoid title words like Community,
+  // Workshop, Poet(s), Please (film titles), Authors, Readers.
+  t = t.replace(
+    /([a-z0-9…’”'"”)\]])\s+(?=(?:Join|Meet|Write|Register|Application|Each|Come|Bring|Featured|Blackout)\b)/g,
     "$1. ",
   );
   t = t.replace(
@@ -107,8 +115,9 @@ export function repairAboutPunctuationAndCaps(text: string): string {
   );
 
   // "months Write" / "below Application" style joins after mid-string deletions.
+  // Do not use bare "poetry" here — it splits phrases like “Community Poetry Workshop”.
   t = t.replace(
-    /\b(months|weeks|days|years?|answered|questions|welcome|below|hand|too|here|now|tonight|today|poetry|events)\s+(?=[A-Z])/g,
+    /\b(months|weeks|days|years?|answered|questions|welcome|below|hand|too|here|now|tonight|today|events)\s+(?=[A-Z])/g,
     "$1. ",
   );
 
