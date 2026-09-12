@@ -379,8 +379,8 @@ export function reconcileEventPricingFromCopy(
       next.price = "free";
       next.priceDetail = "Free";
     } else {
+      // Line above already maps paid → unknown; clear useless $0 detail.
       next.priceDetail = undefined;
-      if (next.price === "paid") next.price = "unknown";
     }
     return next;
   }
